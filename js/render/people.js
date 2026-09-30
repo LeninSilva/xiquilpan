@@ -67,13 +67,13 @@ export function lookKey(look) {
 export function getFrame(look, dir, frame) {
   const k = lookKey(look) + '#' + dir + '#' + frame;
   let c = cache.get(k);
-  if (c) return c;
+  if (c) { cache.delete(k); cache.set(k, c); return c; }
   c = makeCanvas(CHAR_W * SCALE, CHAR_H * SCALE);
   const ctx = c.getContext('2d');
   ctx.scale(SCALE, SCALE);
   drawPerson(ctx, look, dir, frame);
   cache.set(k, c);
-  if (cache.size > 2600) { let n = 0; for (const key of cache.keys()) { cache.delete(key); if (++n > 600) break; } }
+  if (cache.size > 1100) { let n = 0; for (const key of cache.keys()) { cache.delete(key); if (++n > 300) break; } }
   return c;
 }
 

@@ -32,9 +32,9 @@ export class Renderer {
     const zoom = clamp(Math.min(w, h) / (15 * TILE), 1.4, 4) * (this.zoomMul || 1);
     this.zoom = zoom;
     this.S = zoom * dpr;                      // screen px per world unit
-    this.CS = Math.min(this.S, 4);            // cache resolution (px per unit)
+    this.CS = Math.min(this.S, 3.2);          // cache resolution (px per unit); capped to stay within mobile canvas memory
     setPeopleScale(this.CS);
-    this.spriteCache.clear();
+    this.spriteCache.clear(); this.spritePx = 0;
     this.chunks.scale = -1; // force reset
     this.light.width = Math.ceil(this.canvas.width / 2); this.light.height = Math.ceil(this.canvas.height / 2);
   }
@@ -59,7 +59,11 @@ export class Renderer {
     if (def) { try { def.draw(ctx, s); } catch (e) { console.warn('sprite draw failed', s.kind, e); } }
     c.w = w; c.up = up; c.down = down;
     this.spriteCache.set(s.cacheKey, c);
-    if (this.spriteCache.size > 320) this.spriteCache.delete(this.spriteCache.keys().next().value);
+    this.spritePx = (this.spritePx || 0) + c.width * c.height;
+    while ((this.spritePx > 22e6 || this.spriteCache.size > 260) && this.spriteCache.size > 1) {
+      const k = this.spriteCache.keys().next().value, old = this.spriteCache.get(k);
+      this.spriteCache.delete(k); this.spritePx -= old.width * old.height;
+    }
     return c;
   }
 

@@ -144,7 +144,7 @@ export class Game {
     this.lastOutdoor = 'town';
     this.changeMap('casa_abuela', 8.5, 9.6, 1, { instant: true });
     this.npcs.timer = 0; this.npcs.update(0.016);
-    if (!skipIntro) setTimeout(() => this.cutscene('intro'), 600);
+    if (!skipIntro) setTimeout(() => this.cutscene('intro').then(() => this.controlsHint()), 600);
     else this.quests.set('main', 1);
     this.save();
   }
@@ -163,6 +163,10 @@ export class Game {
     } catch (e) {
       console.error(e); this.ui.toast('No se pudo cargar la partida; empezando de nuevo.', 'bad'); this.newGame('Emiliano');
     }
+  }
+  controlsHint() {
+    const touch = matchMedia('(hover: none)').matches || 'ontouchstart' in window;
+    this.ui.toast(touch ? 'Toca la mitad izquierda para caminar · A: hablar/entrar · B: correr' : 'Flechas/WASD: caminar · Shift: correr · Espacio: hablar/entrar · M: mapa', '');
   }
   reportError(e) { if (!this._errShown) { this._errShown = true; this.ui.toast('Ups: ' + (e.message || e), 'bad'); setTimeout(() => this._errShown = false, 5000); } }
 

@@ -314,7 +314,7 @@ export class UI {
     t.innerHTML = `
       <div class="card"><h3>Ajustes</h3>
         <div class="set-row"><span>Hora real de Jiquilpan<br><small>El reloj del juego sigue la hora de México</small></span><button class="toggle ${g.clock.realTime ? 'on' : ''}" data-t="realTime"></button></div>
-        <div class="set-row"><span>Clima real de Jiquilpan<br><small>Usa el clima actual (Open-Meteo) cuando la hora es real</small></span><button class="toggle ${g.env.useLive ? 'on' : ''}" data-t="liveWeather"></button></div>
+        <div class="set-row"><span>Clima real de Jiquilpan<br><small>Si hay internet, llueve o hace sol como ahorita en Jiquilpan (Open-Meteo)</small></span><button class="toggle ${g.env.useLive ? 'on' : ''}" data-t="liveWeather"></button></div>
         <div class="set-row"><span>Velocidad del tiempo</span><select id="setRate"><option value="0.5">Lenta</option><option value="1">Normal (1 min = 1 s)</option><option value="2">Rápida</option></select></div>
         <div class="set-row"><span>Sonido</span><button class="toggle ${st.sound ? 'on' : ''}" data-t="sound"></button></div>
         <div class="set-row"><span>Acercamiento</span><select id="setZoom"><option value="0.8">Lejos</option><option value="1">Normal</option><option value="1.25">Cerca</option></select></div>

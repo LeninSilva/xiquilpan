@@ -276,7 +276,7 @@ function hillshade(ctx, map, x0, y0, x1, y1) {
 }
 
 export class ChunkCache {
-  constructor() { this.map = null; this.scale = 1; this.cache = new Map(); this.max = 48; }
+  constructor() { this.map = null; this.scale = 1; this.cache = new Map(); this.max = 22; }
   reset(map, scale) {
     if (map !== this.map || scale !== this.scale || (map && map.version !== this.version)) {
       this.cache.clear(); this.map = map; this.scale = scale; this.version = map ? map.version : 0;

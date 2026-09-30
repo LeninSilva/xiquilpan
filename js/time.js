@@ -81,10 +81,9 @@ export class Environment {
     const mo = clock.month; this.bloom = mo >= 1 && mo <= 3;
     // weather
     let targetRain = 0, targetCloud = 0.2, wind = 0.3, code = 0;
-    const realNowish = Math.abs(clock.date.getTime() - Date.now()) < 1000 * 3600 * 24 * 400; // only meaningful near "now"
     if (this.override) {
       ({ rain: targetRain, cloud: targetCloud } = this.override);
-    } else if (this.live && this.useLive && clock.realTime && realNowish) {
+    } else if (this.live && this.useLive && (Date.now() - this.liveAt) < 3 * 3600 * 1000) {
       targetRain = clamp((this.live.precipitation || 0) / 3, 0, 1);
       targetCloud = clamp((this.live.cloud_cover || 0) / 100, 0, 1);
       wind = clamp((this.live.wind_speed_10m || 0) / 25, 0.1, 1);

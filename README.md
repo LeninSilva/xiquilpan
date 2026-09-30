@@ -53,7 +53,7 @@ Tu personaje tiene cuatro valores: **Corazón** (bondad), **Palabra** (honestida
 
 ## Clima y hora reales
 
-En Ajustes puedes activar la **hora real de Jiquilpan** (zona America/Mexico_City). Con la hora real, el juego usa el **clima actual de Jiquilpan** (Open-Meteo, sin key). Si no, el clima se simula: en temporada de lluvias (junio a octubre) caen tormentas por la tarde. Las jacarandas florecen de febrero a abril.
+Si hay internet, el juego usa el **clima actual de Jiquilpan** (Open-Meteo, sin key): si allá está lloviendo, en el juego también. En Ajustes puedes activar además la **hora real de Jiquilpan** (zona America/Mexico_City). Sin conexión, el clima se simula: en temporada de lluvias (junio a octubre) caen tormentas por la tarde. Las jacarandas florecen de febrero a abril.
 
 ## Estructura del código
 
