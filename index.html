@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Xiquilpan: Las Luces del Cerro</title>
+  <meta name="description" content="RPG de acción y aventura en Jiquilpan de Juárez, Michoacán.">
+  <meta name="theme-color" content="#1c1a24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Xiquilpan">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-left">
+      <div id="placePill" class="pill place"><span id="placeName">Jiquilpan</span><span id="streetName"></span></div>
+      <div id="timePill" class="pill time"><span id="wxIcon">☀</span><span id="clockText">7:30 am</span><span id="dayText">Jue</span></div>
+    </div>
+    <div class="hud-right">
+      <div class="pill money"><span class="peso">$</span><span id="moneyText">150</span></div>
+      <button id="btnMenu" class="round" aria-label="Menú">☰</button>
+    </div>
+    <div id="questTracker" class="tracker"></div>
+    <div id="compass" class="compass"><div id="compassNeedle"></div></div>
+  </div>
+
+  <!-- Touch controls -->
+  <div id="touch" class="hidden">
+    <div id="stickZone"></div>
+    <div id="stickBase"><div id="stickKnob"></div></div>
+    <button id="btnA" class="tbtn a">A</button>
+    <button id="btnB" class="tbtn b">B</button>
+  </div>
+
+  <!-- Contextual prompt -->
+  <div id="prompt" class="prompt hidden"><span class="key">A</span><span id="promptText">Hablar</span></div>
+
+  <!-- Dialogue -->
+  <div id="dialog" class="dialog hidden">
+    <div class="dlg-card">
+      <canvas id="portrait" width="160" height="160"></canvas>
+      <div class="dlg-body">
+        <div class="dlg-name"><span id="dlgName"></span><span id="dlgRole"></span></div>
+        <div id="dlgText" class="dlg-text"></div>
+        <div id="dlgChoices" class="dlg-choices"></div>
+        <form id="dlgAsk" class="dlg-ask hidden" autocomplete="off">
+          <input id="dlgInput" type="text" maxlength="200" placeholder="Di algo…" enterkeyhint="send">
+          <button type="submit">Decir</button>
+        </form>
+      </div>
+      <div id="dlgNext" class="dlg-next">▾</div>
+    </div>
+  </div>
+
+  <!-- Toasts / banners -->
+  <div id="toasts"></div>
+  <div id="banner" class="banner hidden"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+  <div id="fade" class="fade"></div>
+
+  <!-- Menus -->
+  <div id="menu" class="menu hidden">
+    <div class="menu-top">
+      <div class="tabs" id="menuTabs">
+        <button data-tab="map" class="on">Mapa</button>
+        <button data-tab="journal">Diario</button>
+        <button data-tab="bag">Morral</button>
+        <button data-tab="self">Yo</button>
+        <button data-tab="settings">Ajustes</button>
+      </div>
+      <button id="menuClose" class="round" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="menu-body">
+      <section id="tab-map" class="tab on">
+        <div class="mapwrap" id="mapWrap"><canvas id="bigmap"></canvas><div id="mapLabel" class="maplabel"></div></div>
+        <div class="maplegend" id="mapLegend"></div>
+      </section>
+      <section id="tab-journal" class="tab"></section>
+      <section id="tab-bag" class="tab"></section>
+      <section id="tab-self" class="tab"></section>
+      <section id="tab-settings" class="tab"></section>
+    </div>
+  </div>
+
+  <!-- Shop -->
+  <div id="shop" class="sheet hidden">
+    <div class="sheet-head"><div><div id="shopName" class="sheet-title"></div><div id="shopSub" class="sheet-sub"></div></div><button id="shopClose" class="round">✕</button></div>
+    <div id="shopList" class="shop-list"></div>
+  </div>
+
+  <!-- Title screen -->
+  <div id="title" class="title">
+    <div class="title-sky"></div>
+    <div class="title-inner">
+      <div class="t-kicker">Jiquilpan de Juárez · Michoacán</div>
+      <h1>Xiquilpan</h1>
+      <div class="t-sub">Las Luces del Cerro</div>
+      <div class="t-actions">
+        <button id="btnContinue" class="primary hidden">Continuar</button>
+        <button id="btnNew" class="primary">Nueva partida</button>
+      </div>
+      <div class="t-name hidden" id="nameBox">
+        <label>¿Cómo te llamas?</label>
+        <input id="nameInput" maxlength="16" value="Emiliano" autocomplete="off">
+        <button id="btnStart" class="primary">Empezar</button>
+      </div>
+      <div class="t-foot">Instálalo: Compartir → “Agregar a inicio” (iPhone) · Menú ⋮ → “Instalar app” (Android)</div>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">Cargando el pueblo…</div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

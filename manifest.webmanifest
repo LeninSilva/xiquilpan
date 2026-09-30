@@ -1,0 +1,18 @@
+{
+  "name": "Xiquilpan: Las Luces del Cerro",
+  "short_name": "Xiquilpan",
+  "description": "RPG de aventura en Jiquilpan de Juárez, Michoacán.",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#14131a",
+  "theme_color": "#1c1a24",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

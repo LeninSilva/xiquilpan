@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#111}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+import { buildTown, applyWeekday } from '../js/data/town.js';
+import { Renderer } from '../js/renderer.js';
+import { Person } from '../js/entities.js';
+import { makeLook } from '../js/render/people.js';
+const q = new URLSearchParams(location.search);
+const map = buildTown(); applyWeekday(map, +(q.get('day') ?? 4));
+const r = new Renderer(document.getElementById('c'));
+if (q.get('zoom')) { r.zoomMul = +q.get('zoom'); r.resize(); }
+const ents = [];
+const cx = +(q.get('x') ?? 125.5) * 16, cy = +(q.get('y') ?? 100) * 16;
+for (let i = 0; i < 12; i++) { const p = new Person(map, cx - 60 + (i % 6) * 22, cy + 20 + Math.floor(i / 6) * 30, makeLook(i * 97 + 5)); p.dir = i % 4; ents.push(p); }
+const L = +(q.get('light') ?? 1);
+const game = { map, camera: { x: cx, y: cy }, entities: ents, effects: [], env: { light: L, rainAmt: +(q.get('rain') ?? 0), cloud: 0.3, wind: 0.3, overcast: 0, lightning: 0, bloom: q.get('bloom') === '1', dusk: L < 1 }, clock: { real: 1, dt: 0.016 }, firstFrame: true };
+r.draw(game);
+window.done = true;
+</script></body></html>
