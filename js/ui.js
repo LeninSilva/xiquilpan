@@ -81,9 +81,9 @@ export class UI {
         e.needle.style.transform = `rotate(${ang}rad)`;
       }
     } else if (at && at[0] !== g.map.id && g.map.id === 'town' && at[0] === 'cerro') {
-      e.compass.style.display = ''; const ang = Math.atan2(0 - g.player.y, 126 * TILE - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
+      e.compass.style.display = ''; const ang = Math.atan2(g.map.h * TILE - g.player.y, 152 * TILE - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
     } else if (at && g.map.id === 'cerro' && at[0] === 'town') {
-      e.compass.style.display = ''; const ang = Math.atan2(129 * TILE - g.player.y, 40 * TILE - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
+      e.compass.style.display = ''; const ang = Math.atan2(0 - g.player.y, 40 * TILE - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
     } else e.compass.style.display = 'none';
   }
   prompt(text) {
@@ -402,14 +402,22 @@ export class UI {
       ctx.setTransform(view.z, 0, 0, view.z, cv.width / 2 - view.cx * view.z, cv.height / 2 - view.cy * view.z);
       ctx.drawImage(img, 0, 0);
       // labels of places
-      const labels = map.areas.filter(a => ['building', 'plaza', 'monument', 'park', 'forest', 'stadium', 'cemetery', 'ranch', 'village', 'summit', 'shop', 'taxi', 'home', 'district', 'trail'].includes(a.kind));
+      const PRI = { plaza: 0, monument: 1, building: 2, stadium: 2, home: 3, shop: 4, taxi: 5, nature: 3, park: 6, forest: 6, village: 6, summit: 6, cemetery: 6, ranch: 6, trail: 7, neighbor: 8, district: 9 };
+      const labels = map.areas.filter(a => a.kind in PRI).sort((a, b) => PRI[a.kind] - PRI[b.kind]);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const placed = [];
       for (const a of labels) {
-        const big = ['district', 'park', 'forest', 'village'].includes(a.kind);
+        const big = ['district', 'park', 'forest', 'village', 'neighbor'].includes(a.kind);
         const size = (big ? 15 : 9.5) / Math.sqrt(view.z / dpr);
         if (!big && view.z / dpr < 1.1 && a.kind !== 'plaza') continue;
         ctx.font = `${big ? 'italic 600' : '600'} ${size}px Fraunces, Georgia, serif`;
         const x = (a.x + a.w / 2) * K, y = (a.y + a.h / 2) * K;
+        // skip labels that would overlap one already placed (more important places go first)
+        const w = ctx.measureText(a.name).width, h = size * 1.1;
+        const box = [x - w / 2 - 2, y - h / 2, x + w / 2 + 2, y + h / 2];
+        if (placed.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
+        placed.push(box);
+        if (a.kind === 'neighbor') { ctx.lineWidth = 3 / Math.sqrt(view.z); ctx.strokeStyle = 'rgba(245,236,214,0.9)'; ctx.strokeText(a.name, x, y); ctx.fillStyle = 'rgba(110,90,70,0.75)'; ctx.fillText(a.name, x, y); continue; }
         ctx.lineWidth = 3 / Math.sqrt(view.z); ctx.strokeStyle = 'rgba(245,236,214,0.9)'; ctx.strokeText(a.name, x, y);
         ctx.fillStyle = big ? 'rgba(90,60,40,0.7)' : a.kind === 'taxi' ? '#1b7a3e' : a.kind === 'shop' ? '#7a4a1a' : '#4a2a1a';
         ctx.fillText(a.name, x, y);

@@ -5,13 +5,13 @@ export const G = {
   GRASS: 0, DIRT: 1, ASPHALT: 2, COBBLE: 3, SIDEWALK: 4, PLAZA: 5, WATER: 6, ROCK: 7,
   FIELD: 8, FOREST: 9, ROOF: 10, MEDIAN: 11, COURT: 12, INFIELD: 13, STAIRS: 14, SLOPE: 15,
   FLOOR_WOOD: 16, FLOOR_TILE: 17, FLOOR_STONE: 18, WALL: 19, CEMETERY: 20, GARDEN: 21, VOID: 22,
-  ROCKROAD: 23, CARPET: 24, MARKET: 25, OUTFIELD: 26, DIRTROAD: 27,
+  ROCKROAD: 23, CARPET: 24, MARKET: 25, OUTFIELD: 26, DIRTROAD: 27, CANTERA: 28, HEX: 29, SAND: 30,
 };
 
 // Which ground types a person can walk on (others collide).
 const WALKABLE = new Set([G.GRASS, G.DIRT, G.ASPHALT, G.COBBLE, G.SIDEWALK, G.PLAZA, G.ROCK, G.FIELD,
   G.FOREST, G.MEDIAN, G.COURT, G.INFIELD, G.STAIRS, G.FLOOR_WOOD, G.FLOOR_TILE, G.FLOOR_STONE,
-  G.CEMETERY, G.ROCKROAD, G.CARPET, G.MARKET, G.OUTFIELD, G.DIRTROAD]);
+  G.CEMETERY, G.ROCKROAD, G.CARPET, G.MARKET, G.OUTFIELD, G.DIRTROAD, G.CANTERA, G.HEX, G.SAND]);
 export const ROADS = new Set([G.ASPHALT, G.COBBLE, G.DIRTROAD, G.ROCKROAD]);
 
 export class GameMap {
@@ -83,6 +83,7 @@ export class GameMap {
   areaAt(tx, ty) {
     let best = null;
     for (const a of this.areas) {
+      if (a.kind === 'neighbor') continue;
       if (tx >= a.x && ty >= a.y && tx < a.x + a.w && ty < a.y + a.h) {
         if (!best || a.w * a.h < best.w * best.h) best = a;
       }

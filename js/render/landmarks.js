@@ -10,7 +10,7 @@ export const SPRITES = {};
 const T = TILE;
 
 // helpers --------------------------------------------------------------
-function building(ctx, s, o) {
+export function building(ctx, s, o) {
   // Generic 3/4 building: footprint fw x fd; front wall height fh; roof above.
   const w = s.fw, d = s.fd, fh = o.fh;
   const x = -w / 2;

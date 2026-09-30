@@ -1,7 +1,9 @@
 // Frame renderer: ground chunks, y-sorted sprites & entities, light and weather.
-import { TILE, makeCanvas, clamp, lerp, rgba, mix } from './util.js';
-import { ChunkCache, CHUNK } from './render/ground.js';
+import { TILE, makeCanvas, clamp, lerp, rgba, mix, hash2, roundRect } from './util.js';
+import { G, ROADS } from './world.js';
+import { ChunkCache, CHUNK, isPothole, potholeGeom } from './render/ground.js';
 import { SPRITES } from './render/landmarks.js';
+import './render/jiquilpan.js';
 import { setPeopleScale } from './render/people.js';
 
 export class Renderer {
@@ -67,6 +69,12 @@ export class Renderer {
     return c;
   }
 
+  // Ocote fires outside some houses: only in the evening/night and not while it pours.
+  firesOn(game) {
+    const h = game.clock.hour;
+    return (h >= 19.5 || h < 1.5) && (game.env.rainAmt || 0) < 0.25;
+  }
+
   // env: {time (minutes), light (0 night..1 day), weather, rainAmt, cloud, bloom}
   draw(game) {
     const { ctx, canvas } = this;
@@ -86,24 +94,31 @@ export class Renderer {
     const csz = CHUNK * TILE;
     let budget = game.firstFrame ? 999 : 3;
     const cx0 = Math.floor(x0 / csz), cy0 = Math.floor(y0 / csz), cx1 = Math.floor((x0 + vw) / csz), cy1 = Math.floor((y0 + vh) / csz);
+    // chunks are blitted at whole-pixel screen positions so neighbours meet exactly (no seams)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
       if (cx < 0 || cy < 0 || cx * CHUNK >= map.w || cy * CHUNK >= map.h) continue;
+      const sx0 = Math.round((cx * csz - x0) * S), sy0 = Math.round((cy * csz - y0) * S);
+      const sx1 = Math.round(((cx + 1) * csz - x0) * S), sy1 = Math.round(((cy + 1) * csz - y0) * S);
       const key = cx + ',' + cy;
       let img = this.chunks.cache.get(key);
-      if (!img) { if (budget-- <= 0) { ctx.fillStyle = '#7a9a5a'; ctx.fillRect(cx * csz, cy * csz, csz, csz); continue; } img = this.chunks.get(cx, cy); }
+      if (!img) { if (budget-- <= 0) { ctx.fillStyle = map.interior ? '#14151a' : '#7a9a5a'; ctx.fillRect(sx0, sy0, sx1 - sx0, sy1 - sy0); continue; } img = this.chunks.get(cx, cy); }
       else this.chunks.get(cx, cy);
-      ctx.drawImage(img, cx * csz, cy * csz, csz + 0.3, csz + 0.3);
+      ctx.drawImage(img, sx0, sy0, sx1 - sx0, sy1 - sy0);
     }
+    ctx.setTransform(S, 0, 0, S, -x0 * S, -y0 * S);
     game.firstFrame = false;
 
     // ground-level effects (puddles, footprints, tianguis shade...)
-    if (game.env.rainAmt > 0.2 && map.outdoor) this.drawPuddles(ctx, map, x0, y0, vw, vh, game.env);
+    if ((game.env.wetness || 0) > 0.05 && map.outdoor) this.drawWater(ctx, map, x0, y0, vw, vh, game.env, game.clock.real);
 
     // y-sorted drawables
     const list = map.spritesInView(x0, y0, x0 + vw, y0 + vh);
     const items = [];
+    const fires = this.firesOn(game);
     for (const s of list) {
       if (s.hidden) continue;
+      if (s.nightOnly && !fires) continue;
       if (s.acts && !s.acts.includes(game.state.act)) continue;
       if (s.bloomOnly && !game.env.bloom) continue;
       items.push({ y: s.y + (s.sortOffset || 0), s });
@@ -158,19 +173,68 @@ export class Renderer {
     this.glowCache.set(color, c); return c;
   }
 
-  drawPuddles(ctx, map, x0, y0, vw, vh, env) {
-    const tx0 = Math.floor(x0 / TILE), ty0 = Math.floor(y0 / TILE);
-    ctx.fillStyle = `rgba(120,150,175,${0.28 * env.rainAmt})`;
-    for (let ty = ty0; ty < ty0 + vh / TILE + 1; ty++) for (let tx = tx0; tx < tx0 + vw / TILE + 1; tx++) {
+  // Rain water: potholes and dips fill up, gutters run downhill, low gardens flood.
+  drawWater(ctx, map, x0, y0, vw, vh, env, t) {
+    const wet = env.wetness;
+    const tx0 = Math.floor(x0 / TILE) - 1, ty0 = Math.floor(y0 / TILE) - 1, tx1 = tx0 + Math.ceil(vw / TILE) + 2, ty1 = ty0 + Math.ceil(vh / TILE) + 2;
+    if (!map.flowDir) computeFlow(map);
+    for (let ty = ty0; ty < ty1; ty++) for (let tx = tx0; tx < tx1; tx++) {
+      if (!map.inb(tx, ty)) continue;
       const g = map.get(tx, ty);
-      if (g !== 2 && g !== 3 && g !== 27 && g !== 1 && g !== 5) continue;
-      const h = ((tx * 73856093) ^ (ty * 19349663)) >>> 0;
-      if (h % 9 !== 0) continue;
-      const px = tx * TILE + (h % 7) + 3, py = ty * TILE + ((h >> 3) % 7) + 4;
-      ctx.beginPath(); ctx.ellipse(px, py, 4 + (h % 3), 2 + (h % 2), 0, 0, 7); ctx.fill();
-      const ph = (performance.now() / 600 + (h % 10) / 10) % 1;
-      ctx.strokeStyle = `rgba(230,240,255,${(1 - ph) * 0.35 * env.rainAmt})`; ctx.lineWidth = 0.4;
-      ctx.beginPath(); ctx.ellipse(px, py, 1 + ph * 3, 0.5 + ph * 1.5, 0, 0, 7); ctx.stroke();
+      const h = hash2(tx, ty, 7);
+      const X = tx * TILE, Y = ty * TILE;
+      // potholes become little ponds
+      if (isPothole(map, tx, ty)) {
+        const pg = potholeGeom(tx, ty), cx = pg.cx, cy = pg.cy, rx = pg.rx * (0.6 + wet * 0.5);
+        ctx.fillStyle = `rgba(110,130,150,${0.75 * Math.min(1, wet * 1.5)})`;
+        ctx.beginPath(); ctx.ellipse(cx, cy, rx, rx * 0.7, 0.3, 0, 7); ctx.fill();
+        ctx.fillStyle = `rgba(220,235,255,${0.25 * wet})`; ctx.fillRect(cx - rx * 0.5, cy - rx * 0.3, rx * 0.6, 0.5);
+        if (env.rainAmt > 0.1) { const ph = (t * 1.6 + h * 10) % 1; ctx.strokeStyle = `rgba(230,240,255,${(1 - ph) * 0.4})`; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.ellipse(cx, cy, 0.6 + ph * rx * 0.8, 0.3 + ph * rx * 0.5, 0, 0, 7); ctx.stroke(); }
+      } else if ((g === G.DIRT || g === G.DIRTROAD || g === G.PLAZA || g === G.CANTERA) && h < 0.07 * wet) {
+        ctx.fillStyle = `rgba(120,140,160,${0.35 * wet})`;
+        ctx.beginPath(); ctx.ellipse(X + 8, Y + 9, 5 + h * 30, 2.5 + h * 12, 0, 0, 7); ctx.fill();
+      }
+      // running water along the gutters (only next to the curb), following the slope of the street
+      const f = map.flowDir[ty * map.w + tx];
+      if (f && wet > 0.25) {
+        const dx = f === 1 ? 1 : f === 2 ? -1 : 0, dy = f === 3 ? 1 : f === 4 ? -1 : 0;
+        const a = Math.min(0.6, (wet - 0.25) * 1.2);
+        const road = (x, y) => ROADS.has(map.get(x, y));
+        const sides = dx ? [[!road(tx, ty - 1), Y + 1.8], [!road(tx, ty + 1), Y + TILE - 1.8]] : [[!road(tx - 1, ty), X + 1.8], [!road(tx + 1, ty), X + TILE - 1.8]];
+        for (const [curbSide, l] of sides) {
+          if (!curbSide) continue;
+          const bw = 1.6 + wet * 1.6;
+          ctx.fillStyle = `rgba(120,150,178,${a * 0.55})`;
+          if (dx) ctx.fillRect(X, l - bw / 2, TILE, bw); else ctx.fillRect(l - bw / 2, Y, bw, TILE);
+          ctx.strokeStyle = `rgba(215,232,245,${a})`; ctx.lineWidth = 0.45; ctx.beginPath();
+          for (let k = 0; k < 3; k++) {
+            const p = ((t * 26 + k * 5.3 + h * 16) % TILE);
+            const w = (hash2(tx + k, ty, 3) - 0.5) * bw * 0.6;
+            if (dx) { const px = dx > 0 ? X + p : X + TILE - p; ctx.moveTo(px, l + w); ctx.lineTo(px + dx * 2.2, l + w); }
+            else { const py = dy > 0 ? Y + p : Y + TILE - p; ctx.moveTo(l + w, py); ctx.lineTo(l + w, py + dy * 2.2); }
+          }
+          ctx.stroke();
+        }
+      }
+    }
+    // flooding: the Jardín de la Paz sits in a dip and fills with muddy water in a downpour
+    const flood = env.flood || 0;
+    if (flood > 0) for (const z of map.floodZones || []) {
+      const X = z.x * TILE, Y = z.y * TILE, W = z.w * TILE, H = z.h * TILE;
+      if (X > x0 + vw || X + W < x0 || Y > y0 + vh || Y + H < y0) continue;
+      const grow = 0.3 + flood * 0.7, ix = W / 2 * (1 - grow), iy = H / 2 * (1 - grow);
+      const g = ctx.createLinearGradient(0, Y + iy, 0, Y + H - iy);
+      g.addColorStop(0, `rgba(135,160,175,${0.75 * flood})`); g.addColorStop(1, `rgba(110,105,80,${0.78 * flood})`);
+      ctx.fillStyle = g; roundRect(ctx, X + ix - 4, Y + iy - 3, W - ix * 2 + 8, H - iy * 2 + 6, 18 * grow + 6); ctx.fill();
+      ctx.strokeStyle = `rgba(235,240,235,${0.35 * flood})`; ctx.lineWidth = 0.8; roundRect(ctx, X + ix - 4, Y + iy - 3, W - ix * 2 + 8, H - iy * 2 + 6, 18 * grow + 6); ctx.stroke();
+      ctx.strokeStyle = `rgba(230,240,245,${0.35 * flood})`; ctx.lineWidth = 0.45;
+      const n = 14 + Math.floor(env.rainAmt * 20);
+      for (let i = 0; i < n; i++) {
+        const ph = (t * 1.3 + i * 0.37) % 1, rx = X + ix + hash2(i, Math.floor(t * 1.3 + i * 0.37), 5) * (W - ix * 2), ry = Y + iy + hash2(Math.floor(t * 1.3 + i * 0.37), i, 6) * (H - iy * 2);
+        ctx.globalAlpha = 1 - ph; ctx.beginPath(); ctx.ellipse(rx, ry, 0.6 + ph * 4, 0.3 + ph * 2, 0, 0, 7); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = `rgba(255,255,255,${0.12 * flood})`; ctx.fillRect(X + ix + 10, Y + iy + 6, (W - ix * 2) * 0.4, 1.2);
     }
   }
 
@@ -208,7 +272,8 @@ export class Renderer {
     lc.fillRect(0, 0, l.width, l.height);
     lc.globalCompositeOperation = 'destination-out';
     const act = game.state.act;
-    const lights = map.lights.filter(l => !l.acts || l.acts.includes(act)).concat(game.dynamicLights || []);
+    const fires = this.firesOn(game);
+    const lights = map.lights.filter(l => (!l.acts || l.acts.includes(act)) && (!l.nightOnly || fires)).concat(game.dynamicLights || []);
     for (const li of lights) {
       const sx = (li.x - x0) * S, sy = (li.y - y0) * S, r = li.r * S;
       if (sx < -r || sy < -r || sx > l.width + r || sy > l.height + r) continue;
@@ -250,4 +315,24 @@ export class Renderer {
     }
     if (env.lightning > 0) { ctx.fillStyle = `rgba(235,240,255,${env.lightning})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   }
+}
+
+// For every road tile, which neighbouring road tile is downhill (1 E, 2 W, 3 S, 4 N, 0 none).
+function computeFlow(map) {
+  // Water follows the street it is on: along a horizontal street it runs east or west, along a vertical
+  // one north or south, downhill over a few tiles (so tiny bumps don't make it zig-zag).
+  const f = new Uint8Array(map.w * map.h);
+  const E = (x, y) => map.elevAt(clamp(x, 0, map.w - 1), clamp(y, 0, map.h - 1));
+  for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) {
+    const g = map.get(x, y);
+    if (!ROADS.has(g)) continue;
+    const ld = map.laneDir ? map.laneDir[y * map.w + x] : 0;
+    const horiz = ld & 10, vert = ld & 5;
+    const dh = E(x - 3, y) - E(x + 3, y), dv = E(x, y - 3) - E(x, y + 3);
+    let best = 0;
+    if (horiz && (!vert || Math.abs(dh) >= Math.abs(dv))) { if (dh > 0.05) best = 1; else if (dh < -0.05) best = 2; }
+    else if (vert || !ld) { if (dv > 0.05) best = 3; else if (dv < -0.05) best = 4; else if (!ld) { if (dh > 0.05) best = 1; else if (dh < -0.05) best = 2; } }
+    f[y * map.w + x] = best;
+  }
+  map.flowDir = f;
 }

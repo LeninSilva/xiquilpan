@@ -14,7 +14,7 @@ const ents = [];
 const cx = +(q.get('x') ?? 125.5) * 16, cy = +(q.get('y') ?? 100) * 16;
 for (let i = 0; i < 12; i++) { const p = new Person(map, cx - 60 + (i % 6) * 22, cy + 20 + Math.floor(i / 6) * 30, makeLook(i * 97 + 5)); p.dir = i % 4; ents.push(p); }
 const L = +(q.get('light') ?? 1);
-const game = { map, camera: { x: cx, y: cy }, entities: ents, effects: [], env: { light: L, rainAmt: +(q.get('rain') ?? 0), cloud: 0.3, wind: 0.3, overcast: 0, lightning: 0, bloom: q.get('bloom') === '1', dusk: L < 1 }, clock: { real: 1, dt: 0.016 }, firstFrame: true };
+const game = { map, camera: { x: cx, y: cy }, entities: ents, effects: [], env: { light: L, rainAmt: +(q.get('rain') ?? 0), cloud: 0.3, wind: 0.3, overcast: 0, lightning: 0, bloom: q.get('bloom') === '1', dusk: L < 1, wetness: +(q.get('wet') ?? 0), flood: +(q.get('flood') ?? 0) }, clock: { real: 1, dt: 0.016, hour: +(q.get('hour') ?? 12) }, state: { act: 1 }, firstFrame: true };
 r.draw(game);
 window.done = true;
 </script></body></html>

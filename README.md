@@ -32,15 +32,59 @@ Para publicarlo, sube la carpeta a GitHub Pages, Netlify o cualquier hosting est
 
 ## Lo que hay en el pueblo
 
-- **Centro:** el Jardín Zaragoza con su kiosco, la Fuente de la Aguadora (Canessi) y la fuente de la plaza. También el Palacio Municipal con portal de arcos, el Portal Azul, los portales con La Cochera y la nevería, y la Casa de la Cultura con “los tubos”.
-- **Templos:** la Parroquia de San Francisco (con su atrio), el Santuario del Sagrado Corazón (rosa, neoclásico), el Templo de las Monjas con su claustro, la Capilla de San Cayetano y la capilla del cerro.
-- **Monumentos y lugares:** la Biblioteca Gabino Ortiz (con los murales de Orozco y su puerta de bronce), la UNAM de Estudios Regionales con el jeep del General Cárdenas, y el obelisco (“la botella”). También Av. Las Palmas con su camellón de palmeras, la Fuente de los Pescados y la curva de la tortillería, y el Parque Juárez con su portada, la escalinata y el Monumento a Juárez. Además el Estadio 18 de Marzo con la portada del águila, el campo de béisbol y las canchas de básquet, el Monumento a Lázaro Cárdenas y el Bosque Cuauhtémoc.
-- **Entrada:** la glorieta “Jiquilpan, Pueblo Mágico”, los gallos, las letras blancas, el Hotel Palmira con su neón, el OXXO, la PEMEX y el Panteón.
-- **Comida y bebida:** el mercado tiene tres Birrias El Cano (los tres dicen ser el original), tortas, jugos, chiles rellenos, huevos de codorniz con jerez, carnicería y verduras. Afuera está la Panadería Mendoza, con billar arriba. Hay tres puestos de **Tacos El Güero** (el salado, el de la salsa aguada y el bueno, junto a los tubos), las carnitas de la camioneta roja (cuidado con la salsa, que enchila) y la birria de Guatemala. Para tomar: Micheladas Lupita, Norma, Nico, La Pantera Rosa y del Bosque. También Mezcal El Chamacuero, la tienda “Frijoles”, la carnicería de la esquina, fruta picada, garbanzos, churros, gelatinas de rompope y el café de Rosita.
-- **Pajaretes:** Don Refugio y sus vacas negras, cafés y pintas. Un litro de leche cuesta $5, o te lo **fía**. Si no pagas, el pueblo se entera.
-- **Tianguis:** los viernes en el Jardín de la Paz. Los sábados cierran la calle Morelos junto al mercado y ponen otro junto al estadio.
-- **Alrededores (en taxi):** Totolán, Abadiano, Francisco Sarabia y el pueblito de San Francisco en la cima del cerro. Hay sitios de taxis frente a la Biblioteca, junto al Mercado y Palacio, y en la entrada junto al OXXO.
-- **Vida diaria:** a primera hora corredores en el bosque y el café de Rosita. En la mañana, los empleados rumbo al Ayuntamiento. De día, estudiantes y compradores. Los domingos hay misa. En la tarde se llenan las micheladas, y los viernes en la noche la plaza y los portales se llenan de gente. De noche salen los taqueros y los carros dan vueltas en el bosque. Pasan taxis, Italikas, camionetas y el grupo ciclista de **Los Rinos**.
+El norte está arriba. La **Av. Presidente Lázaro Cárdenas** cruza el pueblo de norte a sur. Hacia el norte sale a Sahuayo; hacia el sur pasa por la Biblioteca, la Casa de Cárdenas, “La Tipo” y el estadio, y termina en los bosques y el camino al cerro.
+
+- **Plaza Principal:**
+  - Al centro, el kiosco blanco con barandal de hierro negro y cúpula oscura, y la **Fuente de la Aguadora** (la mujer con el cántaro en la cabeza, bajo su cúpula de talavera).
+  - Ficus podados en cubo con el tronco encalado, jardines con reja de hierro y bancas.
+  - En la esquina **noroeste**, la casona de **Don Nacho Marín**. Luego el andador y la **Casa de la Cultura**; detrás de ella, al final del andador, se pone **Tacos El Güero** en la noche, junto a “los tubos”.
+  - Al sur, los **portales** con La Cochera, la nevería y el Hotel Plaza Tarasca. En la esquina **sureste**, el **Portal Azul**; pasando los portales, la **Tortillería Marín** del hijo de Don Nacho.
+  - Al oriente, el **Parque Ignacio Zaragoza**, con la estatua del general y los **dos galgos de Durenne** mirando al oriente.
+- **Frente al parque, cruzando la avenida:** el **Palacio Municipal** (frente de columnas y letrero PALACIO MUNICIPAL) con el **busto de Diego José Abad**, donado por Bolonia. Más allá, el mercado y la Panadería Mendoza con el billar arriba.
+- **Templos:**
+  - La **Parroquia de San Francisco** (Fajardo y Abasolo): fachada amarilla con sillares rojos en zigzag, torre de cantera oscura a la izquierda, curato y atrio.
+  - El **Santuario del Sagrado Corazón**: torres de ladrillo rojo con reloj y pórtico rosa neoclásico.
+  - Las Monjas y la capilla de **San Cayetano**, en cuyo barrio está el taller de rebozos de **Doña Amparo**.
+- **Sobre la avenida, al sur:**
+  - La **Biblioteca Gabino Ortiz**.
+  - La **Casa de Lázaro Cárdenas**, frente a la escuela **“La Tipo”**.
+  - La **Portada del Estadio 18 de Marzo** con su águila y las palabras de Cárdenas: *“Los recursos naturales del país deben servir para su propia prosperidad. Entregarlos a intereses extraños es traicionar la patria.”*
+  - Adentro del estadio: el **palenque** (gallos y bailes de noviembre a Reyes), las canchas de básquet y el campo de béisbol.
+  - Al oriente, la **UAER de la UNAM** (con el jeep del General) y el **Monumento a Lázaro Cárdenas**.
+  - Al sur del estadio, **El Santo Remedio** (“el Santo Mugrero”) y **Ferretuberías**, cuyo dueño casi nunca está.
+- **Oriente:** la casa de la abuela, el **Jardín de la Paz** (tianguis de los viernes), el Hospital General y las micheladas de Nico y La Pantera Rosa. En la **entrada** están la glorieta “Pueblo Mágico”, los gallos, las letras blancas, el Hotel Palmira con su neón, el OXXO, la PEMEX, el panteón y el Río Jiquilpan.
+- **Poniente:**
+  - **Av. Las Palmas** en diagonal, con su camellón de palmeras, la **Fuente de los Pescados** y la tortillería (Maseca) en la curva.
+  - El **cerrito de La Trasquila**, con la escalinata y el **Monumento a Juárez**, y el obelisco (“la botella”).
+- **Sur:**
+  - Los **bosques Cuauhtémoc y Juárez**, de eucalipto, jacaranda, fresno y matorral; sin pinos.
+  - La **Portada de Juárez**, de piedra volcánica con sus dos arcos.
+  - **La Casita de Piedra**, donde se venden los rebozos.
+  - Los caminos de tierra que suben al cerro.
+- **El Cerro de San Francisco:**
+  - Se sube desde el sur del pueblo. Primero está **la subida mágica**, donde los carros “suben solos”. Luego **La Piedrita**, una caidita de agua donde se ven las luces.
+  - Después vienen el pueblito con su capilla y la cruz en la cima. Los pinos crecen sólo allá arriba.
+  - En las laderas hay magueyes gigantes, nopales, vacas, caballos y piedras por todos lados. Algunas se pueden mover, y debajo a veces hay algo.
+- **Calles y clima:**
+  - Las banquetas son de laja al estilo Pueblo Mágico, más formales, de cantera, sobre la avenida y la plaza. Las calles son de asfalto negro con baches, o empedradas; ninguna tiene raya a la mitad. La tierra y los empedrados empiezan hacia el bosque y el cerro.
+  - Cuando llueve fuerte, el agua corre por las orillas de las calles cuesta abajo (por la Vicente Guerrero, desde el lado alto de Las Palmas) y el **Jardín de la Paz se inunda**.
+- **Casas y negocios:**
+  - Se puede entrar a casi todo. Cada casa es de una familia (Farías, Betancourt, Valencia, Moreno, Cárdenas, Silva, Martínez, Flores, Núñez, Grimaldo, Méndez, Mendoza, Ochoa, Coit…) y tiene roperos, baúles y macetas donde buscar dinero, recuerdos y pistas.
+  - Algunas casas tienen barandal. En la noche hay quien prende **ocote** afuera de su casa.
+  - Cada tiendita tiene su dueño.
+- **Gente:**
+  - El historiador **Álvaro Ochoa** viene de Zamora a dar pláticas: los jueves en la Casa de la Cultura y los viernes en la UAER.
+  - Los fines de semana hay **carnitas y chicharrones** en las esquinas de Rioseco con Diego José Abad y de Fajardo con 5 de Mayo.
+  - Muchos se burlan de tu abuelo y tienen su teoría sobre las luces: drones, Starlink, globos de Cantoya, cohetes de Sahuayo o Venus.
+- **Alrededores:** Sahuayo, Totolán, La Lagunita, Abadiano, Paredones y Francisco Sarabia aparecen en el mapa y en los letreros, pero por ahora sus caminos están cerrados. La historia pasa en Jiquilpan.
+- **Placas:** de Ramón Martínez Ocaranza, Federico Canessi, Feliciano Béjar, Gabino Ortiz, Diego José Abad y Lázaro Cárdenas.
+- **Comida y bebida:**
+  - En el mercado hay tres Birrias El Cano (los tres dicen ser el original), tortas, jugos, chiles rellenos, huevos de codorniz con jerez, carnicería y verduras.
+  - Hay tres puestos de **Tacos El Güero** (el salado, el de la salsa aguada y el bueno), las carnitas de la camioneta roja (la salsa enchila) y la birria de Guatemala.
+  - Para tomar: Micheladas Lupita, Norma, Nico, La Pantera Rosa y del Bosque, y Mezcal El Chamacuero.
+  - Además: el café de Rosita, fruta, garbanzos, churros y gelatinas de rompope.
+- **Pajaretes:** Don Refugio vende en sus corrales, al noreste. Un litro de leche cuesta $5, o te lo **fía**. Si no pagas, el pueblo se entera.
+- **Tianguis:** los viernes en el Jardín de la Paz. Los sábados cierran la Fajardo junto al mercado y la calle del bosque, con birria de Guatemala.
 
 ## Quién eres cambia (al estilo Fable)
 
@@ -63,6 +107,7 @@ js/main.js          arranque y loop
 js/game.js          estado, jugador, interacciones, tiendas, taxis, guardado
 js/renderer.js      chunks del terreno, sprites ordenados por Y, luz, clima
 js/render/*.js      arte vectorial: terreno, casas, monumentos, personajes
+js/render/jiquilpan.js  edificios y monumentos propios de Jiquilpan (a partir de fotos)
 js/data/town.js     trazo del pueblo (calles, manzanas, monumentos, tianguis)
 js/data/regions.js  Cerro de San Francisco y los pueblos cercanos
 js/data/interiors.js interiores (mercado, templos, biblioteca, UNAM…)
@@ -76,4 +121,6 @@ tests/              pruebas automatizadas con Playwright
 
 ## Sobre la fidelidad al pueblo
 
-Todo el arte está dibujado por código, sin fotos. El trazo del pueblo es una **interpretación** basada en descripciones públicas de Jiquilpan: la ubicación relativa de la plaza, los templos, Las Palmas, el estadio, el bosque, el cerro y la entrada. Durante el desarrollo no hubo acceso a imágenes ni a mapas satelitales, así que las proporciones, las fachadas y algunos nombres de calles son aproximados. Los personajes y sus historias son ficticios. Si tienes fotos o correcciones (la orientación de un templo, el color de una fachada, el nombre real de una calle), el trazo está en `js/data/town.js` y cada edificio en `js/render/landmarks.js`, así que es fácil ajustarlo.
+Todo el arte está dibujado por código, sin fotos. El trazo sigue lo que se sabe del pueblo real: nombres de calles, la ubicación de la plaza, los portales, el Palacio, San Francisco, la Biblioteca, la Casa de Cárdenas, la UAER, el estadio y los bosques. También sigue el relieve: el valle sube hacia el sur y hacia La Trasquila. Las fachadas de San Francisco, el Sagrado Corazón, la Portada de Juárez, la Aguadora y el kiosco están hechas a partir de fotos.
+
+Aun así, las distancias están comprimidas y muchas cuadras son aproximadas. Los personajes son ficticios, salvo las figuras históricas de las placas y el historiador Álvaro Ochoa, que aparece como homenaje. El trazo está en `js/data/town.js`; los edificios propios de Jiquilpan están en `js/render/jiquilpan.js` y el resto en `js/render/landmarks.js`.

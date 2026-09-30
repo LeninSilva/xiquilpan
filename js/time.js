@@ -102,6 +102,9 @@ export class Environment {
     }
     const k = Math.min(1, dt * 0.25);
     this.rainAmt = lerp(this.rainAmt, targetRain, k);
+    // the ground stays wet for a while after the rain; gardens in dips flood during long storms
+    this.wetness = clamp((this.wetness || 0) + (this.rainAmt > 0.12 ? this.rainAmt * 0.035 : -0.006) * dt * (this.rainAmt > 0.12 ? 1 : 1), 0, 1);
+    this.flood = clamp((this.wetness - 0.55) * 2.2, 0, 1) * (this.rainAmt > 0.3 || this.flood > 0 ? 1 : 0.98);
     this.cloud = lerp(this.cloud, targetCloud, k);
     this.wind = lerp(this.wind, wind, k);
     this.overcast = clamp((this.cloud - 0.5) * 1.6, 0, 0.8) + this.rainAmt * 0.3;

@@ -215,6 +215,7 @@ export class Dialogue {
     pools.push([TOPICS.gossip, 1]);
     if (def.lines) pools.push([def.lines, 4]);
     if (g.state.act === 1) pools.push([TOPICS.abuelo_no, 0.8]);
+    if (g.state.act <= 3 && !def.believer && !def.family) pools.push([TOPICS.skeptic, g.state.act === 1 ? 0.35 : 0.5]);
     let tot = pools.reduce((a, p) => a + p[1], 0), x = r() * tot;
     let chosen = pools[0][0];
     for (const [list, wt] of pools) { x -= wt; if (x <= 0) { chosen = list; break; } }

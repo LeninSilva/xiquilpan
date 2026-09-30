@@ -148,13 +148,13 @@ async function ufo(game) {
   game.env.override = { rain: 0, cloud: 0 };
   // place everyone around the fire
   const P = game.player;
-  P.x = 40.5 * TILE; P.y = 16.4 * TILE; P.dir = 1; P.pose = 'sit';
-  if (miguel) { miguel.x = 39 * TILE; miguel.y = 15.2 * TILE; miguel.dir = 1; miguel.behaviour = 'stand'; miguel.pose = null; }
-  if (tono) { tono.x = 44 * TILE; tono.y = 15.4 * TILE; tono.dir = 1; tono.behaviour = 'stand'; tono.pose = null; }
-  game.camera.x = 42 * TILE; game.camera.y = 12 * TILE; game.camLock = true;
+  P.x = 40.5 * TILE; P.y = 121.4 * TILE; P.dir = 1; P.pose = 'sit';
+  if (miguel) { miguel.x = 39 * TILE; miguel.y = 120.2 * TILE; miguel.dir = 1; miguel.behaviour = 'stand'; miguel.pose = null; }
+  if (tono) { tono.x = 44 * TILE; tono.y = 120.4 * TILE; tono.dir = 1; tono.behaviour = 'stand'; tono.pose = null; }
+  game.camera.x = 42 * TILE; game.camera.y = 117 * TILE; game.camLock = true;
   await ui.fade(false, false, 1200);
   await d.scene(async d => { await d.narrate('Casi medianoche. La fogata truena. Abajo, las luces de Jiquilpan, de Sahuayo y, a lo lejos, el brillo de la Ciénega.'); });
-  const sky = new SkyLights(game.map, 44 * TILE, 5 * TILE);
+  const sky = new SkyLights(game.map, 44 * TILE, 110 * TILE);
   game.effects.push(sky);
   game.sfx('ufo');
   for (let i = 0; i <= 30; i++) { sky.alpha = i / 30; await wait(60); }
@@ -163,8 +163,8 @@ async function ufo(game) {
     if (miguel) await d.say(miguel, 'No son estrellas, mijo. Míralas: se mueven como si nos estuvieran buscando.');
   });
   // they descend and land in the llano behind the cross
-  sky.landX = 48 * TILE; sky.landY = 8 * TILE;
-  for (let i = 0; i <= 60; i++) { sky.land = i / 60; sky.x = lerp(44 * TILE, sky.landX, i / 60); sky.y = lerp(5 * TILE, sky.landY + 120, i / 60); await wait(40); }
+  sky.landX = 48 * TILE; sky.landY = 112 * TILE;
+  for (let i = 0; i <= 60; i++) { sky.land = i / 60; sky.x = lerp(44 * TILE, sky.landX, i / 60); sky.y = lerp(110 * TILE, sky.landY + 120, i / 60); await wait(40); }
   sky.land = 1; sky.x = sky.landX; sky.y = sky.landY;
   game.dynamicLights = [{ x: sky.landX, y: sky.landY, r: 200, color: '#9fb4ff', power: 0.9 }];
   P.pose = null; P.dir = 1;
@@ -172,7 +172,7 @@ async function ufo(game) {
   game.effects.push(gray);
   for (let i = 0; i <= 20; i++) { gray.alpha = i / 20; await wait(50); }
   // it walks toward the camp
-  for (let i = 0; i <= 50; i++) { gray.x = lerp(sky.landX, 43.5 * TILE, i / 50); gray.y = lerp(sky.landY, 12.6 * TILE, i / 50); await wait(40); }
+  for (let i = 0; i <= 50; i++) { gray.x = lerp(sky.landX, 43.5 * TILE, i / 50); gray.y = lerp(sky.landY, 117.6 * TILE, i / 50); await wait(40); }
   if (tono) { tono.look.holds = 'rifle'; tono.dir = 1; }
   await d.scene(async d => {
     if (tono) await d.say(tono, '¡Quieto ahí, compadre! ¡Un paso más y te trueno!');
@@ -207,7 +207,7 @@ async function ufo(game) {
   game.env.override = null;
   game.state.act = 3; game.quests.set('main', 30);
   if (tono) tono.look.holds = null;
-  P.x = 41 * TILE; P.y = 17 * TILE; P.dir = 0; game.camLock = false;
+  P.x = 41 * TILE; P.y = 122.6 * TILE; P.dir = 1; game.camLock = false;
   game.npcs.timer = 0;
   await wait(600);
   await ui.fade(false, true, 1600);
@@ -249,8 +249,8 @@ async function anil(game) {
   ui.cinema(true);
   await ui.fade(true, false, 900);
   const P = game.player;
-  P.x = 125.5 * TILE; P.y = 107.8 * TILE; P.dir = 0;
-  game.camera.x = 125.5 * TILE; game.camera.y = 103 * TILE; game.camLock = true;
+  P.x = 126 * TILE; P.y = 106.6 * TILE; P.dir = 0;
+  game.camera.x = 126 * TILE; game.camera.y = 103 * TILE; game.camLock = true;
   // gather the town around the kiosco
   const extra = [];
   for (let i = 0; i < 26; i++) {
@@ -270,7 +270,7 @@ async function anil(game) {
     await d.narrate(`Extiendes el rebozo añil sobre el barandal del kiosco. ${game.state.hilos} hilos. Cada uno, el nombre de alguien que te contó algo verdadero: ${game.state.hiloNames.slice(0, 14).join(', ')}${game.state.hiloNames.length > 14 ? '…' : ''}.`);
   });
   // lights over the cerro, seen by everyone
-  const sky = new SkyLights(game.map, 126 * TILE, 88 * TILE);
+  const sky = new SkyLights(game.map, 126 * TILE, 92 * TILE);
   game.effects.push(sky); game.sfx('ufo');
   for (let i = 0; i <= 40; i++) { sky.alpha = i / 40; await wait(70); }
   const s = game.stats;

@@ -80,18 +80,20 @@ const CROWD = {
 };
 
 const POIS = {
-  plaza: [[125, 99], [118, 104], [131, 106], [124, 110], [117, 97], [133, 103]],
-  portal: [[118, 117], [124, 117], [130, 117]],
-  mercado: [[146, 88.6], [146, 73.4]],
-  palacio: [[125, 88.6]],
-  santuario: [[125, 141.8]], sanfrancisco: [[146, 106]], monjas: [[86, 85]],
-  bosque: [[60, 216.5], [100, 216.5], [150, 216.5], [200, 216.5]],
-  juarez: [[50, 156], [50, 175]],
-  paz: [[193.5, 121.5], [189, 118], [198, 126]],
-  escuela: [[193, 70.5]],
-  entrada: [[230, 86.6], [242, 86.6]],
-  palmas: [[97.4, 130], [97.4, 160], [88.4, 150], [97.4, 185]],
-  micheladas: [[57.5, 70.6], [164.5, 144.6], [212.5, 128.6], [205, 88.6], [101, 204.6]],
+  plaza: [[120, 101.5], [126, 106.4], [131, 101.5], [122, 107.5], [118.5, 102], [136.5, 108.8], [126, 94.4]],
+  portal: [[118, 114.6], [124, 114.6], [130, 114.6], [136, 114.6], [144, 114.6]],
+  mercado: [[200, 110.6], [200, 83.4]],
+  palacio: [[170, 106.5], [163, 107]],
+  santuario: [[64, 136.5]], sanfrancisco: [[195, 146], [200, 152]], monjas: [[86, 103]],
+  bosque: [[60, 252.6], [110, 252.6], [175, 252.6], [230, 252.6], [194, 254.5]],
+  juarez: [[29, 70], [35, 71], [32, 62]],
+  paz: [[224, 163.5], [224, 169.5], [215, 165.5], [232.5, 165.5]],
+  escuela: [[132, 157], [124, 157]],
+  entrada: [[284, 171.6], [268, 172], [292, 171.6]],
+  palmas: [[104, 28.5], [120, 22.3], [80, 38.6], [134, 16.6]],
+  micheladas: [[86.5, 61.2], [163.5, 141.8], [244.5, 142], [244.5, 173], [143.5, 249.6]],
+  tianguis_sab: [[189.3, 90], [189.3, 95], [200, 226.2], [230, 226.2], [175, 226.2]],
+  estadio: [[170, 194.6], [180, 210], [190, 205]],
 };
 
 export class NPCManager {
@@ -115,6 +117,7 @@ export class NPCManager {
     if (def.acts && !def.acts.includes(act)) return null;
     if (def.eras && !def.eras.includes(era)) return null;
     if (g.quests.hideNPC(def.id)) return null;
+    if (def.when && !def.when(g)) return null;
     const h = g.clock.hour, d = g.clock.weekday;
     for (const s of def.sched || []) {
       if (s.acts && !s.acts.includes(act)) continue;
@@ -204,7 +207,8 @@ export class NPCManager {
     if (d === 5 && h >= 17) strollers += 16; // Friday nights: the plaza fills up
     if (d === 6 && h >= 17) strollers += 8;
     if (d === 5 && h >= 9 && h < 15) add('shopper', 8, POIS.paz);           // Friday tianguis
-    if (d === 6 && h >= 8 && h < 15) add('shopper', 10, [[138, 90], [138, 100], [100, 188], [80, 188]]); // Saturday tianguis
+    if (d === 6 && h >= 8 && h < 15) add('shopper', 10, POIS.tianguis_sab); // Saturday tianguis
+    if (h >= 16 && h < 20.5) add('exercise', d === 0 ? 4 : 6, POIS.estadio);  // basketball & baseball in the stadium
     if (after) strollers = Math.round(strollers * 0.5);
     if (g.env.rainAmt > 0.4) { strollers = Math.round(strollers * 0.3); for (const p of plan) p.n = Math.round(p.n * 0.4); }
     add('stroll', strollers, [...POIS.plaza, ...POIS.plaza, ...POIS.portal, ...POIS.paz]);
@@ -219,6 +223,7 @@ export class NPCManager {
       if (far && !c.talking) { this.remove(c); return false; }
       return true;
     });
+    if (map.residents) { this.syncResidents(map); return; }
     if (map.id !== 'town') return;
     const plan = this.crowdPlan();
     for (const p of plan) {
@@ -256,6 +261,36 @@ export class NPCManager {
       return npc;
     }
     return null;
+  }
+  // The family at home (or the shopkeeper) in the generic houses and shops of town.
+  syncResidents(map) {
+    const g = this.game, res = map.residents;
+    if (this.crowd.some(c => c.map === map)) return;
+    const h = g.clock.hour;
+    if (!res.shopkeeper && (h < 6.5 || h >= 23)) return; // everybody is asleep
+    const r = rng(res.seed * 7 + 3);
+    const FIRST_F = ['Doña Chayo', 'Lupita', 'Doña Mago', 'Rocío', 'Doña Chelo', 'Ximena', 'Doña Licha', 'Paty', 'Doña Tina', 'Fer'];
+    const FIRST_M = ['Don Chuy', 'Toñito', 'Don Pancho', 'Iván', 'Don Goyo', 'Beto', 'Don Chencho', 'Emilio', 'Don Rigo', 'Santi'];
+    const n = res.shopkeeper ? 1 : res.n;
+    for (let i = 0; i < n; i++) {
+      const female = r() < 0.55, age = res.shopkeeper ? 'adult' : pick(r, ['elder', 'adult', 'adult', 'teen', 'kid']);
+      const look = makeLook(res.seed * 13 + i * 7, { female, age, apron: res.shopkeeper || (female && age !== 'kid' && r() < 0.3) });
+      if (g.state.era === 'after' && age !== 'elder' && r() < 0.6) look.phone = true;
+      const first = age === 'kid' ? pick(r, ['Dany', 'Mateo', 'Camila', 'Regina', 'Leo', 'Axel']) : pick(r, female ? FIRST_F : FIRST_M);
+      const name = res.shopkeeper ? first : `${first} ${res.surname}`;
+      const role = res.shopkeeper ? `atiende la ${res.sign.toLowerCase()}` : `de la familia ${res.surname}`;
+      const persona = `${female ? 'Una mujer' : 'Un hombre'} de Jiquilpan (${age === 'kid' ? 'niño' : age === 'teen' ? 'joven' : age === 'elder' ? 'persona mayor' : 'adulto'}), ${res.shopkeeper ? `que atiende su negocio (${res.sign.toLowerCase()})` : `de la familia ${res.surname}, en su propia casa, recibiendo una visita inesperada`}. Amable pero curioso de por qué entraste.`;
+      let x, y;
+      if (res.shopkeeper) { x = 7 * TILE; y = 4.3 * TILE; }
+      else {
+        for (let k = 0; k < 20; k++) { x = (2 + r() * (map.w - 4)) * TILE; y = (4 + r() * (map.h - 6)) * TILE; if (!map.blocked(x, y, 5, 4)) break; }
+      }
+      const npc = new NPC(map, x, y, look, { id: 'res' + res.seed + '_' + i, name, role, persona, crowd: true, resident: true });
+      npc.behaviour = res.shopkeeper ? 'stand' : pick(r, ['stand', 'wander', 'sit']);
+      if (npc.behaviour === 'sit' && age !== 'elder') npc.behaviour = 'stand';
+      npc.wanderR = 2; npc.expire = g.clock.minutes + 600; npc.ctype = 'resident';
+      this.crowd.push(npc); this.add(npc);
+    }
   }
   crowdName(look) {
     const r = R;
@@ -353,15 +388,18 @@ export class NPCManager {
     const add = (a) => { this.animals.push(a); this.add(a); };
     if (map.id === 'town') {
       const cows = ['negra', 'negra', 'cafe', 'cafe', 'pinta', 'pinta', 'pinta'];
-      cows.forEach((v, i) => add(new Animal(map, (200 + (i % 4) * 5.5) * TILE, (25 + Math.floor(i / 4) * 3.5) * TILE, 'cow', { variant: v, r: 40 })));
-      for (let i = 0; i < 5; i++) add(new Animal(map, (212 + i) * TILE, (20 + (i % 2)) * TILE, 'chicken', { r: 30 }));
-      for (let i = 0; i < 12; i++) add(new Animal(map, (117 + (i * 7) % 17) * TILE, (98 + (i * 5) % 12) * TILE, 'pigeon', { r: 30 }));
-      const dogs = [[170, 115, '#b5854f'], [60, 92, '#2b2b2b'], [100, 190, '#d9c9a8'], [200, 70, '#8a5a34'], [125, 38, '#c9a06a']];
+      cows.forEach((v, i) => add(new Animal(map, (270 + (i % 4) * 5.5) * TILE, (33 + Math.floor(i / 4) * 4.5) * TILE, 'cow', { variant: v, r: 36 })));
+      for (let i = 0; i < 5; i++) add(new Animal(map, (268 + i * 1.5) * TILE, (47.5 + (i % 2)) * TILE, 'chicken', { r: 30 }));
+      for (let i = 0; i < 12; i++) add(new Animal(map, (122 + (i * 7) % 12) * TILE, (100.5 + (i * 5) % 4) * TILE, 'pigeon', { r: 30 }));
+      const dogs = [[172, 111.6, '#b5854f'], [60, 111.6, '#2b2b2b'], [100, 157.6, '#d9c9a8'], [200, 62.6, '#8a5a34'], [130, 41.6, '#c9a06a'], [224, 158.4, '#e8e2d4']];
       for (const [x, y, c] of dogs) add(new Animal(map, x * TILE, y * TILE, 'dog', { color: c, r: 90 }));
     } else if (map.id === 'cerro') {
-      add(new Animal(map, 46 * TILE, 56 * TILE, 'dog', { color: '#c8743a', r: 50 })); // Canelo
-      for (let i = 0; i < 6; i++) add(new Animal(map, (30 + i * 2) * TILE, (58 + (i % 2)) * TILE, 'chicken', { r: 40 }));
-      for (let i = 0; i < 3; i++) add(new Animal(map, (20 + i * 4) * TILE, (70 + i * 3) * TILE, 'cow', { variant: pick(R, ['negra', 'cafe', 'pinta']), r: 60 }));
+      add(new Animal(map, 43 * TILE, 81 * TILE, 'dog', { color: '#c8743a', r: 50 })); // Canelo
+      for (let i = 0; i < 6; i++) add(new Animal(map, (33 + i * 2) * TILE, (84.5 + (i % 2)) * TILE, 'chicken', { r: 40 }));
+      // cows and horses loose on the slopes
+      const free = (x, y) => !map.isSolidTile(Math.floor(x), Math.floor(y));
+      const herd = [[20, 34, 'cow'], [26, 36, 'cow'], [58, 60, 'cow'], [16, 58, 'cow'], [60, 96, 'cow'], [22, 100, 'cow'], [48, 16, 'horse'], [52, 18, 'horse'], [18, 88, 'horse'], [60, 70, 'horse']];
+      herd.forEach(([x, y, k], i) => { if (!free(x, y)) return; add(new Animal(map, x * TILE, y * TILE, k, k === 'cow' ? { variant: ['negra', 'cafe', 'pinta'][i % 3], r: 70 } : { color: ['#6b4428', '#2b2420', '#8a6a4a', '#d8d0c0'][i % 4], r: 90 })); });
     } else if (['totolan', 'abadiano', 'sarabia'].includes(map.id)) {
       for (let i = 0; i < 6; i++) add(new Animal(map, (20 + i * 3) * TILE, (30 + (i % 3)) * TILE, 'chicken', { r: 50 }));
       add(new Animal(map, 30 * TILE, 34 * TILE, 'dog', { color: '#8a5a34', r: 80 }));

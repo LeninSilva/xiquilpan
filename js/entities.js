@@ -2,6 +2,7 @@
 import { TILE, clamp, dist, rng, pick, hash2 } from './util.js';
 import { getFrame, drawCow, drawDog, drawBird, drawChicken, CHAR_W, CHAR_H } from './render/people.js';
 import { drawCarSide } from './render/landmarks.js';
+import { drawHorse } from './render/jiquilpan.js';
 import { DIR } from './data/build.js';
 import { G, ROADS } from './world.js';
 
@@ -25,11 +26,38 @@ export class Person extends Entity {
   }
   tryMove(dx, dy, dt, others) {
     const m = this.map;
+    if (m.blocked(this.x, this.y, 4, 2.5)) this.unstick();
     const nx = this.x + dx * dt, ny = this.y + dy * dt;
     let moved = false;
     if (dx !== 0 && !m.blocked(nx, this.y, 4, 2.5) && !this.bump(nx, this.y, others)) { this.x = nx; moved = true; }
     if (dy !== 0 && !m.blocked(this.x, ny, 4, 2.5) && !this.bump(this.x, ny, others)) { this.y = ny; moved = true; }
+    if (!moved && (dx || dy)) moved = this.slideAround(dx, dy, dt, others);
     return moved;
+  }
+  // Corner assist: when walking into the edge of a wall, a tree or a bench, slip sideways around it
+  // instead of getting stuck on a corner.
+  slideAround(dx, dy, dt, others) {
+    const m = this.map, sp = Math.hypot(dx, dy) * dt;
+    const horiz = Math.abs(dx) >= Math.abs(dy);
+    for (const o of [3, 6, 9, 12]) for (const sgn of [-1, 1]) {
+      const ox = horiz ? 0 : sgn * o, oy = horiz ? sgn * o : 0;
+      const tx = this.x + ox + (horiz ? Math.sign(dx) * sp : 0), ty = this.y + oy + (horiz ? 0 : Math.sign(dy) * sp);
+      if (m.blocked(tx, ty, 4, 2.5) || m.blocked(this.x + ox, this.y + oy, 4, 2.5)) continue;
+      const step = Math.min(sp, o);
+      const nx = this.x + (horiz ? 0 : sgn * step), ny = this.y + (horiz ? sgn * step : 0);
+      if (m.blocked(nx, ny, 4, 2.5) || this.bump(nx, ny, others)) continue;
+      this.x = nx; this.y = ny; return true;
+    }
+    return false;
+  }
+  // If we ever end up inside something solid (a spawn point, a stall that appeared), step out.
+  unstick() {
+    const m = this.map;
+    for (let r = 2; r <= 48; r += 2) for (let a = 0; a < 16; a++) {
+      const x = this.x + Math.cos(a / 16 * Math.PI * 2) * r, y = this.y + Math.sin(a / 16 * Math.PI * 2) * r;
+      if (!m.blocked(x, y, 4, 2.5)) { this.x = x; this.y = y; return true; }
+    }
+    return false;
   }
   bump(x, y, others) {
     if (!others) return false;
@@ -293,9 +321,9 @@ export class Animal extends Entity {
     this.kind = kind; this.variant = opts.variant; this.color = opts.color || '#b5854f';
     this.home = { x, y, r: opts.r || 60 };
     this.dir = 2; this.moving = false; this.animT = Math.random() * 5; this.wait = Math.random() * 3;
-    this.target = null; this.solid = kind === 'cow' || kind === 'dog';
-    this.radius = kind === 'cow' ? 12 : 5;
-    this.speed = kind === 'cow' ? 12 : kind === 'dog' ? 40 : 22;
+    this.target = null; this.solid = kind === 'cow' || kind === 'dog' || kind === 'horse';
+    this.radius = kind === 'cow' || kind === 'horse' ? 12 : 5;
+    this.speed = kind === 'cow' ? 12 : kind === 'horse' ? 16 : kind === 'dog' ? 40 : 22;
     this.flyT = 0;
   }
   update(dt, game) {
@@ -332,6 +360,7 @@ export class Animal extends Entity {
     else if (this.kind === 'dog') drawDog(ctx, this.color, this.dir, fr, t);
     else if (this.kind === 'pigeon') drawBird(ctx, t + this.id, this.flyT > 0);
     else if (this.kind === 'chicken') drawChicken(ctx, t + this.id, this.dir);
+    else if (this.kind === 'horse') drawHorse(ctx, this.dir === 2 ? -1 : 1, t + this.id, this.color, this.moving);
     ctx.restore();
     if (this.bubbleT > 0) drawBubble(ctx, this.x, this.y - 14, '¡Guau! ¡Guau!');
   }

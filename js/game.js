@@ -29,7 +29,7 @@ const INFO = {
   juarez: 'Monumento a Benito Juárez. La escultura, sobre su base piramidal, se instaló en 1939 en el Parque Juárez y en 1968 se trasladó al mirador. Desde aquí se ve todo Jiquilpan y, al fondo, el Cerro de San Francisco.',
   cardenas: 'Monumento al General Lázaro Cárdenas del Río (1895–1970), nacido en Jiquilpan. Presidente de México de 1934 a 1940; el 18 de marzo de 1938 decretó la expropiación petrolera. Por eso el estadio se llama así.',
   pescados: 'La Fuente de los Pescados, en el camellón de Av. Las Palmas. De noche, junto a ella, se ponen unos tacos que valen la pena.',
-  estadio: 'La portada del Estadio 18 de Marzo, con su águila en lo alto. En la entrada hay una cita del General Cárdenas y placas metálicas con mapas de Jiquilpan de distintas épocas.',
+  estadio: 'La portada del Estadio 18 de Marzo, con su águila de bronce en lo alto. El nombre recuerda el 18 de marzo de 1938, el día de la expropiación petrolera. A los lados, dos tablas con las palabras del General Cárdenas: “Los recursos naturales del país deben servir para su propia prosperidad. Entregarlos a intereses extraños es traicionar la patria.”',
   murales: 'Los murales de José Clemente Orozco en la Biblioteca Pública Gabino Ortiz, fundada en 1940 en un antiguo templo. Figuras enormes, fuego, pueblo. No caben en una pantalla: hay que torcer el cuello para verlos.',
   jeep: 'El jeep del General Cárdenas. Con él recorría los caminos de Michoacán, sin escolta, parando a platicar con la gente en las plazas.',
   vitrina1: 'Vitrina: objetos personales del General — unos lentes, una pluma fuente, una credencial.',
@@ -38,6 +38,19 @@ const INFO = {
   cruz: 'La cruz del Cerro de San Francisco. Desde aquí se ve la Ciénega de Chapala, Sahuayo y todo Jiquilpan.',
   altar: 'El altar de la abuela: la Virgen de Guadalupe, veladoras, y fotos de toda la familia. Tu abuelo sale en una con su texana nueva.',
   poster: 'Una hoja descolorida por el sol: “SE BUSCA — Miguel (81), Antonio (77) y su nieto. Vistos por última vez el 1 de octubre rumbo al Cerro de San Francisco. Cualquier informe, al Palacio Municipal.” Tu propia foto te mira desde el poste.',
+  zaragoza: 'El General Ignacio Zaragoza, vencedor de la batalla de Puebla del 5 de mayo de 1862. El parque que lleva su nombre es la orilla oriente del jardín, frente al Palacio Municipal.',
+  galgos: 'Dos perros de caza de hierro fundido, de la casa francesa de Antoine Durenne, como los que adornan parques de París y de la Ciudad de México. Miran al oriente, hacia el Palacio. Los niños se les suben a caballo aunque el policía les chifle.',
+  abad: 'Busto de Diego José Abad y García (Jiquilpan, 1727 – Bolonia, 1779), jesuita, poeta y humanista, autor del poema latino “De Deo, Deoque Homine Heroica”. Expulsado con los jesuitas en 1767, murió en Bolonia, Italia; de allá vino este busto, regalo de la ciudad a su pueblo natal.',
+  plaque_ocaranza: 'Placa: Ramón Martínez Ocaranza (Jiquilpan, 1915 – Morelia, 1982), poeta. Le llamó a su pueblo “la ciudad de las jacarandas”. Sus versos se leen en voz alta cada marzo, cuando florecen.',
+  plaque_canessi: 'Placa: Federico Canessi (1905–1977), escultor. Vivió en Jiquilpan de 1934 a 1940 y aquí dejó la Aguadora, en honor a las mujeres que acarreaban el agua en cántaro.',
+  plaque_gabino: 'Placa: Biblioteca Pública Gabino Ortiz, inaugurada en 1940 en el antiguo templo de San Agustín (luego del Sagrado Corazón). Adentro, los murales de José Clemente Orozco, pintados ese mismo año.',
+  plaque_cardenas: 'Placa: En esta casa vivió el General Lázaro Cárdenas del Río (Jiquilpan, 21 de mayo de 1895 – Ciudad de México, 19 de octubre de 1970), Presidente de la República de 1934 a 1940.',
+  plaque_quote: '“Los recursos naturales del país deben servir para su propia prosperidad. Entregarlos a intereses extraños es traicionar la patria.” — General Lázaro Cárdenas del Río.',
+  plaque_bejar: 'Placa: Feliciano Béjar (Jiquilpan, 1920 – Ciudad de México, 2007), pintor y escultor, creador de los “magiscopios” de vidrio y acero.',
+  piedrita: 'La Piedrita. Un hilo de agua que baja entre las piedras negras y cae a una poza chiquita. Aquí suben las parejas, los que van a rezar y los que vienen a ver las luces. En la piedra alguien rayó: “AQUÍ LAS VIMOS — 1998”.',
+  subida: 'La “subida mágica”. Dicen que si dejas el carro en neutral aquí, se va solito para arriba. Los que saben dicen que es ilusión óptica. Los que han visto las luces dicen que no.',
+  trash: 'Bolsas de basura, latas y una silla rota. Por eso le dicen “El Santo Mugrero”.',
+  palenque: 'El palenque del estadio. En temporada (de noviembre a Reyes) hay peleas de gallos y bailes hasta las cuatro de la mañana.',
   altar_iglesia: 'El altar mayor. Huele a cera y a flores. Un señor reza en voz baja en la última banca.',
 };
 
@@ -140,7 +153,7 @@ export class Game {
     this.clock = new Clock();
     this.playing = true;
     this.ui.showHUD(true);
-    this.returnStack = [{ map: 'town', x: 195.5 * TILE, y: 113.2 * TILE, dir: 0 }];
+    this.returnStack = [{ map: 'town', x: 225.5 * TILE, y: 157.2 * TILE, dir: 0 }];
     this.lastOutdoor = 'town';
     this.changeMap('casa_abuela', 8.5, 9.6, 1, { instant: true });
     this.npcs.timer = 0; this.npcs.update(0.016);
@@ -209,9 +222,11 @@ export class Game {
     this.input.enabled = !this.dialog.active; this.transitioning = false;
   }
   enterDoor(door) {
-    const h = this.clock.hour;
-    if (door.hours && !(h >= door.hours[0] && h < door.hours[1])) {
-      this.ui.toast(`${door.label}: cerrado. Abre de ${door.hours[0]}:00 a ${door.hours[1] % 24}:00.`, 'bad');
+    if (!this.doorOpen(door)) {
+      const msg = door.season === 'palenque' && !this.palenqueSeason()
+        ? `${door.label}: cerrado. Abre en temporada, de noviembre a Reyes.`
+        : `${door.label}: cerrado. Abre de ${door.hours[0]}:00 a ${door.hours[1] % 24}:00.`;
+      this.ui.toast(msg, 'bad');
       this.doorCooldown = 1.2;
       return;
     }
@@ -230,11 +245,18 @@ export class Game {
       this.ui.toast(door.label, '');
     });
   }
+  palenqueSeason() { const m = this.clock.month, d = this.clock.date.getUTCDate(); return m === 10 || m === 11 || (m === 0 && d <= 6); }
+  doorOpen(door) {
+    if (door.season === 'palenque' && !this.palenqueSeason()) return false;
+    if (!door.hours) return true;
+    const h = this.clock.hour, [a, b] = door.hours;
+    return (h >= a && h < b) || (b > 24 && h < b - 24);
+  }
   exitInterior(which) {
-    const back = this.returnStack.pop() || { map: 'town', x: 125.5 * TILE, y: 100 * TILE, dir: 0 };
+    const back = this.returnStack.pop() || { map: 'town', x: 126 * TILE, y: 106 * TILE, dir: 0 };
     this.transition(() => {
-      if (which === '__back2' && this.map.id === 'mercado') { this.changeMap('town', 146.5, 72.9, 1); return; }
-      if (which === '__back' && this.map.id === 'mercado' && back.y < 80 * TILE) { this.changeMap('town', 146.5, 89.4, 0); return; }
+      if (which === '__back2' && this.map.id === 'mercado') { this.changeMap('town', 200.5, 83.2, 1); return; }
+      if (which === '__back' && this.map.id === 'mercado' && back.y < 90 * TILE) { this.changeMap('town', 200.5, 110.4, 0); return; }
       this.changeMap(back.map, back.x / TILE, back.y / TILE, back.dir);
     });
   }
@@ -258,7 +280,7 @@ export class Game {
     if (n.includes('palmas') || n.includes('pescados') || n.includes('tortill')) return 'palmas';
     if (n.includes('estadio') || n.includes('cárdenas') || n.includes('cancha')) return 'estadio';
     if (n.includes('entrada') || n.includes('glorieta') || n.includes('gallos') || n.includes('palmira') || n.includes('oxxo') || n.includes('pemex')) return 'entrada';
-    if (n.includes('cerro') || n.includes('cruz') || n.includes('san francisco')) return 'cerro';
+    if (this.map.id === 'cerro' || n.includes('cerro') || n.includes('cruz')) return 'cerro';
     if (n.includes('juárez')) return 'juarez';
     return 'generic';
   }
@@ -290,7 +312,7 @@ export class Game {
   }
   applyEffect(e) {
     if (e.panza) this.addStat('panza', e.panza);
-    if (e.buzz) this.status.buzz = Math.min(100, this.status.buzz + e.buzz);
+    if (e.buzz) this.status.buzz = Math.max(0, Math.min(100, this.status.buzz + e.buzz));
     if (e.enchilado) { this.status.enchilado = e.enchilado; this.sfx('enchilado'); this.ui.toast('🌶️ ¡AY! ¡Pica, pica, pica!', 'bad'); }
     if (e.cure === 'enchilado' && this.status.enchilado > 0) { this.status.enchilado = 0; this.ui.toast('Ahhh… ya se te quitó lo enchilado.', 'good'); this.quests.onCure('enchilado'); }
     if (e.cure === 'enchilado_soft' && this.status.enchilado > 0) { this.status.enchilado = Math.max(0, this.status.enchilado - 40); if (!this.status.enchilado) this.quests.onCure('enchilado'); }
@@ -341,6 +363,72 @@ export class Game {
     this.quests.onBuy(shopId, entry);
     this.save();
   }
+  // Look through a wardrobe, a trunk, a flower pot… once per spot.
+  searchSpot(s) {
+    const key = `searched_${this.map.id}_${Math.round(s.x)}_${Math.round(s.y)}`;
+    const what = { ropero: 'el ropero', baul: 'el baúl', maceta: 'las macetas', bookshelf: 'el librero' }[s.kind] || 'ahí';
+    return this.dialog.scene(async d => {
+      if (this.flags[key]) { await d.narrate(`Ya buscaste en ${what}. No hay nada más.`); return; }
+      const owner = this.map.residents && !this.map.residents.shopkeeper;
+      if (owner) {
+        const c = await d.choose([{ text: `Buscar en ${what}`, value: 1, tag: 'rude' }, { text: 'Mejor no: no es tu casa', value: 0, tag: 'kind' }]);
+        if (!c.value) { this.addStat('corazon', 1); return; }
+        if (Math.random() < 0.3) { this.addStat('fama', -2); await d.narrate('—¡Oiga! ¿Qué anda buscando ahí? —te reclaman desde la cocina. Te pones rojo.'); }
+      }
+      this.flags[key] = true;
+      const loot = s.loot || 'nothing';
+      if (loot === 'pesos') { const n = 5 + Math.floor(Math.random() * 4) * 5; this.state.money += n; this.sfx('coin'); await d.narrate(`Entre la ropa hay una bolsita con monedas: $${n}. “Pa' la tanda”, dice un papelito.`); }
+      else if (loot === 'lore') await d.narrate(pick(Math.random, [
+        'Un recorte de periódico de 1979: “Vecinos de Jiquilpan reportan luces sobre el Cerro de San Francisco”. Alguien subrayó la palabra “vecinos”.',
+        'Un cuaderno con recetas: corundas, uchepos, capirotada. En la última hoja: “Las luces otra vez. Nacho dice que no estamos locos.”',
+        'Una foto de la plaza en los años cincuenta: el kiosco, los portales, y la Aguadora con su cúpula recién pintada.',
+        'Un programa de la feria de 1985 con palenque, jaripeo y baile en el estadio. Los precios hacen reír.',
+        'Una carta desde California: “Mamá, aquí nadie saluda en la calle. Extraño las jacarandas.”',
+        'Un rosario, una estampa de San Cayetano y un boleto de lotería que nunca se cobró.']));
+      else if (loot === 'nothing') await d.narrate(`Buscas en ${what}: calcetines, facturas viejas y un olor a naftalina. Nada más.`);
+      else if (ITEMS[loot]) { if (this.hasItem(loot) && ITEMS[loot].type === 'quest') { await d.narrate('Nada nuevo por aquí.'); return; } this.giveItem(loot); }
+    });
+  }
+  // Move a rock on the cerro; sometimes something was under it.
+  pushRock(s) {
+    if (s.moved) return;
+    const p = this.player, dx = Math.sign(s.x - p.x) || 1;
+    s.moved = true; s.x += dx * 12; s.cacheKey = null;
+    this.map.finalize();
+    this.sfx('door');
+    const key = `rock_${this.map.id}_${s.rid}`;
+    if (!this.flags[key] && s.loot) {
+      this.flags[key] = true;
+      const it = { map: this.map.id, id: s.loot, x: (s.x - dx * 12) / TILE, y: s.y / TILE };
+      this.quests.extraItems = (this.quests.extraItems || []).concat([it]);
+      this.syncItems();
+      this.ui.toast('Algo brilla donde estaba la piedra…', 'good');
+    } else this.ui.toast(pick(Math.random, ['Debajo sólo hay tierra húmeda y una lagartija que sale corriendo.', 'Un alacrán. Mejor la dejas.', 'Nada. Pero pesaba.']), '');
+  }
+  async palenqueBet() {
+    await this.dialog.scene(async d => {
+      const h = this.clock.hour;
+      if (!(h >= 21 || h < 4)) { await d.narrate('El ruedo está vacío. Las peleas empiezan ya noche y siguen hasta las cuatro de la mañana.'); return; }
+      await d.narrate('Los galleros de Sahuayo, de Cotija y de aquí mismo presentan a sus gallos. El juez da la señal y el palenque ruge.');
+      const c = await d.choose([{ text: 'Apostar $50 al colorado (de Jiquilpan)', value: 'colorado' }, { text: 'Apostar $50 al giro (de Sahuayo)', value: 'giro' }, { text: 'Sólo mirar', value: null }]);
+      if (!c.value) { await d.narrate('Te quedas mirando a la gente más que a los gallos: nadie trae el celular en la mano. Aquí todos gritan, ríen y se abrazan con desconocidos.'); return; }
+      if (this.state.money < 50) { await d.narrate('No te alcanza. El apostador te mira de arriba abajo y se ríe.'); return; }
+      this.state.money -= 50;
+      const win = Math.random() < (c.value === 'colorado' ? 0.5 : 0.45);
+      if (win) { this.state.money += 95; this.sfx('coin'); await d.narrate(`¡Ganó el ${c.value}! Te pagan $95 entre gritos. Alguien te invita una cerveza.`); this.addStat('fama', 1); }
+      else await d.narrate(`Perdió el ${c.value}. “Así es esto, joven”, te dice un señor de sombrero, palmeándote la espalda.`);
+    });
+  }
+  ferreCounter(s) {
+    // Güicho, the owner, is rarely in: mornings on weekdays, when he isn't out partying.
+    const h = this.clock.hour, d = this.clock.weekday, day = this.clock.dayIndex;
+    const here = d >= 1 && d <= 5 && h < 13 && (day * 7 + d) % 3 !== 0;
+    if (here) return this.openShop('ferretuberias');
+    return this.dialog.scene(async dd => { await dd.narrate(pick(Math.random, [
+      'En el mostrador hay un letrero escrito con plumón: “REGRESO EN 5 MIN”. El polvo sobre el letrero dice otra cosa.',
+      'No está Güicho. El chavo de la tienda de al lado grita: “¡Anda en Sahuayo con una muchacha, quién sabe a qué hora vuelva!”',
+      'Cerrado por dentro, pero se oye cumbia en el cuarto de atrás. Nadie abre.'])); });
+  }
   sleep(hour) {
     this.transition(() => {
       this.clock.advanceTo(hour);
@@ -374,18 +462,17 @@ export class Game {
     if (driverAt && !this.npcs.named.get(driverAt)) { this.ui.toast('No hay taxis en el sitio ahorita. Vuelve más al rato.', 'bad'); return; }
     const inTown = this.map.id === 'town';
     const dests = inTown ? [
-      { text: 'Al sitio del Mercado — $30', value: ['town', 138.5, 86.4, 30] },
-      { text: 'Al sitio de la Biblioteca Gabino Ortiz — $30', value: ['town', 158.5, 114.6, 30] },
-      { text: 'A la entrada (OXXO) — $35', value: ['town', 234.5, 88.4, 35] },
-      { text: 'Al Bosque Cuauhtémoc — $35', value: ['town', 96.5, 203, 35] },
-      { text: 'A la brecha del Cerro — $40', value: ['town', 126.5, 34.5, 40] },
-      { text: 'A Totolán — $70', value: ['totolan', null, null, 70] },
-      { text: 'A Abadiano — $60', value: ['abadiano', null, null, 60] },
-      { text: 'A Francisco Sarabia — $80', value: ['sarabia', null, null, 80] },
+      { text: 'Al sitio del Mercado — $30', value: ['town', 188, 99, 30] },
+      { text: 'Al sitio de la Biblioteca Gabino Ortiz — $30', value: ['town', 134.5, 142.6, 30] },
+      { text: 'A la entrada (OXXO) — $35', value: ['town', 290.5, 171.6, 35] },
+      { text: 'Al Bosque Juárez (la Portada) — $35', value: ['town', 194, 253.5, 35] },
+      { text: 'A la Casita de Piedra — $40', value: ['town', 29.5, 255, 40] },
+      { text: 'Al camino del Cerro — $40', value: ['town', 152, 320, 40] },
+      { text: 'A Totolán, Abadiano o Sarabia', value: ['closed', null, null, 0] },
       { text: 'A Sahuayo — $90', value: ['sahuayo', null, null, 90] },
       { text: 'Mejor no', value: null },
     ] : [
-      { text: 'Regresar a Jiquilpan (sitio Gabino Ortiz) — $60', value: ['town', 158.5, 114.6, 60] },
+      { text: 'Regresar a Jiquilpan (sitio Gabino Ortiz) — $60', value: ['town', 134.5, 142.6, 60] },
       { text: 'Mejor no', value: null },
     ];
     const driver = this.npcs.named.get(driverAt) || { name: 'Taxista', role: 'sitio de taxis', look: makeLook(55, { uniform: 'taxi', age: 'adult' }) };
@@ -394,6 +481,7 @@ export class Game {
       const c = await d.choose(dests, driver);
       if (!c.value) return;
       const [map, x, y, fare] = c.value;
+      if (map === 'closed') { await d.say(driver, 'Ay, joven, hoy no. Andan arreglando la carretera y a los ranchos no estoy subiendo. Otro día lo llevo a Totolán, a Abadiano, hasta a Sarabia. Hoy, puro Jiquilpan.'); return; }
       if (map === 'sahuayo') { await d.say(driver, '¿A Sahuayo? Jaja, allá va a gastar todo su dinero, joven. Mejor quédese: aquí hay más historia y la birria es igual de buena. (El taxista no quiere salir de su ruta hoy.)'); return; }
       if (this.state.money < fare) { await d.say(driver, 'Mmm, no le alcanza, joven. Y fiado no, eh. Eso es con Don Refugio.'); return; }
       this.state.money -= fare; this.sfx('coin');
@@ -440,6 +528,10 @@ export class Game {
       const d = dist(px, py, e.x, e.y - (e.def ? 4 : 0));
       if (d < bd) { bd = d; best = { type: e.item ? 'item' : 'npc', e: e.owner || e }; }
     }
+    // a quest landmark right in front of you (the kiosco) wins over a passer-by
+    if (best && best.e.def?.crowd) {
+      for (const s of m.spritesInView(p.x - 40, p.y - 40, p.x + 40, p.y + 40)) if (s.priority && s.interact && dist(px, py, s.x, s.y - 4) < 30) return { type: 'sprite', s };
+    }
     if (best) return best;
     // sprites with an interaction
     for (const s of m.spritesInView(p.x - 40, p.y - 40, p.x + 40, p.y + 40)) {
@@ -462,7 +554,7 @@ export class Game {
     if (it.type === 'door') return `Entrar: ${it.door.label}`;
     if (it.type === 'sprite') {
       const s = it.s;
-      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar' }[s.interact] || 'Ver';
+      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
     }
   }
   async interact(it) {
@@ -472,6 +564,8 @@ export class Game {
       const e = it.e;
       const i = this.entities.indexOf(e); if (i >= 0) this.entities.splice(i, 1);
       this.itemEntities = this.itemEntities.filter(x => x !== e);
+      const ex = (this.quests.extraItems || []).find(x => x.id === e.item && x.map === this.map.id);
+      if (ex) this.flags['got_' + ex.map + ex.id + Math.round(ex.x)] = true;
       this.giveItem(e.item);
       return;
     }
@@ -483,6 +577,14 @@ export class Game {
       case 'tianguis': return this.openShop('tianguis');
       case 'shopcounter': return this.openShop(s.shop || 'tiendita');
       case 'kiosco': return this.quests.interactWorld('kiosco');
+      case 'search': return this.searchSpot(s);
+      case 'push': return this.pushRock(s);
+      case 'palenque_bet': return this.palenqueBet();
+      case 'ferre_counter': return this.ferreCounter(s);
+      case 'telar': return this.dialog.scene(async d => { await d.narrate('El telar de cintura: un extremo amarrado al poste, el otro a la cintura de la tejedora. Hilo por hilo, así se hacen los rebozos de bolita desde antes de que existieran las máquinas. Un rebozo fino lleva semanas.'); });
+      case 'altar_casa': return this.dialog.scene(async d => { await d.narrate(pick(Math.random, ['Un altarcito con la Virgen de Guadalupe, veladoras y fotos de los difuntos de la familia.', 'San Judas Tadeo, una veladora encendida y la foto de un muchacho que se fue al norte.', 'La Virgen, un ramo de flores de plástico y la foto de una boda en el Santuario.'])); });
+      case 'vitrina_casa1': return this.dialog.scene(async d => { await d.narrate('Vitrina: el sombrero, las botas de montar y unos binoculares del General. Al lado, fotos de la familia Cárdenas en el patio de esta misma casa.'); });
+      case 'vitrina_casa2': return this.dialog.scene(async d => { await d.narrate('Vitrina: cartas y el acta de nacimiento, 21 de mayo de 1895. Un letrero pide, a mano: “Favor de no tocar. La familia lo agradece”.'); });
       case 'pajarete': return this.dialog.scene(async d => { await d.narrate('El corral huele a leche tibia, a tierra y a chocolate. Don Refugio vende los pajaretes muy temprano.'); });
       case 'cama': return this.dialog.scene(async d => {
         const c = await d.choose([{ text: 'Dormir hasta mañana (7 am)', value: 7 }, { text: 'Descansar hasta la tarde (5 pm)', value: 17 }, { text: 'Hasta la noche (8 pm)', value: 20 }, { text: 'No, gracias', value: null }], null);
@@ -596,6 +698,12 @@ export class Game {
   }
   useExit(ex) {
     if (ex.to === '__back' || ex.to === '__back2') { this.exitInterior(ex.to); return; }
+    if (ex.to === 'closed') {
+      const p = this.player;
+      if (ex.w >= ex.h) p.y += (ex.y === 0 ? 1 : -1) * 22; else p.x += (ex.x === 0 ? 1 : -1) * 22;
+      this.dialog.scene(async d => { await d.narrate(ex.msg || `${ex.label}: por ahora el camino está cerrado.`); });
+      return;
+    }
     if (ex.to === 'sahuayo_sign' || ex.to === 'zamora_sign') {
       this.player.x += ex.to === 'sahuayo_sign' ? 20 : -20;
       this.dialog.scene(async d => {
@@ -605,7 +713,7 @@ export class Game {
     }
     this.transition(() => {
       this.returnStack = [];
-      this.changeMap(ex.to, ex.tx, ex.ty, ex.to === 'town' ? 0 : 1);
+      this.changeMap(ex.to, ex.tx, ex.ty, ex.dir ?? (ex.to === 'town' ? 0 : 1));
       if (ex.to === 'town' && this.state.act >= 3 && this.clock.hour < 7) this.clock.advanceTo(7.5);
     });
   }

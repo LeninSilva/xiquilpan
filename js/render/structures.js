@@ -97,8 +97,8 @@ export function drawFacade(ctx, x, baseY, w, fh, opts, r) {
   }
   // openings
   const kind = opts.kind || (r() < 0.35 ? 'shop' : 'house');
-  const doorW = kind === 'shop' ? Math.min(w - 4, 12 + r() * 4) : 5.5 + r() * 1.5;
-  const doorX = kind === 'shop' ? x + (w - doorW) / 2 + (r() - 0.5) * 2 : x + 2 + r() * Math.max(0, w - doorW - 4);
+  const doorW = opts.doorW ?? (kind === 'shop' ? Math.min(w - 4, 12 + r() * 4) : 5.5 + r() * 1.5);
+  const doorX = opts.doorX ?? (kind === 'shop' ? x + (w - doorW) / 2 : x + 2 + r() * Math.max(0, w - doorW - 4));
   const doorH = Math.min(fh - 5, kind === 'shop' ? 13 : 12);
   if (kind === 'shop') {
     // roll-up metal curtain partially open, shop interior visible
@@ -138,6 +138,16 @@ export function drawFacade(ctx, x, baseY, w, fh, opts, r) {
       wx += 7;
     }
   }
+  if (opts.barandal && kind === 'house') { // low iron railing (barandal) closing a narrow front patio
+    ctx.fillStyle = '#1d1d1f';
+    for (const [a, b] of [[x + 1, doorX - 1.2], [doorX + doorW + 1.2, x + w - 1]]) {
+      if (b - a < 3) continue;
+      ctx.fillRect(a, baseY - 5.2, b - a, 0.6); ctx.fillRect(a, baseY - 0.8, b - a, 0.5);
+      for (let i = a; i <= b; i += 1.2) ctx.fillRect(i, baseY - 5.2, 0.3, 5);
+      for (let i = a + 0.6; i < b; i += 2.4) { ctx.beginPath(); ctx.arc(i, baseY - 3.6, 0.5, 0, 7); ctx.fill(); }
+    }
+    ctx.fillStyle = '#2f6a2a'; for (let i = x + 2; i < x + w - 2; i += 5) { if (i > doorX - 2 && i < doorX + doorW + 1) continue; ctx.beginPath(); ctx.arc(i, baseY - 6, 1.4, 0, 7); ctx.fill(); }
+  }
   if (fh > 42) { // second storey windows / balcony
     for (let wx = x + 2.5; wx + 5 < x + w - 1; wx += 8) window1(ctx, wx, top + 5, 5, 8, r, false, true);
   }
@@ -173,6 +183,32 @@ function window1(ctx, x, y, w, h, r, flower, upper) {
   }
 }
 
+// Deterministic list of the street-facing lots of a block (shared by the renderer and
+// by the map builder, which puts a door on every lot).
+export const SURNAMES = ['Farías', 'Betancourt', 'Valencia', 'Moreno', 'Cárdenas', 'Silva', 'Martínez', 'Flores', 'Núñez', 'Grimaldo', 'Méndez', 'Mendoza', 'Ochoa', 'Coit', 'Ceja', 'Villaseñor', 'Zepeda', 'Manzo', 'Arteaga', 'Sánchez', 'Barragán', 'Amezcua', 'Ortiz', 'Pulido', 'Chávez'];
+export function blockLots(s) {
+  if (s._lots) return s._lots;
+  const X = s.x * TILE, W = s.w * TILE;
+  const r = rng((s.seed || 1) * 3 + 17);
+  const fh = s.facadeH ?? 36;
+  const out = [];
+  let x = X;
+  while (x < X + W - 0.1) {
+    let lw = (4 + Math.floor(r() * 4)) * 8 + 8;
+    if (X + W - x < lw + 20) lw = X + W - x;
+    const lr = rng(Math.floor(x * 13 + (s.seed || 1)));
+    const kind = s.allHouses ? 'house' : (lr() < (s.outskirts ? 0.22 : 0.42) ? 'shop' : 'house');
+    const doorW = kind === 'shop' ? Math.min(lw - 4, 12 + lr() * 4) : 5.5 + lr() * 1.5;
+    const doorX = kind === 'shop' ? x + (lw - doorW) / 2 : x + 2 + lr() * Math.max(0, lw - doorW - 4);
+    const tall = !s.outskirts && lr() < 0.2;
+    out.push({ x, w: lw, kind, doorW, doorX, fh: fh + (tall ? 8 : 0), barandal: kind === 'house' && lr() < 0.35, ocote: kind === 'house' && lr() < 0.12,
+      sign: pick(lr, SIGNS), surname: pick(lr, SURNAMES), seed: Math.floor(x * 13 + (s.seed || 1)) });
+    x += lw;
+  }
+  s._lots = out;
+  return out;
+}
+
 // ---------------------------------------------------------------------
 // A full city block ("manzana"): roofs, a south row of facades, courtyard.
 STRUCTURE_DRAW.block = (ctx, s) => {
@@ -202,17 +238,13 @@ STRUCTURE_DRAW.block = (ctx, s) => {
     if (W > 80) courtyardTree(ctx, X + W * (0.3 + r() * 0.4), midY + midH / 2, 8 + r() * 5, r);
   }
   // front rows (south) roofs just above the facades
-  x = X;
-  const lots = [];
-  while (x < X + W - 0.1) {
-    let lw = (4 + Math.floor(r() * 4)) * TILE / 2 + 8;
-    if (X + W - x < lw + 20) lw = X + W - x;
-    lots.push([x, lw]);
+  const specs = fh > 0 ? blockLots(s) : [];
+  const lots = specs.map(l => [l.x, l.w, l]);
+  for (const [x, lw] of lots) {
     const depth = (roofBottom - Y) * (0.3 + r() * 0.15);
     const ry = roofBottom - depth;
     if (!outskirts && r() < 0.55) roofTiles(ctx, x, ry, lw, depth, pick(r, ['#b0583d', '#a24f37', '#bd6446', '#b86a4c']), s.seed + 3);
     else azotea(ctx, x, ry, lw, depth, s.seed + 1, r);
-    x += lw;
   }
   // side lots (east / west edges)
   for (const side of [0, 1]) {
@@ -231,7 +263,7 @@ STRUCTURE_DRAW.block = (ctx, s) => {
   // facades
   const overrides = s.facades || [];
   const exact = overrides.filter(o => o.exact);
-  for (const [lx, lw] of lots) {
+  for (const [lx, lw, spec] of lots) {
     if (exact.some(o => o.x * TILE < lx + lw - 2 && (o.x + o.w) * TILE > lx + 2)) {
       // partially covered lot: draw only the uncovered part as plain wall
       const ranges = [];
@@ -247,9 +279,8 @@ STRUCTURE_DRAW.block = (ctx, s) => {
       continue;
     }
     const ov = overrides.find(o => !o.exact && o.x * TILE >= lx - 1 && o.x * TILE < lx + lw);
-    const lotR = rng(Math.floor(lx * 13 + s.seed));
-    const f2 = fh + (lotR() < 0.2 && !outskirts ? 8 : 0);
-    drawFacade(ctx, lx, Y + H, lw, f2, { outskirts, ...(ov || {}) }, lotR);
+    const lotR = rng(spec.seed + 5);
+    drawFacade(ctx, lx, Y + H, lw, spec.fh, { outskirts, kind: spec.kind, doorX: spec.doorX, doorW: spec.doorW, barandal: spec.barandal, sign: spec.sign, ...(ov || {}) }, lotR);
   }
   // named overrides that carry their own exact position (e.g. famous shops)
   for (const o of overrides) {
@@ -367,4 +398,53 @@ STRUCTURE_DRAW.pond = (ctx, s) => {
   ctx.fillStyle = '#a89a86'; roundRect(ctx, X, Y, W, H, 8); ctx.fill();
   ctx.fillStyle = '#3f8fb5'; roundRect(ctx, X + 3, Y + 3, W - 6, H - 6, 6); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(X + 8, Y + 8, W * 0.3, 1);
+};
+
+// Smooth diagonal avenue (Las Palmas): sidewalks, asphalt and planted median as strokes.
+STRUCTURE_DRAW.diagRoad = (ctx, s) => {
+  const pts = s.pts.map(([x, y]) => [x * TILE, y * TILE]);
+  const path = () => { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); };
+  ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+  path(); ctx.strokeStyle = '#a79f92'; ctx.lineWidth = s.width * TILE; ctx.stroke();
+  path(); ctx.strokeStyle = '#8c8376'; ctx.lineWidth = s.width * TILE - 3; ctx.setLineDash([2.5, 1.2]); ctx.stroke(); ctx.setLineDash([]);
+  path(); ctx.strokeStyle = '#b3a590'; ctx.lineWidth = (s.width - 2) * TILE + 3; ctx.stroke();
+  path(); ctx.strokeStyle = '#303235'; ctx.lineWidth = (s.width - 2) * TILE; ctx.stroke();
+  // aggregate speckles & potholes along the avenue
+  const r = rng(s.x * 7 + s.y);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, ay] = pts[i], [bx, by] = pts[i + 1], L = Math.hypot(bx - ax, by - ay);
+    const nx = -(by - ay) / L, ny = (bx - ax) / L;
+    for (let d = 0; d < L; d += 3) {
+      const t = d / L, o = (r() - 0.5) * (s.width - 2) * TILE;
+      ctx.fillStyle = r() < 0.5 ? 'rgba(120,120,118,0.45)' : 'rgba(10,10,12,0.5)';
+      ctx.fillRect(ax + (bx - ax) * t + nx * o, ay + (by - ay) * t + ny * o, 0.8, 0.8);
+      if (r() < 0.03) { const px = ax + (bx - ax) * t + nx * o * 0.7, py = ay + (by - ay) * t + ny * o * 0.7; ctx.fillStyle = '#1a1917'; ctx.beginPath(); ctx.ellipse(px, py, 3, 2, 0.4, 0, 7); ctx.fill(); }
+    }
+  }
+  if (s.median) {
+    path(); ctx.strokeStyle = '#d9d2c2'; ctx.lineWidth = s.median * TILE + 2; ctx.stroke();
+    path(); ctx.strokeStyle = '#6fa647'; ctx.lineWidth = s.median * TILE - 1; ctx.stroke();
+  }
+};
+
+STRUCTURE_DRAW.river = (ctx, s) => {
+  const pts = s.pts.map(([x, y]) => [x * TILE, y * TILE]);
+  const path = () => { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); };
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  path(); ctx.strokeStyle = '#6d8f45'; ctx.lineWidth = s.width * TILE + 10; ctx.stroke();
+  path(); ctx.strokeStyle = '#9a8a6a'; ctx.lineWidth = s.width * TILE + 3; ctx.stroke();
+  path(); ctx.strokeStyle = '#4a7f93'; ctx.lineWidth = s.width * TILE; ctx.stroke();
+  path(); ctx.strokeStyle = 'rgba(200,230,240,0.25)'; ctx.lineWidth = 1; ctx.setLineDash([4, 7]); ctx.stroke(); ctx.setLineDash([]);
+};
+
+// Low stone kerb/iron fence around the plaza gardens (per garden rectangle)
+STRUCTURE_DRAW.ironFence = (ctx, s) => {
+  const X = s.x * TILE, Y = s.y * TILE, W = s.w * TILE, H = s.h * TILE;
+  ctx.fillStyle = '#9e8f78'; ctx.fillRect(X - 1, Y - 1, W + 2, 1.6); ctx.fillRect(X - 1, Y + H - 0.6, W + 2, 1.6); ctx.fillRect(X - 1, Y - 1, 1.6, H + 2); ctx.fillRect(X + W - 0.6, Y - 1, 1.6, H + 2);
+  ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 0.35;
+  const post = (x, y) => { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 3.4); ctx.stroke(); };
+  for (let x = X; x <= X + W; x += 1.6) { post(x, Y + H); post(x, Y + 0.4); }
+  for (let y = Y; y <= Y + H; y += 1.6) { post(X, y); post(X + W, y); }
+  ctx.beginPath(); ctx.moveTo(X, Y + H - 3.4); ctx.lineTo(X + W, Y + H - 3.4); ctx.moveTo(X, Y - 3); ctx.lineTo(X + W, Y - 3); ctx.stroke();
+  for (let x = X + 0.8; x < X + W; x += 3.2) { ctx.beginPath(); ctx.arc(x, Y + H - 2.4, 0.7, Math.PI, 0); ctx.stroke(); }
 };

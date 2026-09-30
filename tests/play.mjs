@@ -7,7 +7,8 @@ const errors = [];
 page.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_')) errors.push('console: ' + m.text()); });
 page.on('pageerror', e => errors.push('pageerror: ' + e.message + '\n' + e.stack));
 const sleep = (ms) => page.waitForTimeout(ms);
-const shot = async (n) => { await page.screenshot({ path: `/tmp/claude-0/p_${scenario}_${n}.png` }); };
+const OUT = process.env.OUT || '/tmp/claude-0';
+const shot = async (n) => { await page.screenshot({ path: `${OUT}/p_${scenario}_${n}.png` }); };
 const G = (fn, arg) => page.evaluate(fn, arg);
 // press Enter until dialog closes (max n)
 async function skipDialog(n = 40) {
@@ -49,36 +50,36 @@ const scenarios = {
   async basic() {
     await sleep(1500); await shot('intro'); await skipDialog(); await sleep(300); await shot('afterintro');
     await hold('ArrowDown', 1600); await sleep(900); await shot('outside');
-    await G(() => { const g = window.__game; g.player.x = 125.5 * 16; g.player.y = 100 * 16; });
+    await G(() => { const g = window.__game; g.player.x = 126 * 16; g.player.y = 106 * 16; });
     await sleep(1200); await shot('plaza');
     await G(() => { const g = window.__game; g.clock.minutes = 20.5 * 60; }); await sleep(2500); await shot('plaza_night');
   },
   async talk() {
-    await G(() => { const g = window.__game; g.changeMap('town', 121.5, 107, 1); g.clock.minutes = 8 * 60; g.npcs.timer = 0; });
+    await G(() => { const g = window.__game; g.changeMap('town', 120.5, 104, 1); g.clock.minutes = 8 * 60; g.npcs.timer = 0; });
     await sleep(2500); await shot('near_rosita');
     await G(() => { const g = window.__game; const r = g.npcs.named.get('rosita'); if (r) { g.player.x = r.x; g.player.y = r.y + 16; g.player.dir = 1; } });
     await sleep(400); await page.keyboard.press('Space'); await sleep(1800); await shot('dialog');
     await page.keyboard.press('Enter'); await sleep(300); await shot('choices');
   },
   async tour() {
-    const spots = [['palacio', 125, 92], ['mercado_ext', 146, 92], ['sanfrancisco', 146, 115], ['biblio', 162, 116], ['santuario', 125, 147], ['estadio', 128, 186], ['palmas', 93, 150], ['juarez', 50, 162], ['bosque', 100, 208], ['entrada', 238, 97], ['palmira', 228, 90], ['cerro_path', 126, 20], ['corral', 208, 30], ['monjas', 86, 92], ['paz', 194, 130], ['unam', 172, 168]];
+    const spots = [['plaza', 126, 106], ['portales', 131, 115], ['palacio', 168, 108], ['mercado_ext', 200, 112], ['sanfrancisco', 196, 150], ['biblio', 140, 142], ['cardenas_tipo', 152, 158], ['santuario', 64, 138], ['monjas', 86, 106], ['obelisco', 86, 141], ['estadio', 170, 178], ['estadio_in', 185, 200], ['uaer', 225, 197], ['santo_remedio', 200, 245], ['paz', 224, 165], ['palmas', 104, 31], ['juarez', 32, 73], ['portada_juarez', 194, 256], ['casita', 29, 256], ['entrada', 274, 172], ['palmira', 271, 172.5], ['corral', 278, 48], ['cayetano', 40, 33], ['panteon', 275, 197], ['rio', 280, 116], ['marin', 119, 94], ['guero_night', 126, 84.5]];
     for (const [n, x, y] of spots) {
       await G(([x, y]) => { const g = window.__game; g.changeMap('town', x, y, 0, { instant: true }); g.clock.minutes = 12 * 60; }, [x, y]);
       await sleep(1100); await shot(n);
     }
   },
   async churches() {
-    for (const [n, x, y] of [['sf', 146, 108], ['santuario', 125, 146], ['monjas', 86, 90], ['biblio', 162, 110]]) {
+    for (const [n, x, y] of [['sf', 196, 150], ['santuario', 64, 138], ['monjas', 86, 106], ['biblio', 140, 142]]) {
       await G(([x, y]) => { const g = window.__game; g.changeMap('town', x, y, 0, { instant: true }); g.clock.minutes = 12 * 60; }, [x, y]);
       await sleep(1100); await shot(n);
     }
   },
   async story() {
-    await G(() => { const g = window.__game; g.state.act = 3; g.quests.set('main', 30); g.flags.mancha = true; g.clock.minutes = 10 * 60 + 151 * 1440; g.changeMap('town', 195.5, 114, 1); });
+    await G(() => { const g = window.__game; g.state.act = 3; g.quests.set('main', 30); g.flags.mancha = true; g.clock.minutes = 10 * 60 + 151 * 1440; g.changeMap('town', 225.5, 157.2, 1); });
     await sleep(800); await skipDialog();
     await talkTo('abuela', []); await shot('home');
     let st = await G(() => window.__game.quests.q('main').stage); console.log('after home', st);
-    await G(() => { const g = window.__game; g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 19 * 60; g.changeMap('town', 125, 106.2, 1); });
+    await G(() => { const g = window.__game; g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 19 * 60; g.changeMap('town', 126, 105.4, 1); });
     await sleep(600); await page.keyboard.press('Space'); await sleep(500); await drive(['Contar todo']); await shot('speech');
     st = await G(() => window.__game.quests.q('main').stage); console.log('after speech', st);
     await G(() => { const g = window.__game; g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 1440 + 10 * 60; while (g.clock.weekday !== 2) g.clock.minutes += 1440; });
@@ -99,14 +100,14 @@ const scenarios = {
     await talkTo('karla', ['invitar', 'Todos cometemos']);
     await talkTo('juanita', ['escuchar', 'Quedarte']);
     st = await G(() => [window.__game.state.hilos, window.__game.quests.alliesCount(), window.__game.quests.objective().text]); console.log('act4', JSON.stringify(st));
-    await G(() => { const g = window.__game; g.stats.corazon = 45; while (g.clock.weekday !== 5) g.clock.minutes += 1440; g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 20.5 * 60; g.changeMap('town', 125, 106.2, 1); });
+    await G(() => { const g = window.__game; g.stats.corazon = 45; while (g.clock.weekday !== 5) g.clock.minutes += 1440; g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 20.5 * 60; g.changeMap('town', 126, 105.4, 1); });
     await sleep(600); await page.keyboard.press('Space'); await sleep(600);
     for (let i = 0; i < 12; i++) { await drive([], 30); await sleep(400); if (i === 3) await shot('anil'); }
     st = await G(() => [window.__game.state.act, window.__game.state.ending]); console.log('ending', st);
     await shot('end');
   },
   async shops() {
-    await G(() => { const g = window.__game; g.clock.minutes = 7 * 60; g.changeMap('town', 205, 26, 1); });
+    await G(() => { const g = window.__game; g.clock.minutes = 7 * 60; g.changeMap('town', 276, 40, 1); });
     await talkTo('refugio', ['comprar']);
     await sleep(300); await shot('shop');
     await page.click('#shopList .shop-row:nth-child(2) button.alt'); await sleep(200);
@@ -115,9 +116,9 @@ const scenarios = {
     console.log('debt', await G(() => [window.__game.state.debt, window.__game.state.money, window.__game.status.buzz]));
     await talkTo('refugio', ['Pagarle']); console.log('debt after', await G(() => window.__game.state.debt));
     // taxi
-    await G(() => { const g = window.__game; g.clock.minutes = 10 * 60; g.changeMap('town', 158.5, 114.6, 1); g.player.x = 158 * 16; g.player.y = 114.2 * 16; g.player.dir = 1; });
+    await G(() => { const g = window.__game; g.clock.minutes = 10 * 60; g.changeMap('town', 134.5, 142.2, 1); g.player.x = 134.5 * 16; g.player.y = 142.2 * 16; g.player.dir = 1; });
     await sleep(500); await page.keyboard.press('Space'); await sleep(500); await shot('taxi');
-    await drive(['Totolán']); await sleep(1500); await shot('totolan');
+    await drive(['Mercado']); await sleep(1500); await shot('taxi_mercado');
     console.log('map', await G(() => window.__game.map.id));
     // menu screens
     await page.keyboard.press('m'); await sleep(600); await shot('map');
@@ -127,19 +128,21 @@ const scenarios = {
     await page.click('[data-tab=settings]'); await sleep(300); await shot('settings');
   },
   async interiors() {
-    const ids = ['mercado', 'biblioteca', 'unam', 'templo_sf', 'micheladas_lupita', 'la_cochera', 'palacio', 'panaderia', 'billar_mendoza', 'oxxo', 'chamacuero', 'hospital'];
+    const ids = ['mercado', 'biblioteca', 'unam', 'templo_sf', 'micheladas_lupita', 'la_cochera', 'palacio', 'panaderia', 'casa_marin', 'palenque', 'reboceria', 'casita_piedra', 'santo_remedio', 'ferretuberias', 'casa_cardenas', 'escuela_tipo', 'casa_123_Farías', 'tienda_77_FARMACIA'];
     for (const id of ids) {
       await G((id) => { const g = window.__game; g.returnStack = [{ map: 'town', x: 2000, y: 1600, dir: 0 }]; const m = g.getMap(id); g.changeMap(id, m.spawns.entry.x, m.spawns.entry.y - 1, 1, { instant: true }); g.clock.minutes = 13 * 60; g.npcs.timer = 0; }, id);
       await sleep(1200); await shot(id);
     }
   },
   async cerro() {
-    await G(() => { const g = window.__game; g.giveItem('linterna'); g.quests.set('main', 2); g.state.clues = ['rosita', 'chuy', 'lupe']; g.changeMap('town', 126.5, 3, 1); });
+    await G(() => { const g = window.__game; g.giveItem('linterna'); g.quests.set('main', 2); g.state.clues = ['rosita', 'chuy', 'lupe']; g.changeMap('town', 152, 329, 0); });
     await sleep(500);
-    await hold('ArrowUp', 1500); await sleep(1500); await shot('arrive');
+    await hold('ArrowDown', 1500); await sleep(1500); await shot('arrive');
     await skipDialog();
-    await G(() => { const g = window.__game; g.player.x = 40.5 * 16; g.player.y = 56 * 16; }); await sleep(1200); await shot('village');
-    await G(() => { const g = window.__game; g.player.x = 40.5 * 16; g.player.y = 17 * 16; g.clock.minutes += 10 * 60; }); await sleep(1500); await shot('summit');
+    await G(() => { const g = window.__game; g.player.x = 40.5 * 16; g.player.y = 79 * 16; }); await sleep(1200); await shot('village');
+    await G(() => { const g = window.__game; g.player.x = 60.5 * 16; g.player.y = 25 * 16; }); await sleep(1200); await shot('piedrita');
+    await G(() => { const g = window.__game; g.player.x = 40 * 16; g.player.y = 14 * 16; }); await sleep(1200); await shot('subida');
+    await G(() => { const g = window.__game; g.player.x = 40.5 * 16; g.player.y = 122 * 16; g.clock.minutes += 10 * 60; }); await sleep(1500); await shot('summit');
     await G(() => { const g = window.__game; const m = g.npcs.named.get('miguel'); g.player.x = m.x; g.player.y = m.y + 14; g.player.dir = 1; });
     await sleep(300); await page.keyboard.press('Space'); await sleep(800); await shot('talk_miguel');
     // run the camp conversation and the UFO cutscene
@@ -154,8 +157,8 @@ const scenarios = {
     }
     await sleep(1500); await shot('after_ufo');
     await skipDialog();
-    await G(() => { const g = window.__game; g.changeMap('town', 126.5, 3, 0); }); await sleep(1500); await skipDialog(); await shot('town_act3');
-    await G(() => { const g = window.__game; g.player.x = 125 * 16; g.player.y = 100 * 16; }); await sleep(1500); await shot('jacarandas');
+    await G(() => { const g = window.__game; g.changeMap('town', 152, 330, 1); }); await sleep(1500); await skipDialog(); await shot('town_act3');
+    await G(() => { const g = window.__game; g.player.x = 126 * 16; g.player.y = 106 * 16; }); await sleep(1500); await shot('jacarandas');
   },
 };
 await scenarios[scenario]();

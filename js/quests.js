@@ -6,12 +6,12 @@ const CLUE_NPC = { rosita: 'Rosita (café de la plaza)', chuy: 'Chuy (sitio Gabi
 
 // Where things are, for the compass & map pins: [map, tileX, tileY]
 const PLACES = {
-  home: ['town', 195, 112.5], rosita: ['town', 121.5, 106], chuy: ['town', 156.5, 114], lupe: ['town', 18, 29], refugio: ['town', 205, 25],
-  cerro: ['town', 126, 1], summit: ['cerro', 40, 13], tona: ['cerro', 36, 53], kiosco: ['town', 125, 106.5], unam: ['town', 172, 164.5],
-  palacio: ['town', 125, 88.6], hospital: ['town', 178, 128.6], templo: ['town', 146, 105], beto: ['town', 194, 122], escuela: ['town', 193, 70.6],
-  chema: ['town', 120.5, 118], poncho: ['town', 104, 205], chon: ['town', 96, 179], guero: ['town', 116.6, 112.3], biblioteca: ['town', 162, 107],
-  tianguis_fri: ['town', 186, 125], mercado: ['town', 146, 88.6], cochera: ['town', 118, 117.4], chamacuero: ['town', 18, 29], parque: ['town', 60, 140],
-  bosque: ['town', 150, 216],
+  home: ['town', 225, 156.5], rosita: ['town', 120.5, 102.2], chuy: ['town', 137.2, 141.4], lupe: ['town', 15.5, 26.2], refugio: ['town', 275.5, 39],
+  cerro: ['town', 152, 332], summit: ['cerro', 41.5, 118.6], tona: ['cerro', 36, 84.4], kiosco: ['town', 126, 105.4], unam: ['town', 225, 194.5],
+  palacio: ['town', 170, 105.6], hospital: ['town', 224, 140.4], templo: ['town', 195, 143.4], beto: ['town', 224, 164.2], escuela: ['town', 132, 156.6],
+  chema: ['town', 121, 115.4], poncho: ['town', 156.5, 248.4], chon: ['town', 222, 217.2], guero: ['town', 125, 84.2], biblioteca: ['town', 140, 140.4],
+  tianguis_fri: ['town', 222, 158.6], mercado: ['town', 200, 110.4], cochera: ['town', 118, 115], chamacuero: ['town', 14.5, 25.6], parque: ['town', 32, 72],
+  bosque: ['town', 194, 253.5], marin: ['town', 119, 93.4], reboceria: ['town', 62, 40.4], casita: ['town', 29, 254.4],
 };
 
 export class Quests {
@@ -45,7 +45,7 @@ export class Quests {
         if (main.stage < 1) return { title: '¿Han visto a mi abuelo?', text: 'Habla con tu abuela.', at: PLACES.home };
         if (main.stage < 2) return { title: '¿Han visto a mi abuelo?', text: `Pregunta en el pueblo por Don Miguel y Don Toño. Pistas: ${s.clues.length}/3`, at: this.nearestClue() };
         if (!g.hasItem('linterna')) return { title: 'Rumbo al cerro', text: 'Consigue una linterna (OXXO, “Frijoles”, el tianguis… o pídesela a tu abuela).', at: PLACES.home };
-        return { title: 'Rumbo al cerro', text: 'Sube al Cerro de San Francisco por la brecha del norte.', at: PLACES.cerro };
+        return { title: 'Rumbo al cerro', text: 'Sube al Cerro de San Francisco: sal al sur por la avenida, cruza el bosque y sigue el camino de terracería.', at: PLACES.cerro };
       case 2:
         if (!this.f.found_grandpas) return { title: 'El Cerro de San Francisco', text: 'Busca a tu abuelo en la cima, junto a la cruz.', at: PLACES.summit };
         return { title: 'La noche en el cerro', text: 'Habla con tu abuelo junto a la fogata.', at: PLACES.summit };
@@ -367,9 +367,10 @@ export class Quests {
   // items lying around the world (visible only when relevant)
   worldItems() {
     const out = [];
-    if (this.started('s_trompo') && !this.done('s_trompo') && !this.game.hasItem('trompo')) out.push({ id: 'trompo', map: 'town', x: 189.6, y: 126.4 });
-    out.push({ id: 'palo', map: 'town', x: 61.5, y: 141.5, repeat: true });
-    if (this.started('s_rinos') && !this.done('s_rinos') && !this.game.hasItem('bomba')) out.push({ id: 'bomba', map: 'town', x: 151.5, y: 217.2 });
+    if (this.started('s_trompo') && !this.done('s_trompo') && !this.game.hasItem('trompo')) out.push({ id: 'trompo', map: 'town', x: 197.5, y: 152.6 });
+    out.push({ id: 'palo', map: 'town', x: 44.5, y: 86.6, repeat: true });
+    if (this.started('s_rinos') && !this.done('s_rinos') && !this.game.hasItem('bomba')) out.push({ id: 'bomba', map: 'town', x: 160.5, y: 253.6 });
+    for (const it of this.extraItems || []) if (!this.f['got_' + it.map + it.id + Math.round(it.x)]) out.push(it);
     if (this.started('s_jeep') && !this.done('s_jeep') && !this.game.hasItem('foto_jeep') && this.f.jeep_hint) out.push({ id: 'foto_jeep', map: 'palacio', x: 19.5, y: 4.6 });
     return out;
   }

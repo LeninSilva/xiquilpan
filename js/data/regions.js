@@ -2,74 +2,105 @@
 import { GameMap, G } from '../world.js';
 import { fbm, hash2, TILE } from '../util.js';
 import { hStreet, vStreet, sprite, building, block, tree, door, area, light, ensureLanes } from './build.js';
+import { addLotDoors } from './town.js';
 
+// The Cerro de San Francisco rises SOUTH of Jiquilpan. You come in from the town at the top of this
+// map (north) and climb southward: the "subida mágica" (the gravity hill), the path to La Piedrita
+// and its little waterfall, the pueblito of San Francisco with its chapel, and the summit with the
+// cross. Only the highest part has pines; below it is oak, huizache, giant magueys, nopales and
+// rocks everywhere, with cows and horses loose on the slopes.
+export const CERRO = { W: 80, H: 140, entry: [40.5, 2.6], camp: [41.5, 120], cross: [42, 129], land: [48, 111], village: [40, 80], tona: [36, 83.6], piedrita: [62, 31], subida: [36, 14] };
 export function buildCerro() {
-  const W = 80, H = 130;
-  const m = new GameMap('cerro', 'Cerro de San Francisco', W, H, { fill: G.GRASS, baseElev: 1700 });
+  const W = CERRO.W, H = CERRO.H;
+  const m = new GameMap('cerro', 'Cerro de San Francisco', W, H, { fill: G.GRASS, baseElev: 1620 });
   m.ambient = 'cerro';
-  // elevation: rises from 1700 m at the foot (south) to ~2080 m at the cross (north)
+  ensureLanes(m);
+  // elevation: ~1620 m where the town's dirt road arrives, ~2000 m at the cross (south)
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const t = 1 - y / H;
-    let e = 1700 + t * 380 + (fbm(x * 0.05, y * 0.05, 3, 3) - 0.5) * 40;
-    const dx = (x - 40) / 30; e -= dx * dx * 60; // ridge along the middle
+    const t = y / H;
+    let e = 1620 + Math.pow(t, 1.15) * 380 + (fbm(x * 0.05, y * 0.05, 3, 3) - 0.5) * 40;
+    const dx = (x - 40) / 30; e -= dx * dx * 60;
     m.elev[y * W + x] = e;
     const n = fbm(x * 0.09, y * 0.09, 17, 3);
-    m.set(x, y, n > 0.6 ? G.FOREST : n < 0.2 ? G.ROCK : G.GRASS);
-    if (x < 6 || x > W - 7) m.set(x, y, G.SLOPE);
+    m.set(x, y, n > 0.62 ? G.FOREST : n < 0.24 ? G.ROCK : G.GRASS);
   }
-  // steep flanks: impassable slope away from the ridge
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const edge = Math.abs(x - 40) > 30 - Math.sin(y * 0.12) * 4;
+    const edge = Math.abs(x - 40) > 31 - Math.sin(y * 0.12) * 4;
     if (edge) m.set(x, y, G.SLOPE);
   }
-  // the rocky road zig-zags up from the bottom to the village and on to the summit
-  const road = [[40, 129], [40, 118], [22, 112], [22, 100], [56, 94], [56, 82], [30, 76], [30, 66], [40, 62], [40, 40], [52, 34], [52, 26], [40, 20], [40, 16]];
+  // the road: dirt from town, then a cobbled/pebbled camino that zig-zags up to the pueblito and the summit
+  const road = [[40, 0], [40, 22], [24, 28], [24, 40], [54, 46], [54, 58], [32, 64], [32, 74], [40, 78], [40, 98], [52, 104], [52, 112], [40, 116], [40, 122]];
   for (let i = 0; i < road.length - 1; i++) {
     let [x, y] = road[i]; const [bx, by] = road[i + 1];
+    const surf = y < 22 ? G.DIRTROAD : G.ROCKROAD;
     while (x !== bx || y !== by) {
-      for (let k = -1; k <= 1; k++) { m.set(x + (by === y ? 0 : k), y + (by === y ? k : 0), G.ROCKROAD); }
+      for (let k = -1; k <= 1; k++) m.set(x + (by === y ? 0 : k), y + (by === y ? k : 0), surf);
       x += Math.sign(bx - x); y += Math.sign(by - y);
     }
   }
-  m.markStreet(20, 16, 40, 114, 'Camino empedrado al Cerro de San Francisco');
-  // village of San Francisco on the hill
-  for (let y = 44; y < 66; y++) for (let x = 24; x < 58; x++) if (m.get(x, y) !== G.ROCKROAD) m.set(x, y, G.DIRT);
-  building(m, 'capilla', 34, 40, 12, 9, { label: 'SAN FRANCISCO', color: '#f3eee4', tall: 60 });
-  door(m, 40, 48, 'capilla_sf', 'Capilla de San Francisco');
-  area(m, 'Pueblito de San Francisco', 24, 38, 34, 28, 'village');
-  m.fill(36, 49, 9, 3, G.PLAZA);
-  for (const [x, y, w, h] of [[26, 52, 7, 6], [48, 50, 8, 6], [26, 60, 6, 5], [46, 58, 9, 6], [50, 44, 6, 5]]) block(m, x, y, w, h, { outskirts: true, facadeH: 28 });
-  door(m, 29, 57, 'tienda_cerro', 'Tiendita del cerro', { hours: [7, 20] });
-  sprite(m, 'lamp', 36.5, 51.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 36.5, 51, 80);
-  sprite(m, 'lamp', 44.5, 51.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 44.5, 51, 80);
-  // summit: cross, campsite, llano where the lights land
-  for (let y = 4; y < 24; y++) for (let x = 28; x < 56; x++) {
-    const d = ((x - 42) / 14) ** 2 + ((y - 14) / 10) ** 2;
-    if (d < 1) m.set(x, y, G.GRASS);
+  m.markStreet(20, 22, 40, 100, 'Camino empedrado al Cerro de San Francisco');
+  m.markStreet(38, 0, 5, 22, 'Camino de terracería (desde Jiquilpan)');
+  // the gravity hill: a straight dirt stretch where cars "roll uphill"
+  m.markStreet(38, 8, 5, 12, 'La subida mágica');
+  sprite(m, 'signpost', 36.2, 12, { text: 'LA SUBIDA MÁGICA', bg: '#7a2f3a', w: 60, up: 30, interact: 'subida' });
+  sprite(m, 'rollingCar', 41, 9, { w: 40, up: 30, interact: 'subida' });
+  area(m, 'La subida mágica', 34, 6, 12, 16, 'road');
+  // La Piedrita: a footpath east to a little waterfall between black rocks
+  for (let x = 42; x < 62; x++) { m.set(x, 24, G.DIRT); m.set(x, 25, G.DIRT); }
+  for (let y = 24; y < 33; y++) { m.set(60, y, G.DIRT); m.set(61, y, G.DIRT); }
+  for (let y = 26; y < 36; y++) for (let x = 56; x < 70; x++) if (((x - 63) / 7) ** 2 + ((y - 31) / 5) ** 2 < 1) m.set(x, y, G.ROCK);
+  sprite(m, 'piedrita', 63, 30.4, { scale: 1.2, w: 90, up: 70, collide: [-30, -12, 60, 12], interact: 'piedrita' });
+  m.setSolid(58, 27, 11, 3);
+  area(m, 'La Piedrita', 55, 24, 16, 12, 'nature');
+  sprite(m, 'signpost', 44.5, 23, { text: 'LA PIEDRITA →', bg: '#6b4a30', w: 44, up: 30 });
+  // the pueblito of San Francisco
+  for (let y = 70; y < 94; y++) for (let x = 22; x < 58; x++) if (m.get(x, y) !== G.ROCKROAD) m.set(x, y, G.DIRT);
+  building(m, 'capilla', 34, 66, 12, 9, { label: 'SAN FRANCISCO', color: '#f3eee4', tall: 60 });
+  door(m, 40, 74, 'capilla_sf', 'Capilla de San Francisco', { hours: [7, 20] });
+  area(m, 'Pueblito de San Francisco', 22, 64, 36, 30, 'village');
+  m.fill(35, 75, 11, 3, G.PLAZA);
+  const vblocks = [[24, 78, 7, 6], [46, 78, 9, 6], [24, 86, 7, 6], [44, 86, 10, 6], [48, 70, 7, 5]];
+  door(m, 27, 83, 'tienda_cerro', 'Tiendita del cerro', { hours: [7, 20] });
+  for (const [x, y, w, h] of vblocks) { block(m, x, y, w, h, { outskirts: true, facadeH: 28, allHouses: true }); addLotDoors(m, m.structures[m.structures.length - 1]); }
+  sprite(m, 'lamp', 35.5, 77.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 35.5, 77, 80);
+  sprite(m, 'lamp', 45.5, 77.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 45.5, 77, 80);
+  sprite(m, 'signpost', 33, 94.5, { text: 'LA CRUZ ↓', bg: '#6b4a30', w: 40, up: 30 });
+  // summit plateau: camp, the llano where the lights come down, the cross at the top
+  for (let y = 106; y < 136; y++) for (let x = 26; x < 58; x++) {
+    const d = ((x - 42) / 15) ** 2 + ((y - 121) / 14) ** 2;
+    if (d < 1 && m.get(x, y) !== G.ROCKROAD) m.set(x, y, G.GRASS);
   }
-  sprite(m, 'summitCross', 42, 7, { scale: 1.3, w: 30, up: 60, collide: [-3, -3, 6, 3], interact: 'cruz' });
-  area(m, 'La Cruz (cima del cerro)', 28, 4, 28, 20, 'summit');
-  sprite(m, 'campfire', 41.5, 15, { w: 20, up: 20, collide: [-5, -3, 10, 4], interact: 'fogata', acts: [2] });
-  sprite(m, 'tent', 36, 13, { color: '#d8792e', w: 34, up: 24, collide: [-12, -4, 24, 4], acts: [2] });
-  sprite(m, 'tent', 47, 12.6, { color: '#3c7a8a', w: 34, up: 24, collide: [-12, -4, 24, 4], acts: [2] });
-  m.lights.push({ x: 41.5 * TILE, y: 14.6 * TILE, r: 110, color: '#ffb35a', kind: 'fire', acts: [2] });
-  // trees: pines and oaks, agaves and rocks
-  for (let i = 0; i < 420; i++) {
+  sprite(m, 'summitCross', CERRO.cross[0], CERRO.cross[1], { scale: 1.3, w: 30, up: 60, collide: [-3, -3, 6, 3], interact: 'cruz' });
+  area(m, 'La Cruz (cima del cerro)', 26, 106, 32, 30, 'summit');
+  sprite(m, 'campfire', CERRO.camp[0], CERRO.camp[1], { w: 20, up: 20, collide: [-5, -3, 10, 4], interact: 'fogata', acts: [2] });
+  sprite(m, 'tent', 36, 118, { color: '#d8792e', w: 34, up: 24, collide: [-12, -4, 24, 4], acts: [2] });
+  sprite(m, 'tent', 47, 117.6, { color: '#3c7a8a', w: 34, up: 24, collide: [-12, -4, 24, 4], acts: [2] });
+  m.lights.push({ x: CERRO.camp[0] * TILE, y: (CERRO.camp[1] - 0.4) * TILE, r: 110, color: '#ffb35a', kind: 'fire', acts: [2] });
+  // vegetation: pines only up high; oak, huizache, giant magueys, nopales and many rocks lower down
+  const road2 = (x, y) => [[0, 1], [1, 0], [-1, 0], [0, -1]].some(([a, b]) => m.get(x + a, y + b) === G.ROCKROAD || m.get(x + a, y + b) === G.DIRTROAD);
+  for (let i = 0; i < 900; i++) {
     const x = 7 + Math.floor(hash2(i, 1, 55) * (W - 14)), y = 2 + Math.floor(hash2(i, 2, 55) * (H - 4));
     const g = m.get(x, y);
-    if (g === G.ROCKROAD || g === G.SLOPE || g === G.DIRT || g === G.PLAZA || g === G.ROOF) continue;
-    if (y > 3 && y < 24 && x > 28 && x < 56) continue;
-    if (m.get(x, y + 1) === G.ROCKROAD || m.get(x + 1, y) === G.ROCKROAD || m.get(x - 1, y) === G.ROCKROAD) continue;
-    const r = hash2(i, 3, 55);
-    if (r < 0.45) tree(m, x + 0.5, y + 0.8, r < 0.3 ? 'pino' : 'encino', { size: 0.9 + r });
-    else if (r < 0.6) sprite(m, 'agave', x + 0.5, y + 0.8, { w: 22, up: 16, collide: [-3, -2, 6, 2] });
-    else if (r < 0.8) sprite(m, 'rock', x + 0.5, y + 0.8, { size: 0.8 + r, w: 20, up: 14, collide: [-6, -3, 12, 3] });
-    else if (r < 0.9) sprite(m, 'nopal', x + 0.5, y + 0.8, { w: 18, up: 24, collide: [-3, -2, 6, 2] });
+    if (g === G.ROCKROAD || g === G.DIRTROAD || g === G.SLOPE || g === G.DIRT || g === G.PLAZA || g === G.ROOF || m.isSolidTile(x, y)) continue;
+    if (y > 108 && y < 134 && x > 30 && x < 54) continue;
+    if (road2(x, y)) continue;
+    const r = hash2(i, 3, 55), high = y > 98;
+    if (r < 0.34) tree(m, x + 0.5, y + 0.8, high ? (r < 0.22 ? 'pino' : 'encino') : (r < 0.14 ? 'huizache' : r < 0.26 ? 'encino' : 'fresno'), { size: 0.9 + r });
+    else if (r < 0.46) sprite(m, 'maguey', x + 0.5, y + 0.8, { seed: i, size: 1.3 + hash2(i, 4, 55) * 0.7, quiote: hash2(i, 5, 55) > 0.85, w: 60, up: 70, collide: [-6, -3, 12, 3] });
+    else if (r < 0.74) sprite(m, 'rock', x + 0.5, y + 0.8, { size: 0.7 + hash2(i, 6, 55) * 1.1, w: 26, up: 18, collide: [-6, -3, 12, 3] });
+    else if (r < 0.88) sprite(m, 'nopal', x + 0.5, y + 0.8, { w: 18, up: 24, collide: [-3, -2, 6, 2] });
+    else sprite(m, 'bush', x + 0.5, y + 0.8, { seed: i, w: 24, up: 18, collide: [-4, -3, 8, 3] });
   }
-  sprite(m, 'signpost', 42.5, 126, { text: 'JIQUILPAN ↓', bg: '#6b4a30', w: 40, up: 30 });
-  sprite(m, 'signpost', 33, 66.5, { text: 'SAN FRANCISCO', bg: '#6b4a30', w: 44, up: 30 });
-  m.exits.push({ x: 38, y: 129, w: 5, h: 1, to: 'town', tx: 126.5, ty: 2.5, label: 'Bajar a Jiquilpan' });
-  m.spawns = { bottom: { x: 40, y: 126 }, summit: { x: 40, y: 17 } };
+  // stones you can move: some hide something
+  const LOOT = ['piedra_azul', null, 'punta_flecha', null, null, 'moneda_antigua', null, 'punta_flecha', null, 'piedra_azul'];
+  const spots = [[30, 18], [48, 34], [20, 44], [58, 52], [28, 60], [48, 64], [20, 96], [58, 100], [30, 108], [52, 132], [60, 40], [18, 70]];
+  spots.forEach(([x, y], k) => {
+    if (m.isSolidTile(x, y) || m.get(x, y) === G.ROCKROAD) m.set(x, y, G.GRASS);
+    sprite(m, 'boulder', x + 0.5, y + 0.8, { rid: k, loot: LOOT[k % LOOT.length], size: 1.2, w: 30, up: 22, collide: [-8, -3, 16, 3], interact: 'push' });
+  });
+  sprite(m, 'signpost', 42.5, 4, { text: 'JIQUILPAN ↑', bg: '#6b4a30', w: 40, up: 30 });
+  m.exits.push({ x: 38, y: 0, w: 5, h: 1, to: 'town', tx: 152, ty: 331, dir: 1, label: 'Bajar a Jiquilpan' });
+  m.spawns = { bottom: { x: CERRO.entry[0], y: CERRO.entry[1] }, entry: { x: CERRO.entry[0], y: CERRO.entry[1] }, summit: { x: 40, y: 117 } };
   m.structures.sort((a, b) => (a.layer || 0) - (b.layer || 0));
   m.finalize();
   return m;

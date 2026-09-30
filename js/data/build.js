@@ -1,6 +1,6 @@
 // Helpers used by the map builders.
 import { TILE } from '../util.js';
-import { G } from '../world.js';
+import { G, ROADS } from '../world.js';
 
 export const DIR = { N: 1, E: 2, S: 4, W: 8 };
 
@@ -19,7 +19,7 @@ export function hStreet(map, name, x0, x1, y, w = 4, opts = {}) {
       const yy = y + j;
       const edge = walk && (j === 0 || j === w - 1);
       if (opts.median && (j === Math.floor(w / 2) - 1 || j === Math.floor(w / 2))) { map.set(x, yy, G.MEDIAN); continue; }
-      if (edge && !(opts.keepExisting && map.get(x, yy) !== G.GRASS)) { if (map.get(x, yy) !== G.ASPHALT && map.get(x, yy) !== G.COBBLE) map.set(x, yy, G.SIDEWALK); }
+      if (edge) { if (!ROADS.has(map.get(x, yy))) map.set(x, yy, opts.walkSurface ?? G.SIDEWALK); }
       else if (!edge) {
         map.set(x, yy, surf);
         const mid = y + w / 2;
@@ -40,7 +40,7 @@ export function vStreet(map, name, x, y0, y1, w = 4, opts = {}) {
       const edge = walk && (i === 0 || i === w - 1);
       if (opts.median && (i === Math.floor(w / 2) - 1 || i === Math.floor(w / 2))) { map.set(xx, y, G.MEDIAN); continue; }
       const cur = map.get(xx, y);
-      if (edge) { if (cur !== G.ASPHALT && cur !== G.COBBLE && cur !== G.DIRTROAD) map.set(xx, y, G.SIDEWALK); }
+      if (edge) { if (!ROADS.has(cur)) map.set(xx, y, opts.walkSurface ?? G.SIDEWALK); }
       else {
         map.set(xx, y, surf);
         const mid = x + w / 2;
@@ -109,4 +109,50 @@ export function area(map, name, x, y, w, h, kind = 'place', extra = {}) {
 
 export function light(map, tx, ty, r = 70, color = '#ffd9a0', kind = 'lamp') {
   map.lights.push({ x: tx * TILE, y: ty * TILE, r, color, kind });
+}
+
+// Distance from point to a polyline (tile units)
+export function distToPolyline(px, py, pts) {
+  let best = 1e9;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+    const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L));
+    const d = Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+// A road that does not follow the grid (e.g. Av. Las Palmas). The tiles become walkable
+// ground and a smooth polygon is painted over them so the edges are not jagged.
+export function diagonalRoad(map, name, pts, width, opts = {}) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const pad = width;
+  for (let y = Math.floor(y0 - pad); y <= y1 + pad; y++) for (let x = Math.floor(x0 - pad); x <= x1 + pad; x++) {
+    if (!map.inb(x, y)) continue;
+    const d = distToPolyline(x + 0.5, y + 0.5, pts);
+    if (d <= width / 2 + 0.3) {
+      const cur = map.get(x, y);
+      if (ROADS.has(cur)) continue;
+      map.setSolid(x, y, 1, 1, 0);
+      // the edge band is painted by the smooth polygon; underneath it stays grass so no stair-steps show
+      map.set(x, y, d < (opts.median || 0) / 2 ? G.MEDIAN : d > width / 2 - 1 ? G.GRASS : (opts.surface ?? G.ASPHALT));
+      map.street[y * map.w + x] = map.addStreetName(name);
+    }
+  }
+  map.structures.push({ kind: 'diagRoad', pts, width, median: opts.median || 0, x: Math.floor(x0 - pad), y: Math.floor(y0 - pad), w: Math.ceil(x1 - x0 + pad * 2) + 1, h: Math.ceil(y1 - y0 + pad * 2) + 1, margin: 0, layer: 1 });
+}
+
+export function river(map, name, pts, width) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  for (let y = Math.floor(y0 - width); y <= y1 + width; y++) for (let x = Math.floor(x0 - width); x <= x1 + width; x++) {
+    if (!map.inb(x, y)) continue;
+    const d = distToPolyline(x + 0.5, y + 0.5, pts);
+    if (d <= width / 2 && !ROADS.has(map.get(x, y))) { map.set(x, y, G.WATER); map.street[y * map.w + x] = map.addStreetName(name); }
+    else if (d <= width / 2 + 1.2 && map.get(x, y) === G.GRASS) map.set(x, y, G.FOREST);
+  }
+  map.structures.push({ kind: 'river', pts, width, x: Math.floor(x0 - width), y: Math.floor(y0 - width), w: Math.ceil(x1 - x0 + width * 2) + 1, h: Math.ceil(y1 - y0 + width * 2) + 1, margin: 0, layer: 1 });
 }

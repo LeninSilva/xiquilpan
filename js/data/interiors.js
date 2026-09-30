@@ -241,7 +241,125 @@ function billar(id, name) {
     lights: [[5, 5, 80, '#fff2c0'], [11.5, 5, 80, '#fff2c0']], dim: 0.35 });
 }
 
+// ---- places added with the new map ------------------------------------------------------------------
+const search = (kind, x, y, loot, props = {}) => ({ kind, x, y, interact: 'search', loot, w: 30, up: 40, collide: [-8, -4, 16, 4], ...props });
+Object.assign(BUILDERS, {
+  casa_marin: () => room('casa_marin', 'Casa de la familia Marín', { w: 22, h: 13, floor: G.FLOOR_TILE, wall: '#f1e7d2', band: '#7d2a22', tiles: true,
+    deco: [{ kind: 'window', x: 2 }, { kind: 'frame', x: 6, color: '#b8a888' }, { kind: 'frame', x: 7.4, color: '#c9b89a' }, { kind: 'cross', x: 11 }, { kind: 'frame', x: 14, color: '#a0b4c0' }, { kind: 'window', x: 18 }],
+    rugs: [{ x: 7, y: 6, w: 8, h: 4, color: '#6b2a2a' }],
+    items: [
+      { kind: 'altarCasa', x: 11, y: 2.7, w: 30, up: 40, collide: [-10, -4, 20, 4], interact: 'altar' },
+      { kind: 'bookshelf', x: 4, y: 3.2, fw: 40, w: 44, up: 40, collide: [-20, -5, 40, 5], seed: 71 },
+      search('ropero', 17.5, 3.4, 'foto_luces', { w: 24, up: 40, collide: [-10, -5, 20, 5] }),
+      table(8, 8.6, { cloth: '#f2e8d8', items: true }), table(13, 8.6, { cloth: '#f2e8d8' }),
+      { kind: 'wheelchair', x: 15.6, y: 6.05, w: 24, up: 30 },
+      { kind: 'maceta', x: 2, y: 10.5, w: 14, up: 20, seed: 4 }, { kind: 'maceta', x: 20, y: 10.5, w: 14, up: 20, seed: 9 },
+    ], lights: [[11, 6, 150]] }),
+  hotel_tarasca: () => room('hotel_tarasca', 'Hotel Plaza Tarasca', { w: 16, h: 11, floor: G.FLOOR_STONE, wall: '#efe4cf', band: '#3f3a33',
+    deco: [{ kind: 'sign', x: 3, w: 70, text: 'HOTEL PLAZA TARASCA · PORTAL HIDALGO 12', bg: '#3f3a33', fg: '#f1e2b8' }, { kind: 'frame', x: 12, color: '#c9b89a' }],
+    items: [counter(8, 5.4, 60, { color: '#5b3a22', shop: 'hotel', interact: 'shopcounter' }), { kind: 'maceta', x: 2, y: 8, w: 14, up: 20, seed: 1 }, { kind: 'maceta', x: 14, y: 8, w: 14, up: 20, seed: 3 }, { kind: 'bench', x: 5, y: 9, w: 20, up: 12, collide: [-8, -4, 16, 4] }],
+    lights: [[8, 5, 110]] }),
+  tortilleria_marin: () => room('tortilleria_marin', 'Tortillería Marín', { w: 12, h: 9, floor: G.FLOOR_TILE, wall: '#f5e6c8', band: '#7a1f1a',
+    deco: [{ kind: 'sign', x: 2, w: 60, text: 'TORTILLERÍA MARÍN · DE NIXTAMAL', bg: '#7a1f1a', fg: '#f5e6c8' }, { kind: 'frame', x: 9, color: '#b8a888' }],
+    items: [counter(6, 4.8, 64, { color: '#9a9a9a', goods: ['#f3e2b0', '#e8d29a', '#f3e2b0'], shop: 'tortilleria_marin', interact: 'shopcounter' }),
+      { kind: 'barrels', x: 2.4, y: 7.4, w: 40, up: 30, collide: [-12, -6, 24, 6] }], lights: [[6, 4, 100]] }),
+  escuela_tipo: () => {
+    const items = [];
+    for (let y = 6; y <= 11; y += 2.5) for (let x = 4; x <= 20; x += 4) items.push({ kind: 'pupitre', x, y, w: 14, up: 12, collide: [-5, -3, 10, 3] });
+    items.push(table(12, 4, { color: '#5b3a22', items: true }));
+    items.push(search('bookshelf', 22, 3.2, 'dibujo', { fw: 20, w: 24, up: 40, collide: [-10, -5, 20, 5], seed: 12 }));
+    return room('escuela_tipo', 'Escuela “La Tipo”', { w: 25, h: 14, floor: G.FLOOR_TILE, wall: '#e9efe6', band: '#2f5b3f',
+      deco: [{ kind: 'sign', x: 5, w: 120, text: 'LA TIPO · “LA PATRIA ES PRIMERO”', bg: '#1f3a2a', fg: '#f4ecd0' }, { kind: 'flag', x: 2 }, { kind: 'window', x: 21 }],
+      items, lights: [[12, 7, 160]] });
+  },
+  casa_cardenas: () => room('casa_cardenas', 'Casa de Lázaro Cárdenas (museo)', { w: 22, h: 13, floor: G.FLOOR_STONE, wall: '#f3ecdc', band: '#8e2f24', tiles: true,
+    deco: [{ kind: 'sign', x: 3, w: 110, text: 'CASA DONDE VIVIÓ EL GRAL. LÁZARO CÁRDENAS', bg: '#4a3b2a', fg: '#f1dfa8' }, { kind: 'frame', x: 14, color: '#b8a888' }, { kind: 'frame', x: 15.4, color: '#a89878' }, { kind: 'window', x: 18 }],
+    items: [
+      { kind: 'bed', x: 4, y: 5.2, color: '#6b4a30', blanket: '#e8e2d2', w: 30, up: 30, collide: [-12, -20, 24, 20] },
+      { kind: 'vitrina', x: 10, y: 6.4, w: 24, up: 24, collide: [-10, -8, 20, 8], item: '#6b8a3d', interact: 'vitrina_casa1' },
+      { kind: 'vitrina', x: 14, y: 6.4, w: 24, up: 24, collide: [-10, -8, 20, 8], item: '#d9d0c0', interact: 'vitrina_casa2' },
+      table(17, 8.6, { color: '#5b3a22', items: true }),
+      { kind: 'maceta', x: 20, y: 10.5, w: 14, up: 20, seed: 6 },
+      search('baul', 3, 10.4, 'moneda_antigua', { w: 22, up: 18, collide: [-9, -4, 18, 4] }),
+    ], lights: [[11, 6, 150]], dim: 0.1 }),
+  curato: () => room('curato', 'Curato de San Francisco', { w: 16, h: 11, floor: G.FLOOR_WOOD, wall: '#f1e4c4', band: '#a3322a',
+    deco: [{ kind: 'cross', x: 7.5 }, { kind: 'frame', x: 3, color: '#b8a888' }, { kind: 'window', x: 12 }],
+    items: [{ kind: 'bookshelf', x: 3, y: 3.2, fw: 30, w: 34, up: 40, collide: [-15, -5, 30, 5], seed: 31 }, table(8, 6.6, { color: '#5b3a22', items: true }),
+      search('baul', 13, 4, 'carta_1940', { w: 22, up: 18, collide: [-9, -4, 18, 4], acts: [3, 4] })], lights: [[8, 5, 110]] }),
+  palenque: () => room('palenque', 'Palenque del estadio', { w: 24, h: 16, floor: G.DIRT, wall: '#3a2e28', wall2: '#2b221d', band: '#7a2626', dark: 0.35, ambient: 'bar',
+    deco: [{ kind: 'sign', x: 6, w: 100, text: 'PALENQUE · PELEAS DE GALLOS · BAILES', bg: '#7a2626', fg: '#f7e7c0' }, { kind: 'papel', x: 1, n: 12 }],
+    items: [{ kind: 'ruedo', x: 12, y: 9, w: 100, up: 40, collide: [-38, -18, 76, 16], interact: 'palenque_bet' },
+      { kind: 'bench', x: 4, y: 13.4, w: 20, up: 12, collide: [-8, -4, 16, 4] }, { kind: 'bench', x: 20, y: 13.4, w: 20, up: 12, collide: [-8, -4, 16, 4] },
+      counter(21, 4.2, 30, { color: '#5b3a22', shop: 'santo_remedio', interact: 'shopcounter' })],
+    lights: [[12, 8, 160, '#fff2c0']] }),
+  santo_remedio: () => room('santo_remedio', 'El Santo Remedio', { w: 14, h: 10, floor: G.FLOOR_TILE, wall: '#e2d6bc', wall2: '#cfc1a2', band: '#2d2d2d', dark: 0.25, ambient: 'bar',
+    deco: [{ kind: 'sign', x: 2, w: 70, text: 'EL SANTO REMEDIO', bg: '#2d2d2d', fg: '#f2c230' }, { kind: 'tv', x: 10 }],
+    items: [counter(7, 4.6, 70, { color: '#6b4a30', goods: ['#e6c75a', '#b8322a', '#f5f0e6'], shop: 'santo_remedio', interact: 'shopcounter' }),
+      table(3.4, 7.8, { color: '#8a8a8a', items: true }), table(10.6, 7.8, { color: '#8a8a8a', items: true }),
+      { kind: 'trash', x: 12.4, y: 8.6, w: 10, up: 8, seed: 3 }], lights: [[7, 5, 90, '#ffe7a8']] }),
+  ferretuberias: () => room('ferretuberias', 'Ferretuberías', { w: 14, h: 10, floor: G.FLOOR_TILE, wall: '#e8eef2', band: '#1f4b7a',
+    deco: [{ kind: 'sign', x: 2, w: 70, text: 'FERRETUBERÍAS', bg: '#1f4b7a' }],
+    items: [{ kind: 'toolWall', x: 4, y: 3.2, fw: 50, w: 54, up: 34, collide: [-25, -5, 50, 5], seed: 4 }, { kind: 'toolWall', x: 10.5, y: 3.2, fw: 40, w: 44, up: 34, collide: [-20, -5, 40, 5], seed: 9 },
+      counter(7, 6.2, 60, { color: '#8a6a48', shop: 'ferretuberias', interact: 'ferre_counter' })], lights: [[7, 5, 110]] }),
+  reboceria: () => room('reboceria', 'Taller de rebozos de Doña Chuy', { w: 16, h: 11, floor: G.FLOOR_TILE, wall: '#f1e4d0', band: '#5b3f7a',
+    deco: [{ kind: 'window', x: 2 }, { kind: 'frame', x: 7, color: '#b8a888' }, { kind: 'papel', x: 9, n: 6 }],
+    items: [{ kind: 'telar', x: 7, y: 6.4, w: 40, up: 34, collide: [-16, -4, 30, 4], interact: 'telar' }, { kind: 'rebozoRack', x: 12, y: 3.6, w: 40, up: 34, collide: [-16, -3, 32, 3], seed: 5 },
+      { kind: 'baul', x: 3, y: 8.6, w: 22, up: 18, collide: [-9, -4, 18, 4] }, { kind: 'maceta', x: 14.4, y: 9, w: 14, up: 20, seed: 8 }], lights: [[8, 5, 110]] }),
+  casita_piedra: () => room('casita_piedra', 'La Casita de Piedra', { w: 14, h: 10, floor: G.FLOOR_WOOD, wall: '#b8a894', wall2: '#a6957f', band: '#5a3620',
+    deco: [{ kind: 'sign', x: 2, w: 70, text: 'LA CASITA DE PIEDRA · REBOZOS', bg: '#3f2f22', fg: '#efd9a8' }],
+    items: [{ kind: 'rebozoRack', x: 4, y: 3.6, w: 40, up: 34, collide: [-16, -3, 32, 3], seed: 1 }, { kind: 'rebozoRack', x: 10, y: 3.6, w: 40, up: 34, collide: [-16, -3, 32, 3], seed: 2 },
+      counter(7, 6.4, 50, { color: '#6b4a30', goods: ['#2b3f8f', '#5b3f7a', '#8e2f24'], shop: 'rebozos', interact: 'shopcounter' })], lights: [[7, 5, 100, '#ffd9a0']] }),
+});
+
+// Every house in town can be visited: a family home furnished from the lot's seed, with a couple of
+// places to look through (a wardrobe, a trunk, the flower pots…) and the family at home.
+function genericHouse(id) {
+  const [, seedS, surEnc] = id.split('_');
+  const seed = +seedS || 1, surname = decodeURIComponent(surEnc || 'Silva');
+  const r = rngLocal(seed);
+  const w = 12 + Math.floor(r() * 5), h = 10 + Math.floor(r() * 2);
+  const walls = ['#f4eadb', '#f2e3c4', '#e6f0ea', '#f3e0e0', '#e9e6f2', '#f6efd9'];
+  const bands = ['#2f5a4a', '#7d2a22', '#2f4f7a', '#8a5a2e', '#5b3f7a'];
+  const wall = walls[Math.floor(r() * walls.length)], band = bands[Math.floor(r() * bands.length)];
+  const loots = ['pesos', 'pesos', 'lore', 'lore', 'dulces', 'moneda_antigua', 'pan', 'nothing'];
+  const pickLoot = () => loots[Math.floor(r() * loots.length)];
+  const items = [
+    { kind: 'altarCasa', x: 3, y: 2.7, w: 30, up: 40, collide: [-10, -4, 20, 4], interact: 'altar_casa' },
+    table(w / 2, 6.6, { cloth: r() < 0.5 ? '#e8e2d2' : '#d8e8e0', items: true }),
+    { kind: 'bed', x: w - 3, y: 5.2, w: 30, up: 30, blanket: ['#7a2f3a', '#2f5a7a', '#6b8a3d', '#c28a2c'][Math.floor(r() * 4)], collide: [-12, -20, 24, 20] },
+    search('ropero', w - 6.5, 3.4, pickLoot(), { w: 24, up: 40, collide: [-10, -5, 20, 5] }),
+    search('maceta', 1.8, h - 2.8, pickLoot(), { w: 14, up: 20, collide: [-4, -2, 8, 2], seed }),
+  ];
+  if (r() < 0.6) items.push(search('baul', 2.6, 6, pickLoot(), { w: 22, up: 18, collide: [-9, -4, 18, 4] }));
+  if (r() < 0.6) items.push({ kind: 'fridge', x: w - 1.8, y: h - 2.6, brand: 'MABE', color: '#e8e8e8', w: 20, up: 36, collide: [-7, -5, 14, 5] });
+  const m = room(id, `Casa de la familia ${surname}`, { w, h, floor: r() < 0.5 ? G.FLOOR_TILE : G.FLOOR_WOOD, wall, band, tiles: r() < 0.4,
+    deco: [{ kind: 'window', x: 5.5 }, { kind: 'frame', x: 8, color: '#c9b89a' }, ...(r() < 0.5 ? [{ kind: 'tv', x: w - 4.5 }] : [{ kind: 'cross', x: w - 4 }])],
+    rugs: r() < 0.6 ? [{ x: Math.floor(w / 2) - 2, y: 5, w: 4, h: 3, color: '#7a2f3a' }] : [],
+    items, lights: [[w / 2, 5, 120]] });
+  m.residents = { surname, seed, n: 1 + Math.floor(r() * 3) };
+  m.generic = true;
+  return m;
+}
+const SHOP_FOR = { ABARROTES: 'tiendita', TIENDITA: 'tiendita', 'MISCELÁNEA': 'tiendita', 'CREMERÍA': 'tiendita', CARNES: 'carniceria', 'RECAUDERÍA': 'tiendita', 'FRUTERÍA': 'tiendita',
+  FARMACIA: 'farmacia', 'PAPELERÍA': 'papeleria', CIBER: 'papeleria', CELULARES: 'papeleria', NOVEDADES: 'papeleria', REGALOS: 'papeleria', 'MERCERÍA': 'papeleria', 'ÓPTICA': 'papeleria',
+  'FERRETERÍA': 'ferreteria', 'TLAPALERÍA': 'ferreteria', REFACCIONES: 'ferreteria', 'DULCERÍA': 'dulceria', 'PALETERÍA': 'dulceria', PURIFICADORA: 'purificadora',
+  'ESTÉTICA': 'servicios', 'LAVANDERÍA': 'servicios', 'ZAPATERÍA': 'servicios' };
+function genericShop(id) {
+  const [, seedS, signEnc] = id.split('_');
+  const sign = decodeURIComponent(signEnc || 'ABARROTES'), seed = +seedS || 1;
+  const r = rngLocal(seed);
+  const bands = ['#8e2f24', '#2f5d9a', '#2f7a4a', '#7a4a2e', '#b2386b'];
+  const m = shop(id, sign.charAt(0) + sign.slice(1).toLowerCase(), SHOP_FOR[sign] || 'tiendita', '#f1ead8', bands[Math.floor(r() * bands.length)]);
+  m.residents = { surname: null, seed, n: 1, shopkeeper: true, sign };
+  m.generic = true;
+  return m;
+}
+function rngLocal(seed) { let a = seed >>> 0 || 1; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
 export function buildInterior(id) {
   const b = BUILDERS[id];
-  return b ? b() : null;
+  if (b) return b();
+  if (id.startsWith('casa_')) return genericHouse(id);
+  if (id.startsWith('tienda_')) return genericShop(id);
+  return null;
 }
