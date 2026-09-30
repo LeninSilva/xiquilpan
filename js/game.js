@@ -300,6 +300,7 @@ export class Game {
     this.refreshLook();
   }
   gainHilo(npc) {
+    if (!this.flags.mancha) return;
     const name = npc?.def?.short || npc?.def?.name || npc?.name || 'alguien';
     this.state.hilos++; this.state.hiloNames.push(name);
     this.ui.toast(`🧶 Un hilo nuevo para el rebozo: ${name} (${this.state.hilos})`, 'soul');
@@ -522,6 +523,12 @@ export class Game {
     if (!this.frozen) {
       this.npcs.update(dt);
       for (const e of this.effects) e.update?.(dt, this);
+    }
+    this.map.act = this.state.act;
+    // an unpaid debt slowly costs you your word
+    if (this.debtOverdue() && this.state.debtPenaltyDay !== this.clock.dayIndex) {
+      this.state.debtPenaltyDay = this.clock.dayIndex; this.addStat('palabra', -3);
+      this.ui.toast('En el pueblo ya se comenta que no le has pagado a Don Refugio.', 'bad');
     }
     // status effects
     if (this.status.enchilado > 0) { this.status.enchilado = Math.max(0, this.status.enchilado - dt * 0.5); if (this.status.enchilado === 0) this.refreshLook(); }

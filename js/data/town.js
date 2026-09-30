@@ -141,7 +141,7 @@ export function buildTown() {
   // taxi rank by the market & palacio
   sprite(m, 'sitio', 139.5, 81, { scale: 1.2, w: 20, up: 24, collide: [-7, -3, 14, 3], interact: 'sitio', sitio: 'Mercado' });
   area(m, 'Sitio de taxis del Mercado', 136, 76, 4, 10, 'taxi');
-  for (const ty of [77, 79, 83]) sprite(m, 'parkedCar', 138, ty, { color: '#f4f4f0', taxi: '#1b7a3e', flip: true, w: 36, up: 24, collide: [-14, -6, 28, 6] });
+  for (const ty of [77, 79, 83]) sprite(m, 'parkedCar', 138, ty, { color: '#f4f4f0', taxi: '#1b7a3e', flip: true, w: 36, up: 24, collide: [-14, -6, 28, 6], notDays: [6] });
 
   // Templo de las Monjas & the obelisk garden
   m.fill(80, 74, 12, 14, G.PLAZA);
@@ -500,7 +500,7 @@ export function buildTown() {
 // Swap tianguis stalls in/out for the given weekday.
 export function applyWeekday(m, day) {
   if (!m.baseSprites) return;
-  m.sprites = m.baseSprites.concat(m.daySprites?.[day] || []);
+  m.sprites = m.baseSprites.filter(s => !s.notDays || !s.notDays.includes(day)).concat(m.daySprites?.[day] || []);
   m.closed = new Uint8Array(m.w * m.h);
   for (const [x, y, w, h] of (m.closedByDay?.[day] || [])) {
     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (m.inb(i, j)) m.closed[j * m.w + i] = 1;

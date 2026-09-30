@@ -117,6 +117,7 @@ export class GameMap {
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (self.isSolidTile(x, y)) return true;
       const list = self.bucket.get(Math.floor(px / B) + ',' + Math.floor(py / B));
       if (list) for (const c of list) {
+        if (c.s.acts && !c.s.acts.includes(self.act)) continue;
         if (px + hw > c.x0 && px - hw < c.x1 && py + hh > c.y0 && py - hh < c.y1) return true;
       }
       return false;
