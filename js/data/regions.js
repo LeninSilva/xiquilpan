@@ -14,7 +14,7 @@ export function buildCerro() {
     const dx = (x - 40) / 30; e -= dx * dx * 60; // ridge along the middle
     m.elev[y * W + x] = e;
     const n = fbm(x * 0.09, y * 0.09, 17, 3);
-    m.set(x, y, n > 0.6 ? G.FOREST : n < 0.3 ? G.ROCK : G.GRASS);
+    m.set(x, y, n > 0.6 ? G.FOREST : n < 0.2 ? G.ROCK : G.GRASS);
     if (x < 6 || x > W - 7) m.set(x, y, G.SLOPE);
   }
   // steep flanks: impassable slope away from the ridge
@@ -45,7 +45,7 @@ export function buildCerro() {
   // summit: cross, campsite, llano where the lights land
   for (let y = 4; y < 24; y++) for (let x = 28; x < 56; x++) {
     const d = ((x - 42) / 14) ** 2 + ((y - 14) / 10) ** 2;
-    if (d < 1) m.set(x, y, d < 0.5 ? G.GRASS : G.ROCK);
+    if (d < 1) m.set(x, y, G.GRASS);
   }
   sprite(m, 'summitCross', 42, 7, { scale: 1.3, w: 30, up: 60, collide: [-3, -3, 6, 3], interact: 'cruz' });
   area(m, 'La Cruz (cima del cerro)', 28, 4, 28, 20, 'summit');

@@ -13,6 +13,10 @@ export class Renderer {
     this.light = makeCanvas(4, 4);
     this.lctx = this.light.getContext('2d');
     this.rain = [];
+    this.blob = makeCanvas(128, 128);
+    { const b = this.blob.getContext('2d'); const g = b.createRadialGradient(64, 64, 0, 64, 64, 64);
+      g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); b.fillStyle = g; b.fillRect(0, 0, 128, 128); }
+    this.glowCache = new Map();
     this.clouds = [];
     for (let i = 0; i < 7; i++) this.clouds.push({ x: Math.random() * 2000, y: Math.random() * 2000, r: 160 + Math.random() * 220, s: 0.4 + Math.random() * 0.6 });
     this.resize();
@@ -137,6 +141,15 @@ export class Renderer {
     if (game.status && game.status.buzz > 45) { ctx.fillStyle = `rgba(255,200,120,${(game.status.buzz - 45) / 500})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   }
 
+  glowSprite(color) {
+    let c = this.glowCache.get(color);
+    if (c) return c;
+    c = makeCanvas(96, 96); const g2 = c.getContext('2d');
+    const g = g2.createRadialGradient(48, 48, 0, 48, 48, 48); g.addColorStop(0, rgba(color, 1)); g.addColorStop(1, rgba(color, 0));
+    g2.fillStyle = g; g2.fillRect(0, 0, 96, 96);
+    this.glowCache.set(color, c); return c;
+  }
+
   drawPuddles(ctx, map, x0, y0, vw, vh, env) {
     const tx0 = Math.floor(x0 / TILE), ty0 = Math.floor(y0 / TILE);
     ctx.fillStyle = `rgba(120,150,175,${0.28 * env.rainAmt})`;
@@ -168,9 +181,9 @@ export class Renderer {
       const S = this.S;
       for (const c of this.clouds) {
         const cx = ((c.x + game.clock.real * 6 * c.s) % 3000) - x0 - 500, cy = ((c.y + game.clock.real * 2) % 2600) - y0 - 400;
-        const g = ctx.createRadialGradient(cx * S, cy * S, 0, cx * S, cy * S, c.r * S);
-        g.addColorStop(0, `rgba(30,40,60,${0.14 * env.cloud})`); g.addColorStop(1, 'rgba(30,40,60,0)');
-        ctx.fillStyle = g; ctx.fillRect(cx * S - c.r * S, cy * S - c.r * S, c.r * 2 * S, c.r * 2 * S);
+        ctx.globalAlpha = 0.14 * env.cloud;
+        ctx.drawImage(this.glowSprite('#1e283c'), cx * S - c.r * S, cy * S - c.r * S, c.r * 2 * S, c.r * 2 * S);
+        ctx.globalAlpha = 1;
       }
     }
     if (env.overcast) { ctx.fillStyle = `rgba(70,80,100,${env.overcast * 0.22})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
@@ -191,11 +204,10 @@ export class Renderer {
     for (const li of lights) {
       const sx = (li.x - x0) * S, sy = (li.y - y0) * S, r = li.r * S;
       if (sx < -r || sy < -r || sx > l.width + r || sy > l.height + r) continue;
-      const g = lc.createRadialGradient(sx, sy, 0, sx, sy, r);
-      const a = li.power ?? 0.95;
-      g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(0.5, `rgba(0,0,0,${a * 0.55})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-      lc.fillStyle = g; lc.fillRect(sx - r, sy - r, r * 2, r * 2);
+      lc.globalAlpha = li.power ?? 0.95;
+      lc.drawImage(this.blob, sx - r, sy - r, r * 2, r * 2);
     }
+    lc.globalAlpha = 1;
     ctx.drawImage(l, 0, 0, this.canvas.width, this.canvas.height);
     // warm additive glow
     if (dark > 0.25) {
@@ -203,9 +215,9 @@ export class Renderer {
       for (const li of lights) {
         const sx = (li.x - x0) * this.S, sy = (li.y - y0) * this.S, r = li.r * this.S * 0.45;
         if (sx < -r || sy < -r || sx > this.canvas.width + r || sy > this.canvas.height + r) continue;
-        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
-        g.addColorStop(0, rgba(li.color || '#ffd9a0', 0.22 * dark)); g.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = g; ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+        ctx.globalAlpha = 0.22 * dark;
+        ctx.drawImage(this.glowSprite(li.color || '#ffd9a0'), sx - r, sy - r, r * 2, r * 2);
+        ctx.globalAlpha = 1;
       }
       ctx.globalCompositeOperation = 'source-over';
     }

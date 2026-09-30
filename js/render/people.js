@@ -100,7 +100,7 @@ export function drawPerson(ctx, L, dir, frame) {
   const skin = L.enchilado ? mix(L.skin, '#e0463a', 0.35) : L.skin;
   const skinD = shade(skin, -0.18);
   const legTop = -12;
-  const hipW = 4.4 * g;
+  const hipW = 4.4 * g * (side ? 0.78 : 1);
 
   ctx.translate(0, bob);
 
@@ -147,7 +147,11 @@ export function drawPerson(ctx, L, dir, frame) {
 
   // ---- torso ----
   const torsoTop = -24, torsoH = 12.5;
-  const shW = 5.4 * g;
+  if (L.hair === 'long' && dir !== 1 && L.hat !== 'sombrero') { // hair falling behind the shoulders
+    ctx.fillStyle = shade(L.hairColor, -0.25);
+    roundRect(ctx, -6.6, torsoTop - 9.8, 13.2, 17, 3); ctx.fill();
+  }
+  const shW = 5.4 * g * (side ? 0.74 : 1);
   const topC = L.dirty ? mix(L.topColor, '#7a6a55', 0.35) : L.topColor;
   const backArm = () => arm(ctx, L, side ? -1 : -1, swing, true, skin, topC, side, dir, frame);
   if (side) backArm();
@@ -352,12 +356,9 @@ function head(ctx, L, dir, torsoTop, skin, skinD, frame) {
   const R = 7.2;
   // neck
   ctx.fillStyle = skinD; ctx.fillRect(-1.6, torsoTop - 2.4, 3.2, 3);
-  // back hair (behind head)
   const hc = L.hairColor, hcD = shade(hc, -0.25), hcL = shade(hc, 0.22);
-  if (['long', 'braids', 'pigtails'].includes(L.hair) || (L.hair === 'ponytail' && dir !== 0)) {
-    ctx.fillStyle = hcD;
-    if (L.hair === 'long') { roundRect(ctx, -R + 0.5, hy - 2, R * 2 - 1, R + 9, 3); ctx.fill(); }
-  }
+  // long hair seen from behind covers the back (from the front it is drawn before the torso)
+  if (L.hair === 'long' && dir === 1 && L.hat !== 'sombrero') { ctx.fillStyle = hcD; roundRect(ctx, -R + 0.5, hy - 2, R * 2 - 1, R + 9, 3); ctx.fill(); }
   // ears
   ctx.fillStyle = skin;
   if (dir === 0 || dir === 1) { ctx.beginPath(); ctx.ellipse(-R + 0.3, hy + 0.8, 1.3, 1.9, 0, 0, 7); ctx.ellipse(R - 0.3, hy + 0.8, 1.3, 1.9, 0, 0, 7); ctx.fill(); }

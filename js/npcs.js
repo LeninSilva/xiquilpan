@@ -75,6 +75,7 @@ const CROWD = {
   student: (seed) => makeLook(seed, { age: pick(rng(seed), ['kid', 'teen']), backpack: true, top: 'polo', topColor: pick(rng(seed), ['#f5f5f5', '#dfe6e9']), bottomColor: '#1f2d4a' }),
   shopper: (seed) => makeLook(seed, { holds: 'bag' }),
   stroll: (seed) => makeLook(seed, {}),
+  drinker: (seed) => makeLook(seed, { age: 'adult', holds: 'michelada', hat: pick(rng(seed), ['cap', null, 'texana']), top: pick(rng(seed + 2), ['tshirt', 'jersey', 'plaid', 'shirt']) }),
   worker: (seed) => makeLook(seed, { age: 'adult', top: pick(rng(seed), ['tshirt', 'plaid']), hat: pick(rng(seed + 3), ['cap', 'sombrero', null]), holds: pick(rng(seed + 4), [null, 'broom', 'bag']) }),
 };
 
@@ -90,6 +91,7 @@ const POIS = {
   escuela: [[193, 70.5]],
   entrada: [[230, 86.6], [242, 86.6]],
   palmas: [[97.4, 130], [97.4, 160], [88.4, 150], [97.4, 185]],
+  micheladas: [[57.5, 70.6], [164.5, 144.6], [212.5, 128.6], [205, 88.6], [101, 204.6]],
 };
 
 export class NPCManager {
@@ -197,6 +199,7 @@ export class NPCManager {
     if (d === 0 && h >= 8 && h < 13) add('church', 12, [...POIS.santuario, ...POIS.sanfrancisco, ...POIS.monjas, ...POIS.plaza]);
     if (h >= 9 && h < 15) add('shopper', 7, [...POIS.mercado, ...POIS.plaza, ...POIS.paz]);
     if (h >= 9 && h < 18) add('worker', 4, [...POIS.plaza, ...POIS.mercado, ...POIS.palmas, ...POIS.entrada]);
+    if (h >= 13 && h < 23.5) add('drinker', (d === 5 || d === 6) ? 8 : 4, POIS.micheladas);
     let strollers = h >= 17 && h < 22.5 ? 10 : h >= 11 && h < 17 ? 5 : h >= 22.5 || h < 1 ? 2 : 1;
     if (d === 5 && h >= 17) strollers += 16; // Friday nights: the plaza fills up
     if (d === 6 && h >= 17) strollers += 8;
@@ -246,6 +249,7 @@ export class NPCManager {
       const path = findPath(map, tx, ty, px + (R() - 0.5) * 3, py + (R() - 0.5) * 2);
       if (!path) continue;
       npc.path = path; npc.pathI = 1;
+      if (type === 'drinker') { npc.onArrive = () => { npc.behaviour = 'stand'; npc.dir = 0; npc.home = { x: npc.x, y: npc.y }; }; this.crowd.push(npc); this.add(npc); return npc; }
       npc.onArrive = () => { npc.behaviour = R() < 0.5 ? 'stand' : 'wander'; npc.home = { x: npc.x, y: npc.y }; npc.wanderR = 3; npc.wait = 2; setTimeout(() => { if (!npc.talking && R() < 0.6) { const [qx, qy] = pick(R, pois); const p2 = findPath(npc.map, npc.x / TILE, npc.y / TILE, qx, qy); if (p2) { npc.path = p2; npc.pathI = 1; npc.behaviour = 'walk'; } } }, 15000 + R() * 30000); };
       this.crowd.push(npc); this.add(npc);
       return npc;
@@ -261,11 +265,11 @@ export class NPCManager {
     return pick(r, look.female ? f : m);
   }
   crowdRole(type) {
-    return { exercise: 'sale a hacer ejercicio', office: 'trabaja en el Ayuntamiento', church: 'viene de misa', student: 'estudiante', shopper: 'anda de compras', stroll: 'vecino del centro', worker: 'trabajador' }[type] || 'vecino';
+    return { drinker: 'se toma una michelada', exercise: 'sale a hacer ejercicio', office: 'trabaja en el Ayuntamiento', church: 'viene de misa', student: 'estudiante', shopper: 'anda de compras', stroll: 'vecino del centro', worker: 'trabajador' }[type] || 'vecino';
   }
   crowdPersona(type, look) {
     const age = { kid: 'un niño de 9 años', teen: 'un joven de 17 años', adult: 'un adulto de unos 40 años', elder: 'una persona mayor de más de 70 años' }[look.age] || 'un vecino';
-    const what = { exercise: 'que sale a correr o caminar por las mañanas al bosque', office: 'que trabaja en el Ayuntamiento y va con prisa', church: 'que viene de misa, muy arreglado', student: 'que va o viene de la escuela', shopper: 'que anda haciendo el mandado en el mercado o el tianguis', stroll: 'que pasea por la plaza', worker: 'que anda trabajando en la calle' }[type];
+    const what = { drinker: 'que está tomando micheladas con sus amigos afuera del puesto, platicador y alegre', exercise: 'que sale a correr o caminar por las mañanas al bosque', office: 'que trabaja en el Ayuntamiento y va con prisa', church: 'que viene de misa, muy arreglado', student: 'que va o viene de la escuela', shopper: 'que anda haciendo el mandado en el mercado o el tianguis', stroll: 'que pasea por la plaza', worker: 'que anda trabajando en la calle' }[type];
     return `${look.female ? (look.age === 'kid' ? 'Una niña' : 'Una mujer') : 'Un hombre'}, ${age}, de Jiquilpan, ${what}. ${look.phone ? 'Está algo distraído con su celular.' : ''}`;
   }
 

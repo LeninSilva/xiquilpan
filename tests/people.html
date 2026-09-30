@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#e9dcc0}canvas{display:block}</style></head><body><canvas id="c" width="1200" height="820"></canvas>
+<script type="module">
+import { drawPerson, makeLook, PEOPLE_SCALE } from '../js/render/people.js';
+import { NAMED } from '../js/data/npcs.js';
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+const ids = ['abuela', 'miguel', 'tono', 'rosita', 'chuy', 'refugio', 'karla', 'padre', 'lupe', 'guero', 'olga', 'beto'];
+ids.forEach((id, i) => {
+  const def = NAMED.find(n => n.id === id);
+  const L = makeLook(100 + i, def.look); L.body = (def.look.age === 'kid' ? 0.78 : 1) / PEOPLE_SCALE;
+  ctx.save(); ctx.translate((i % 6) * 200 + 30, Math.floor(i / 6) * 400 + 20); ctx.scale(5, 5);
+  drawPerson(ctx, L, i % 3 === 2 ? 2 : 0, i % 4 === 1 ? 'talk' : i % 4 === 3 ? 1 : 'idle');
+  ctx.restore();
+  ctx.font = '14px sans-serif'; ctx.fillText(def.name, (i % 6) * 200 + 40, Math.floor(i / 6) * 400 + 390);
+});
+window.done = true;
+</script></body></html>

@@ -281,11 +281,12 @@ export class UI {
     if (!keys.length) html += '<div class="card" style="grid-column:1/-1"><p>Tu morral está vacío. Por ahí hay palos, trompos perdidos… y tiendas.</p></div>';
     for (const k of keys) {
       const it = ITEMS[k] || { name: k, ico: '❔', desc: '' };
-      html += `<div class="item"><div class="ico">${it.ico}</div><b>${it.name}${inv[k] > 1 ? ' ×' + inv[k] : ''}</b><small>${it.desc}</small>${it.type === 'food' || it.type === 'drink' ? `<button data-use="${k}">Consumir</button>` : ''}${k === 'trompo' && g.quests.done('s_trompo') ? `<button data-spin="1">Bailar</button>` : ''}</div>`;
+      html += `<div class="item"><div class="ico">${it.ico}</div><b>${it.name}${inv[k] > 1 ? ' ×' + inv[k] : ''}</b><small>${it.desc}</small>${it.type === 'food' || it.type === 'drink' ? `<button data-use="${k}">Consumir</button>` : ''}${k === 'trompo' ? `<button data-spin="1">Bailar el trompo</button>` : ''}</div>`;
     }
     html += '</div>';
     t.innerHTML = html;
     t.querySelectorAll('[data-use]').forEach(b => b.addEventListener('click', () => { g.consumeItem(b.dataset.use); this.renderBag(); }));
+    t.querySelectorAll('[data-spin]').forEach(b => b.addEventListener('click', () => { this.closeMenu(); g.spinTrompo(); }));
   }
   renderSelf() {
     const g = this.game, t = $('tab-self'), s = g.stats;

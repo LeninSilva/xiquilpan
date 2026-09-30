@@ -346,6 +346,21 @@ export class Game {
     });
   }
   cutscene(name) { return runCutscene(this, name); }
+  spinTrompo() {
+    const p = this.player, t0 = this.clock.real, x = p.x + [0, 0, -12, 12][p.dir], y = p.y + [10, -6, 2, 2][p.dir];
+    const skill = Math.random() < 0.55;
+    this.effects.push({ map: this.map, x, y, update() {}, draw(ctx, game) {
+      const t = game.clock.real - t0; if (t > 4) { game.effects = game.effects.filter(e => e !== this); return; }
+      const wob = skill ? Math.max(0, t - 3) * 0.6 : t * 0.35;
+      ctx.save(); ctx.translate(this.x, this.y);
+      ctx.fillStyle = 'rgba(20,20,35,0.25)'; ctx.beginPath(); ctx.ellipse(0, 0, 3, 1, 0, 0, 7); ctx.fill();
+      ctx.rotate(Math.sin(t * 9) * wob);
+      ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(-3.5, -6); ctx.lineTo(3.5, -6); ctx.lineTo(0, 0); ctx.fill();
+      ctx.fillStyle = t * 20 % 2 < 1 ? '#f2c230' : '#2f5d9a'; ctx.fillRect(-3.5, -6.8, 7, 1.2);
+      ctx.restore();
+    } });
+    this.ui.toast(skill ? '¡Lo bailaste de uñita! El trompo zumba en el piso.' : 'Se te fue chueco… pero bailó tantito.', skill ? 'good' : '');
+  }
 
   // ---- taxis ------------------------------------------------------------------------
   async taxi(sitioName) {
