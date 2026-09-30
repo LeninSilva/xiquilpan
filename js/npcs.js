@@ -206,6 +206,7 @@ export class NPCManager {
     if (d === 5 && h >= 9 && h < 15) add('shopper', 8, POIS.paz);           // Friday tianguis
     if (d === 6 && h >= 8 && h < 15) add('shopper', 10, [[138, 90], [138, 100], [100, 188], [80, 188]]); // Saturday tianguis
     if (after) strollers = Math.round(strollers * 0.5);
+    if (g.env.rainAmt > 0.4) { strollers = Math.round(strollers * 0.3); for (const p of plan) p.n = Math.round(p.n * 0.4); }
     add('stroll', strollers, [...POIS.plaza, ...POIS.plaza, ...POIS.portal, ...POIS.paz]);
     return plan;
   }

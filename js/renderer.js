@@ -128,6 +128,10 @@ export class Renderer {
       } else it.e.draw(ctx, game);
     }
 
+    // ghost of the player on top, so you never lose them behind the kiosco or a church tower
+    if (game.player && game.player.map === map && !game.player.hidden) {
+      ctx.save(); ctx.globalAlpha = 0.28; game.player.draw(ctx, game); ctx.restore();
+    }
     // overhead effects in world space
     for (const fx of game.effects) if (fx.map === map) fx.draw(ctx, game);
 

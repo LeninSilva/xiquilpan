@@ -27,8 +27,8 @@ export class Person extends Entity {
     const m = this.map;
     const nx = this.x + dx * dt, ny = this.y + dy * dt;
     let moved = false;
-    if (!m.blocked(nx, this.y, 4, 2.5) && !this.bump(nx, this.y, others)) { this.x = nx; moved = true; }
-    if (!m.blocked(this.x, ny, 4, 2.5) && !this.bump(this.x, ny, others)) { this.y = ny; moved = true; }
+    if (dx !== 0 && !m.blocked(nx, this.y, 4, 2.5) && !this.bump(nx, this.y, others)) { this.x = nx; moved = true; }
+    if (dy !== 0 && !m.blocked(this.x, ny, 4, 2.5) && !this.bump(this.x, ny, others)) { this.y = ny; moved = true; }
     return moved;
   }
   bump(x, y, others) {

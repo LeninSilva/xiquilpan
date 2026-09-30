@@ -292,6 +292,10 @@ function arm(ctx, L, sideSign, swing, back, skin, topC, sideView, dir, frame) {
   ctx.lineCap = 'butt';
   if (L.rebozo && !back && !sideView && dir === 0) { ctx.fillStyle = L.rebozo; ctx.fillRect(shX - 1.6, shY, 3.2, 6); }
   hand(ctx, ex, ey + 0.6, back ? shade(skin, -0.12) : skin, sideSign, sideView, dir, ang, back);
+  if (L.stain && sideSign === 1 && !back) { // the añil mark left by the visitor
+    ctx.fillStyle = 'rgba(58,52,190,0.85)'; ctx.beginPath(); ctx.ellipse(ex, ey + 0.6, 1.1, 1.2, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(150,140,255,0.5)'; ctx.beginPath(); ctx.arc(ex - 0.3, ey + 0.3, 0.4, 0, 7); ctx.fill();
+  }
   if (holding) heldItem(ctx, L.holds, ex, ey, sideView, dir);
   if (L.phone && sideSign === 1 && !back) phone(ctx, ex, ey, sideView);
 }
