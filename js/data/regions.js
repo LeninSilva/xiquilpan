@@ -9,7 +9,7 @@ import { addLotDoors } from './town.js';
 // and its little waterfall, the pueblito of San Francisco with its chapel, and the summit with the
 // cross. Only the highest part has pines; below it is oak, huizache, giant magueys, nopales and
 // rocks everywhere, with cows and horses loose on the slopes.
-export const CERRO = { W: 80, H: 140, entry: [40.5, 2.6], camp: [41.5, 120], cross: [42, 129], land: [48, 111], village: [40, 80], tona: [36, 83.6], piedrita: [62, 31], subida: [36, 14] };
+export const CERRO = { W: 80, H: 140, entry: [40.5, 2.6], camp: [41.5, 120], cross: [42, 129], land: [48, 111], village: [40, 94], tona: [37, 92.6], road: [[40, 0], [40, 22], [24, 28], [24, 40], [54, 46], [54, 58], [32, 64], [32, 74], [40, 78], [40, 98], [52, 104], [52, 112], [40, 116]], piedrita: [62, 31], subida: [36, 14] };
 export function buildCerro() {
   const W = CERRO.W, H = CERRO.H;
   const m = new GameMap('cerro', 'Cerro de San Francisco', W, H, { fill: G.GRASS, baseElev: 1620 });
@@ -53,23 +53,33 @@ export function buildCerro() {
   m.setSolid(58, 27, 11, 3);
   area(m, 'La Piedrita', 55, 24, 16, 12, 'nature');
   sprite(m, 'signpost', 44.5, 23, { text: 'LA PIEDRITA →', bg: '#6b4a30', w: 44, up: 30 });
-  // the pueblito of San Francisco
-  for (let y = 70; y < 94; y++) for (let x = 22; x < 58; x++) if (m.get(x, y) !== G.ROCKROAD) m.set(x, y, G.DIRT);
-  building(m, 'capilla', 34, 66, 12, 9, { label: 'SAN FRANCISCO', color: '#f3eee4', tall: 60 });
-  door(m, 40, 74, 'capilla_sf', 'Capilla de San Francisco', { hours: [7, 20] });
-  area(m, 'Pueblito de San Francisco', 22, 64, 36, 30, 'village');
-  m.fill(35, 75, 11, 3, G.PLAZA);
-  const vblocks = [[24, 78, 7, 6], [46, 78, 9, 6], [24, 86, 7, 6], [44, 86, 10, 6], [48, 70, 7, 5]];
-  door(m, 27, 83, 'tienda_cerro', 'Tiendita del cerro', { hours: [7, 20] });
+  // the ranchos along the rocky road: Novoa (near the bottom) and the Salazar (with their horses)
+  for (let y = 5; y < 18; y++) for (let x = 45; x < 58; x++) m.set(x, y, G.DIRT);
+  building(m, 'ranchHouse', 46, 6, 10, 7, { name: 'RANCHO DE NOVOA', tall: 40 });
+  area(m, 'Rancho de Novoa', 45, 5, 13, 13, 'ranch');
+  for (let y = 40; y < 57; y++) for (let x = 11; x < 27; x++) m.set(x, y, G.DIRT);
+  building(m, 'ranchHouse', 12, 41, 11, 8, { name: 'RANCHO DE LOS SALAZAR', tall: 40 });
+  for (const [x, y, w, h] of [[12, 52, 14, 1], [12, 52, 1, 5], [25, 52, 1, 5], [12, 56, 6, 1], [21, 56, 5, 1]]) { m.structures.push({ kind: 'fence', x, y, w, h, layer: 3 }); m.setSolid(x, y, w, h); }
+  area(m, 'Rancho de los Salazar', 11, 40, 16, 17, 'ranch');
+  // the pueblito of San Francisco, near the top, with its chapel and a couple of stores
+  for (let y = 84; y < 108; y++) for (let x = 22; x < 58; x++) if (m.get(x, y) !== G.ROCKROAD) m.set(x, y, G.DIRT);
+  building(m, 'capilla', 34, 80, 12, 9, { label: 'SAN FRANCISCO', color: '#f3eee4', tall: 60 });
+  door(m, 40, 88, 'capilla_sf', 'Capilla de San Francisco', { hours: [7, 20] });
+  area(m, 'Pueblito de San Francisco', 22, 78, 36, 30, 'village');
+  m.fill(35, 89, 11, 3, G.PLAZA);
+  const vblocks = [[24, 92, 7, 6], [46, 92, 9, 6], [24, 100, 7, 6], [44, 100, 10, 6], [48, 84, 7, 5]];
+  door(m, 27, 97, 'tienda_cerro', 'Tiendita del cerro', { hours: [7, 20] });
+  door(m, 50, 97, 'tienda_904_ABARROTES', 'Abarrotes La Cumbre', { hours: [8, 19] });
   for (const [x, y, w, h] of vblocks) { block(m, x, y, w, h, { outskirts: true, facadeH: 28, allHouses: true }); addLotDoors(m, m.structures[m.structures.length - 1]); }
-  sprite(m, 'lamp', 35.5, 77.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 35.5, 77, 80);
-  sprite(m, 'lamp', 45.5, 77.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 45.5, 77, 80);
-  sprite(m, 'signpost', 33, 94.5, { text: 'LA CRUZ ↓', bg: '#6b4a30', w: 40, up: 30 });
+  sprite(m, 'lamp', 35.5, 91.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 35.5, 91, 80);
+  sprite(m, 'lamp', 45.5, 91.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 45.5, 91, 80);
+  sprite(m, 'signpost', 33, 108.5, { text: 'LA CRUZ ↓', bg: '#6b4a30', w: 40, up: 30 });
   // summit plateau: camp, the llano where the lights come down, the cross at the top
   for (let y = 106; y < 136; y++) for (let x = 26; x < 58; x++) {
     const d = ((x - 42) / 15) ** 2 + ((y - 121) / 14) ** 2;
     if (d < 1 && m.get(x, y) !== G.ROCKROAD) m.set(x, y, G.GRASS);
   }
+  sprite(m, 'antenna', 50, 131, { scale: 1.3, w: 30, up: 90, collide: [-6, -3, 12, 3] }); m.lights.push({ x: 50 * TILE, y: 120 * TILE, r: 30, color: '#ff4a3a' });
   sprite(m, 'summitCross', CERRO.cross[0], CERRO.cross[1], { scale: 1.3, w: 30, up: 60, collide: [-3, -3, 6, 3], interact: 'cruz' });
   area(m, 'La Cruz (cima del cerro)', 26, 106, 32, 30, 'summit');
   sprite(m, 'campfire', CERRO.camp[0], CERRO.camp[1], { w: 20, up: 20, collide: [-5, -3, 10, 4], interact: 'fogata', acts: [2] });
@@ -83,6 +93,7 @@ export function buildCerro() {
     const g = m.get(x, y);
     if (g === G.ROCKROAD || g === G.DIRTROAD || g === G.SLOPE || g === G.DIRT || g === G.PLAZA || g === G.ROOF || m.isSolidTile(x, y)) continue;
     if (y > 108 && y < 134 && x > 30 && x < 54) continue;
+    if (((x - 63) / 9) ** 2 + ((y - 31) / 7) ** 2 < 1) continue; // keep La Piedrita open
     if (road2(x, y)) continue;
     const r = hash2(i, 3, 55), high = y > 98;
     if (r < 0.34) tree(m, x + 0.5, y + 0.8, high ? (r < 0.22 ? 'pino' : 'encino') : (r < 0.14 ? 'huizache' : r < 0.26 ? 'encino' : 'fresno'), { size: 0.9 + r });
@@ -99,7 +110,8 @@ export function buildCerro() {
     sprite(m, 'boulder', x + 0.5, y + 0.8, { rid: k, loot: LOOT[k % LOOT.length], size: 1.2, w: 30, up: 22, collide: [-8, -3, 16, 3], interact: 'push' });
   });
   sprite(m, 'signpost', 42.5, 4, { text: 'JIQUILPAN ↑', bg: '#6b4a30', w: 40, up: 30 });
-  m.exits.push({ x: 38, y: 0, w: 5, h: 1, to: 'town', tx: 152, ty: 331, dir: 1, label: 'Bajar a Jiquilpan' });
+  m.exits.push({ x: 38, y: 0, w: 5, h: 1, to: 'town', tx: 2.5, ty: 19.6, dir: 3, label: 'Bajar a Jiquilpan' });
+  m.road = CERRO.road;
   m.spawns = { bottom: { x: CERRO.entry[0], y: CERRO.entry[1] }, entry: { x: CERRO.entry[0], y: CERRO.entry[1] }, summit: { x: 40, y: 117 } };
   m.structures.sort((a, b) => (a.layer || 0) - (b.layer || 0));
   m.finalize();

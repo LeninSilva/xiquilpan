@@ -18,6 +18,8 @@ import { LLM, DEFAULT_MODEL } from './llm.js';
 import { runCutscene } from './cutscene.js';
 import { ITEMS, SHOPS } from './data/items.js';
 import { SPRITES } from './render/landmarks.js';
+import { applyProperties, buildMyHouse, newDay, lotInteract, obraInteract, bizSignInteract, wardrobeInteract, wearOutfit, applyOutfit, relOf, CLOTHES, buyBusiness } from './life.js';
+import { playLoteria, playTortillas } from './minigames.js';
 
 const SAVE_KEY = 'xiq_save', SETTINGS_KEY = 'xiq_settings';
 
@@ -38,6 +40,7 @@ const INFO = {
   cruz: 'La cruz del Cerro de San Francisco. Desde aquí se ve la Ciénega de Chapala, Sahuayo y todo Jiquilpan.',
   altar: 'El altar de la abuela: la Virgen de Guadalupe, veladoras, y fotos de toda la familia. Tu abuelo sale en una con su texana nueva.',
   poster: 'Una hoja descolorida por el sol: “SE BUSCA — Miguel (81), Antonio (77) y su nieto. Vistos por última vez el 1 de octubre rumbo al Cerro de San Francisco. Cualquier informe, al Palacio Municipal.” Tu propia foto te mira desde el poste.',
+  fraile: 'San Francisco de Asís, con el brazo extendido, en el atrio de su parroquia. A su lado, un ciprés que ya estaba aquí cuando los abuelos de los abuelos iban a misa.',
   zaragoza: 'El General Ignacio Zaragoza, vencedor de la batalla de Puebla del 5 de mayo de 1862. El parque que lleva su nombre es la orilla oriente del jardín, frente al Palacio Municipal.',
   galgos: 'Dos perros de caza de hierro fundido, de la casa francesa de Antoine Durenne, como los que adornan parques de París y de la Ciudad de México. Miran al oriente, hacia el Palacio. Los niños se les suben a caballo aunque el policía les chifle.',
   abad: 'Busto de Diego José Abad y García (Jiquilpan, 1727 – Bolonia, 1779), jesuita, poeta y humanista, autor del poema latino “De Deo, Deoque Homine Heroica”. Expulsado con los jesuitas en 1767, murió en Bolonia, Italia; de allá vino este busto, regalo de la ciudad a su pueblo natal.',
@@ -82,7 +85,8 @@ export class Game {
 
   // ---- state -------------------------------------------------------------------
   newState() {
-    this.state = { name: 'Emiliano', money: 150, inventory: {}, act: 1, era: 'before', quests: {}, clues: [], hilos: 0, hiloNames: [], debt: 0, debtSince: null, freeTacos: 0, believers: 0, ending: null, ateToday: -1, prayed: -1 };
+    this.state = { name: 'Emiliano', money: 150, inventory: {}, act: 1, era: 'before', quests: {}, clues: [], hilos: 0, hiloNames: [], debt: 0, debtSince: null, freeTacos: 0, believers: 0, ending: null, ateToday: -1, prayed: -1,
+      rel: {}, properties: [], businesses: [], wardrobe: ['jeans', 'sudadera_anil', 'tenis', 'sin_sombrero', 'corte_normal', 'rasurado'], outfit: {}, lastDay: null, earned: 0, jobDay: -1, loteriaDay: -1 };
     this.flags = {};
     this.stats = { corazon: 0, palabra: 0, fama: 0, panza: 22, talks: 0 };
     this.status = { enchilado: 0, buzz: 0 };
@@ -145,7 +149,7 @@ export class Game {
     if (q.get('autostart') != null) { title.classList.add('hidden'); if (q.get('continue') && this.hasSave()) this.loadGame(); else this.newGame(q.get('autostart') || 'Emiliano', q.has('skipintro')); }
   }
   playerLook() {
-    return makeLook(77, { female: false, age: 'teen', hair: 'short', hairColor: '#2b1f18', top: 'hoodie', topColor: '#3d3a8c', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#f5f5f5', hat: null, beard: null, mustache: false, glasses: false, backpack: true, skin: '#d19f78', extra: { eyeColor: '#2a1c12' } });
+    return makeLook(77, { female: false, age: 'adult', hair: 'short', hairColor: '#2b1f18', top: 'hoodie', topColor: '#3d3a8c', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#f5f5f5', hat: false, beard: null, mustache: false, glasses: false, backpack: true, skin: '#d19f78', extra: { eyeColor: '#2a1c12' } });
   }
   newGame(name, skipIntro) {
     this.newState();
@@ -171,6 +175,8 @@ export class Game {
       this.playing = true; this.ui.showHUD(true);
       this.player.look.hat = d.player.hat || null; if (d.player.capColor) this.player.look.capColor = d.player.capColor;
       if (this.flags.mancha) this.player.look.stain = true;
+      applyOutfit(this);
+      if (this.maps.town) applyProperties(this, this.maps.town);
       this.changeMap(d.player.map || 'town', d.player.x / TILE, d.player.y / TILE, d.player.dir || 0, { instant: true });
       this.ui.toast('Bienvenido de vuelta a Jiquilpan', 'good');
     } catch (e) {
@@ -187,7 +193,8 @@ export class Game {
   getMap(id, lazy) {
     if (this.maps[id]) return this.maps[id];
     let m = null;
-    if (id === 'town') { m = buildTown(); applyWeekday(m, this.clock.weekday); this.lastWeekday = this.clock.weekday; }
+    if (id === 'town') { m = buildTown(); applyWeekday(m, this.clock.weekday); this.lastWeekday = this.clock.weekday; this.maps.town = m; applyProperties(this, m); }
+    else if (id.startsWith('mi_casa_')) m = buildMyHouse(this, id);
     else if (id === 'cerro') m = buildCerro();
     else if (id === 'totolan') m = buildTotolan();
     else if (id === 'abadiano') m = buildAbadiano();
@@ -317,6 +324,7 @@ export class Game {
     if (e.cure === 'enchilado' && this.status.enchilado > 0) { this.status.enchilado = 0; this.ui.toast('Ahhh… ya se te quitó lo enchilado.', 'good'); this.quests.onCure('enchilado'); }
     if (e.cure === 'enchilado_soft' && this.status.enchilado > 0) { this.status.enchilado = Math.max(0, this.status.enchilado - 40); if (!this.status.enchilado) this.quests.onCure('enchilado'); }
     if (e.give) this.giveItemSilent(e.give);
+    if (e.outfit && CLOTHES[e.outfit]) wearOutfit(this, e.outfit);
     if (e.wear) { this.player.look.hat = e.wear; if (e.wear === 'cap') this.player.look.capColor = pick(Math.random, ['#c0392b', '#1f4fa0', '#1b1b1b']); this.ui.toast('¡Te queda bien!', 'good'); }
     if (e.sleep) this.sleep(7);
     if (e.minigame === 'billar') {
@@ -350,9 +358,11 @@ export class Game {
       this.ui.toast(`Fiado: ${name}. “Ahí me paga luego, joven.” (Debes $${this.state.debt})`, '');
     } else if (free) { this.state.freeTacos--; this.ui.toast(`${ico} ${name}: ¡invita la casa!`, 'good'); }
     else {
-      if (this.state.money < price) { this.ui.toast('No te alcanza.', 'bad'); return; }
-      this.state.money -= price; if (price) this.sfx('coin');
-      this.ui.toast(`${ico} ${name} (−$${price})`, '');
+      const r = npc?.def?.id ? relOf(this, npc.def.id) : 0;
+      const pay = r >= 75 ? Math.round(price * 0.8) : r >= 45 ? Math.round(price * 0.9) : price;
+      if (this.state.money < pay) { this.ui.toast('No te alcanza.', 'bad'); return; }
+      this.state.money -= pay; if (pay) this.sfx('coin');
+      this.ui.toast(`${ico} ${name} (−$${pay})${pay < price ? ' · precio de amigo' : ''}`, '');
     }
     if (effect.give) { this.state.inventory[effect.give] = (this.state.inventory[effect.give] || 0) + 1; this.quests.onPickup(effect.give); }
     const e2 = { ...effect }; delete e2.give;
@@ -429,6 +439,29 @@ export class Game {
       'No está Güicho. El chavo de la tienda de al lado grita: “¡Anda en Sahuayo con una muchacha, quién sabe a qué hora vuelva!”',
       'Cerrado por dentro, pero se oye cumbia en el cuarto de atrás. Nadie abre.'])); });
   }
+  buyBusiness(id) { buyBusiness(this, id); }
+  albanilLook() { return this._albLook ||= makeLook(4242, { female: false, age: 'adult', hat: 'cap', capColor: '#f2c230', top: 'tshirt', topColor: '#b0a89a', bottom: 'jeans', mustache: true, girth: 1.1 }); }
+  // Lotería at Doña Lety's table in the plaza (evenings, Friday to Sunday)
+  async loteria() {
+    const h = this.clock.hour, d = this.clock.weekday;
+    if (!(d === 5 || d === 6 || d === 0) || h < 17 || h >= 23) return this.dialog.scene(async dd => { await dd.narrate('La mesa de la lotería. Doña Lety la juega los viernes, sábados y domingos, de las cinco a las once de la noche.'); });
+    if (this.state.money < 10) return this.ui.toast('La tabla cuesta $10.', 'bad');
+    this.state.money -= 10; this.input.enabled = false; this.clock.paused = true;
+    const res = await playLoteria(this, { bet: 10 });
+    this.input.enabled = true; this.clock.paused = false;
+    if (res.win) { this.addMoney(res.prize); this.addStat('fama', 1); this.flags.won_loteria = true; this.quests.onEvent?.('loteria_win'); }
+    this.clock.minutes += 20;
+  }
+  // A shift making tortillas for the Marín family (once a day)
+  async tortillasShift(npc) {
+    if (this.state.jobDay === this.clock.dayIndex) return this.ui.toast('Ya trabajaste hoy en la tortillería. Mañana, de seis a tres.', '');
+    this.state.jobDay = this.clock.dayIndex; this.input.enabled = false; this.clock.paused = true;
+    const res = await playTortillas(this);
+    this.input.enabled = true; this.clock.paused = false; this.clock.minutes += 120;
+    if (res.pay > 0) this.addMoney(res.pay);
+    if (res.good >= 10) this.flags.tortillas_ok = true;
+    return res;
+  }
   sleep(hour) {
     this.transition(() => {
       this.clock.advanceTo(hour);
@@ -458,21 +491,22 @@ export class Game {
   // ---- taxis ------------------------------------------------------------------------
   async taxi(sitioName) {
     const h = this.clock.hour;
-    const driverAt = { Mercado: 'lalo', Biblioteca: 'chuy', Entrada: 'memo' }[sitioName];
+    const driverAt = { Fajardo: 'lalo', Abasolo: 'chuy', Entrada: 'memo' }[sitioName];
     if (driverAt && !this.npcs.named.get(driverAt)) { this.ui.toast('No hay taxis en el sitio ahorita. Vuelve más al rato.', 'bad'); return; }
     const inTown = this.map.id === 'town';
     const dests = inTown ? [
-      { text: 'Al sitio del Mercado — $30', value: ['town', 188, 99, 30] },
-      { text: 'Al sitio de la Biblioteca Gabino Ortiz — $30', value: ['town', 134.5, 142.6, 30] },
+      { text: 'Al sitio de Fajardo (mercado) — $30', value: ['town', 188, 99, 30] },
+      { text: 'Al sitio de Abasolo — $30', value: ['town', 163.5, 128.6, 30] },
+      { text: 'Al Jardín de la Paz — $30', value: ['town', 171, 61, 30] },
       { text: 'A la entrada (OXXO) — $35', value: ['town', 290.5, 171.6, 35] },
       { text: 'Al Bosque Juárez (la Portada) — $35', value: ['town', 194, 253.5, 35] },
       { text: 'A la Casita de Piedra — $40', value: ['town', 29.5, 255, 40] },
-      { text: 'Al camino del Cerro — $40', value: ['town', 152, 320, 40] },
+      { text: 'A la salida al Cerro (por el panteón) — $40', value: ['town', 6, 20, 40] },
       { text: 'A Totolán, Abadiano o Sarabia', value: ['closed', null, null, 0] },
       { text: 'A Sahuayo — $90', value: ['sahuayo', null, null, 90] },
       { text: 'Mejor no', value: null },
     ] : [
-      { text: 'Regresar a Jiquilpan (sitio Gabino Ortiz) — $60', value: ['town', 134.5, 142.6, 60] },
+      { text: 'Regresar a Jiquilpan (sitio de Abasolo) — $60', value: ['town', 163.5, 128.6, 60] },
       { text: 'Mejor no', value: null },
     ];
     const driver = this.npcs.named.get(driverAt) || { name: 'Taxista', role: 'sitio de taxis', look: makeLook(55, { uniform: 'taxi', age: 'adult' }) };
@@ -549,16 +583,21 @@ export class Game {
   }
   promptFor(it) {
     if (!it) return null;
-    if (it.type === 'npc') return `Hablar con ${it.e.def?.short || it.e.def?.name || it.e.name}`;
+    if (it.type === 'npc') return it.e.horse ? 'Acariciar a Lucero' : `Hablar con ${it.e.def?.short || it.e.def?.name || it.e.name}`;
     if (it.type === 'item') return `Recoger: ${ITEMS[it.e.item]?.name || it.e.item}`;
     if (it.type === 'door') return `Entrar: ${it.door.label}`;
     if (it.type === 'sprite') {
       const s = it.s;
-      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
+      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
     }
   }
   async interact(it) {
     if (!it) return;
+    if (it.type === 'npc' && it.e.horse) {
+      if (!this.flags.lucero_follow) { this.flags.lucero_follow = true; it.e.follow = true; this.ui.toast('🐎 Lucero se deja acariciar y te sigue. Llévala con Don Celso Salazar.', 'quest'); this.sfx('clue'); }
+      else this.ui.toast('🐎 Lucero resopla y te empuja con la cabeza: quiere ir a casa.', '');
+      return;
+    }
     if (it.type === 'npc') { this.player.pose = null; await this.dialog.converse(it.e); return; }
     if (it.type === 'item') {
       const e = it.e;
@@ -578,6 +617,11 @@ export class Game {
       case 'shopcounter': return this.openShop(s.shop || 'tiendita');
       case 'kiosco': return this.quests.interactWorld('kiosco');
       case 'search': return this.searchSpot(s);
+      case 'lote': return lotInteract(this, s);
+      case 'obra': return obraInteract(this, s);
+      case 'negocio': return bizSignInteract(this, s);
+      case 'wardrobe': return wardrobeInteract(this);
+      case 'loteria': return this.loteria();
       case 'push': return this.pushRock(s);
       case 'palenque_bet': return this.palenqueBet();
       case 'ferre_counter': return this.ferreCounter(s);
@@ -613,6 +657,7 @@ export class Game {
     if (this.playing && !this.ui.menuOpen && !this.cutsceneActive && !this.dialog.active) this.clock.tick(dt);
     else { this.clock.dt = dt; if (!frozen) this.clock.real += dt; }
     this.env.update(this.clock, dt);
+    if (this.playing && this.state.lastDay !== this.clock.dayIndex) newDay(this);
     if (this.map.id === 'town' && this.clock.weekday !== this.lastWeekday) { this.lastWeekday = this.clock.weekday; applyWeekday(this.map, this.clock.weekday); }
     if (this.playing) this.update(dt);
     else { // title backdrop: slow pan across the plaza

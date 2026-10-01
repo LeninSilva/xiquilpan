@@ -1,6 +1,8 @@
 // Conversations: scripted beats + an always-fresh procedural generator + optional live LLM.
 import { GREET, ADDRESS, CLOSE, TOPICS, TYPED_FALLBACK } from './data/lines.js';
 import { pick, DAYS } from './util.js';
+import { addRel, getRel, relKey, relLevel, giftValue, noteRel } from './life.js';
+import { ITEMS } from './data/items.js';
 
 const r = Math.random;
 
@@ -58,8 +60,6 @@ export class Dialogue {
 
   async menu(npc) {
     const g = this.game, def = npc.def || {};
-    let typedTurns = 0;
-    const history = [];
     for (let guard = 0; guard < 40; guard++) {
       const opts = [];
       for (const q of g.quests.optionsFor(npc)) opts.push(q);
@@ -68,7 +68,7 @@ export class Dialogue {
       if (g.state.act >= 3 && !g.flags['told_' + (def.id || npc.id)] && !def.noCerro) opts.push({ text: 'Contarle lo que pasó en el cerro', tag: 'honest', value: 'cerro' });
       if (g.flags.mancha && !g.flags['hilo_' + (def.id || npc.id) + '_' + g.state.era] && !def.noHilo) opts.push({ text: 'Guardar el celular y escuchar', tag: 'kind', value: 'listen' });
       opts.push({ text: 'Platicar', value: 'chat' });
-      opts.push({ text: g.llm.available ? 'Decir algo… (conversación libre)' : 'Decir algo…', value: 'type' });
+      if (relKey(npc)) opts.push({ text: 'Convivir…', value: 'social' });
       opts.push({ text: 'Adiós', value: 'bye' });
       const c = await this.choose(opts, npc);
       if (!c || c.value === 'bye') {
@@ -79,37 +79,104 @@ export class Dialogue {
       }
       if (c.run) { const res = await c.run(this); if (res === 'end') return; continue; }
       if (c.value === 'shop') { this.ui.hideDialog(); await g.openShop(def.shop, npc); if (!this.active) return; continue; }
-      if (c.value === 'chat') { await this.say(npc, this.topicLine(npc)); continue; }
+      if (c.value === 'chat') { await this.chat(npc); continue; }
+      if (c.value === 'social') { await this.social(npc); continue; }
       if (c.value === 'abuelo') {
         g.flags['asked_' + (def.id || npc.id)] = true;
         const k = def.knows && def.knows.abuelo;
-        if (k) { await this.say(npc, typeof k === 'function' ? k(g) : k); if (def.clue) g.quests.addClue(def.clue); }
+        if (k) { await this.say(npc, typeof k === 'function' ? k(g) : k); if (def.clue) g.quests.addClue(def.clue); noteRel(g, npc, 'Te ayudó a buscar a tu abuelo'); }
         else await this.say(npc, this.fill(pick(r, TOPICS.abuelo_no), npc));
         continue;
       }
       if (c.value === 'cerro') { g.flags['told_' + (def.id || npc.id)] = true; await this.tellCerro(npc); continue; }
       if (c.value === 'listen') { await this.listen(npc); continue; }
-      if (c.value === 'type') {
-        const text = await this.askText(g.llm.available ? `Háblale a ${npc.def?.short || npc.name}…` : 'Escribe algo (p. ej. “¿dónde hay tacos?”)');
-        if (!text) continue;
-        history.push({ role: 'user', content: text });
-        this.ui.dialogSpeaker(npc);
-        let reply = null;
-        if (g.llm.available) {
-          this.ui.dialogThinking();
-          reply = await g.llm.reply(this.systemPrompt(npc), history.slice(-12));
-          if (!reply && g.llm.lastError) g.ui.toast('Conversación libre sin conexión: ' + g.llm.lastError, 'bad');
-        }
-        if (!reply) reply = this.localReply(npc, text);
-        history.push({ role: 'assistant', content: reply });
-        await this.say(npc, reply);
-        typedTurns++;
-        if (typedTurns >= 3 && g.flags.mancha && !g.flags['hilo_' + (def.id || npc.id) + '_' + g.state.era]) {
-          g.flags['hilo_' + (def.id || npc.id) + '_' + g.state.era] = true;
-          g.gainHilo(npc);
-        }
-        continue;
-      }
+    }
+  }
+
+  // ---- closed conversation: what they say, and how you answer shapes who you are -------------------
+  async chat(npc) {
+    const g = this.game, def = npc.def || {};
+    let line = null;
+    if (g.llm.available && !def.crowd) {
+      this.ui.dialogSpeaker(npc); this.ui.dialogThinking();
+      line = await g.llm.reply(this.systemPrompt(npc), [{ role: 'user', content: '(El muchacho se acerca a platicar contigo. Dile una sola cosa natural, de una o dos oraciones, según tu personaje y el momento.)' }]);
+    }
+    await this.say(npc, line || this.topicLine(npc));
+    const opts = [
+      { text: pick(r, REPLY.kind), tag: 'kind', value: 'kind' },
+      { text: pick(r, REPLY.funny), tag: 'funny', value: 'funny' },
+      { text: pick(r, REPLY.honest), tag: 'honest', value: 'honest' },
+      { text: pick(r, REPLY.mean), tag: 'mean', value: 'mean' },
+    ];
+    const c = await this.choose(opts, npc);
+    const key = relKey(npc), rel = key ? getRel(g, key) : null, first = rel && rel.day !== g.clock.dayIndex;
+    if (rel) rel.day = g.clock.dayIndex;
+    g.stats.style = g.stats.style || { kind: 0, funny: 0, honest: 0, mean: 0 };
+    g.stats.style[c.value]++;
+    const likesJokes = (def.persona || '').match(/bromista|chist|platicad|alegre|burl|coquet/i);
+    if (c.value === 'kind') { g.addStat('corazon', 1); addRel(g, npc, first ? 4 : 1); await this.say(npc, pick(r, REACT.kind)); }
+    else if (c.value === 'funny') { const ok = likesJokes || r() < 0.65; g.addStat('fama', ok ? 1 : 0); addRel(g, npc, ok ? (first ? 4 : 2) : -2); await this.say(npc, pick(r, ok ? REACT.funny : REACT.flat)); }
+    else if (c.value === 'honest') { g.addStat('palabra', 1); addRel(g, npc, first ? 3 : 1); await this.say(npc, pick(r, REACT.honest)); }
+    else { g.addStat('corazon', -2); addRel(g, npc, -5); await this.say(npc, pick(r, REACT.mean)); }
+  }
+
+  async social(npc) {
+    const g = this.game, def = npc.def || {}, key = relKey(npc), rel = getRel(g, key), today = g.clock.dayIndex;
+    const name = def.short || def.name || npc.name;
+    const opts = [];
+    if (rel.comp !== today) opts.push({ text: 'Hacerle un cumplido', tag: 'kind', value: 'comp' });
+    if (rel.joke !== today) opts.push({ text: 'Echarle carrilla (burlarte tantito)', tag: 'mean', value: 'tease' });
+    const gifts = Object.keys(g.state.inventory).filter(k => g.state.inventory[k] > 0 && giftValue(def, k) !== null);
+    if (gifts.length) opts.push({ text: 'Darle un regalo', tag: 'kind', value: 'gift' });
+    if (rel.v >= 45 && rel.favor !== today) opts.push({ text: 'Pedirle un favor de amigos', tag: 'quest', value: 'favor' });
+    if (def.romance && !rel.novios && rel.v >= 30 && rel.date !== today) opts.push({ text: `Invitar a ${name} a dar la vuelta a la plaza`, tag: 'kind', value: 'date' });
+    if (def.romance && !rel.novios && rel.v >= 75) opts.push({ text: `Pedirle a ${name} que sea tu ${npc.look?.female ? 'novia' : 'novio'}`, tag: 'honest', value: 'ask' });
+    if (def.politico) opts.push({ text: 'Pedirle que arregle los baches de la calle', tag: 'honest', value: 'baches' });
+    opts.push({ text: 'Nada, olvídalo', value: null });
+    const c = await this.choose(opts, npc);
+    if (!c.value) return;
+    if (c.value === 'comp') {
+      rel.comp = today; g.addStat('corazon', 1);
+      const ok = r() < 0.85; addRel(g, npc, ok ? 5 : 1);
+      await this.say({ name: g.state.name, look: g.player.look }, pick(r, COMPLIMENTS));
+      await this.say(npc, pick(r, ok ? REACT.compliment : REACT.flat));
+    } else if (c.value === 'tease') {
+      rel.joke = today; g.addStat('fama', 1); g.addStat('corazon', -1);
+      const takes = (def.persona || '').match(/bromista|burl|chist/i) && r() < 0.6;
+      addRel(g, npc, takes ? 2 : -6);
+      await this.say({ name: g.state.name, look: g.player.look }, pick(r, TEASES));
+      await this.say(npc, pick(r, takes ? REACT.tease_ok : REACT.tease_bad));
+    } else if (c.value === 'gift') {
+      const gc = await this.choose(gifts.map(k => ({ text: `${ITEMS[k].ico} ${ITEMS[k].name}`, value: k })).concat([{ text: 'Mejor no', value: null }]), npc);
+      if (!gc.value) return;
+      g.takeItem(gc.value);
+      let v = giftValue(def, gc.value); if (rel.gift === today) v = Math.round(v / 3);
+      rel.gift = today; addRel(g, npc, v); g.addStat('corazon', 2);
+      if (v >= 12) noteRel(g, npc, `Le encantó tu regalo: ${ITEMS[gc.value].name.toLowerCase()}`);
+      await this.say(npc, pick(r, v >= 12 ? REACT.gift_love : v > 0 ? REACT.gift_ok : REACT.gift_bad));
+    } else if (c.value === 'favor') {
+      rel.favor = today;
+      if (def.shop) { await this.say(npc, pick(r, ['Para ti, lo que quieras de aquí te lo dejo a precio de amigo. Y hoy, esto va por mi cuenta.', 'Ándale, llévate esto. No me lo pagues; nomás no le digas a nadie.'])); const e = (await import('./data/items.js')).SHOPS[def.shop]?.items?.[0]; if (e) { const eff = { ...e[4] }; if (eff.give) g.giveItem(eff.give); else g.applyEffect(eff); } }
+      else if (npc.look?.age === 'elder') { const n = 20 + Math.floor(r() * 4) * 10; await this.say(npc, `Ten, mijo, para tus tacos. No me digas que no, que me ofendo.`); g.addMoney(n); }
+      else await this.say(npc, pick(r, SECRETS));
+      noteRel(g, npc, 'Te hizo un favor de amigos');
+    } else if (c.value === 'date') {
+      rel.date = today;
+      const h = g.clock.hour, nice = h >= 17 && h < 22;
+      await this.narrate(nice ? `Dan la vuelta a la plaza con ${name}, como se hacía antes: despacio, alrededor del kiosco, con una nieve del portal. Nadie saca el celular.` : `Caminan un rato con ${name}. Hace calor y hay mucho ruido, pero platican a gusto.`);
+      addRel(g, npc, nice ? 8 : 4); g.addStat('corazon', 1);
+      await this.say(npc, pick(r, REACT.date));
+      g.clock.minutes += 40;
+    } else if (c.value === 'ask') {
+      const other = Object.entries(g.state.rel || {}).find(([k, v]) => v.novios && k !== key);
+      if (other) { g.state.rel[other[0]].v -= 40; g.state.rel[other[0]].novios = false; g.addStat('fama', -6); g.ui.toast('En Jiquilpan todo se sabe: tu otra relación se terminó.', 'bad'); }
+      rel.novios = true; addRel(g, npc, 6, true); g.addStat('fama', 3);
+      await this.say(npc, pick(r, ['…¿De veras? Sí. Sí quiero. Pero me vas a llevar a misa el domingo y a comer birria con mi familia, ¿eh?', 'Ay, ya te habías tardado. Sí. Y que se entere todo el pueblo.']));
+      g.ui.toast(`💞 ${name} y tú ya son novios`, 'good');
+    } else if (c.value === 'baches') {
+      g.flags.asked_politico = (g.flags.asked_politico || 0) + 1;
+      await this.say(npc, pick(r, POLITICO));
+      g.quests.onEvent?.('politico');
     }
   }
 
@@ -276,3 +343,29 @@ ${knows ? 'Lo que tu personaje sabe:\n' + knows : ''}
 Estilo: español mexicano natural de la región (Michoacán), cálido y con modismos locales sin caricaturizar. Responde SIEMPRE en personaje, en 1 a 3 frases (máximo 60 palabras), sin narración entre asteriscos, sin listas y sin mencionar que eres una IA o un juego. Si te preguntan algo que tu personaje no sabría, dilo con naturalidad. Cada respuesta debe sentirse nueva y específica a este momento.`;
   }
 }
+
+// Answers you can give, and how people react to them
+const REPLY = {
+  kind: ['Qué bonito lo que dice. Gracias por contarme.', 'Usted siempre tan amable, de veras.', 'Me alegra verlo bien. ¿Y la familia?', 'Cuente conmigo para lo que se ofrezca.'],
+  funny: ['¡Ah, chirrión! Eso ni mi tío Toño se lo cree.', 'Jaja, con razón dicen que en Jiquilpan no hay noticias: hay chismes.', 'Si eso pasa en Sahuayo, ya lo estarían vendiendo.', 'Pues mientras no sea la salsa de Don Chon, todo bien.'],
+  honest: ['Le voy a ser sincero: no estoy tan seguro.', 'La verdad, yo lo veo de otro modo.', 'Mire, yo nomás digo lo que vi.', 'No sé mucho de eso, pero me gustaría aprender.'],
+  mean: ['Ajá… ¿y a mí qué?', 'Ya me aburrió con eso.', 'Pues allá usted.', 'Qué chismoso me salió.'],
+};
+const REACT = {
+  kind: ['Ay, gracias, muchacho. Da gusto platicar con alguien educado.', 'Qué buena gente eres. Se nota de qué familia vienes.', 'Bien, gracias a Dios. Saludos a tu abuela.'],
+  funny: ['¡Jajaja! Ay, qué ocurrente.', 'Jaja, ¡no te pases! Pero sí, eh.', '¡Jajaja! Eso se lo voy a contar a mi señora.'],
+  flat: ['…Mmm. Bueno.', 'Ajá. Ok.', 'No le entendí, pero bueno.'],
+  honest: ['Eso me gusta: alguien que dice las cosas derechas.', 'Tienes razón. A veces uno habla de más.', 'Pues fíjate que sí. Gracias por la franqueza.'],
+  mean: ['Oye, oye. ¿Así te enseñaron en tu casa?', '…Ándale pues. Que te vaya bien.', 'Mira nomás qué modos.'],
+  compliment: ['¡Ay, no exageres! …Pero gracias.', 'Uy, me chuleaste el día.', 'Jaja, ya, ya. Me vas a hacer sonrojar.'],
+  tease_ok: ['¡Jajaja! Sí, ya sé, ya sé. Tú tampoco te salvas.', 'Uy, cuidado, que yo también sé cosas de ti, eh.'],
+  tease_bad: ['No me parece chistoso.', 'Ah, ¿sí? Qué bonito. Ya veremos quién se ríe.', 'Pues mira, si vas a estar de payaso, mejor vete.'],
+  gift_love: ['¡No me digas! ¿Es para mí? Ay, ¿cómo supiste? Me encanta.', '¡Qué detallazo! Esto no se me olvida.'],
+  gift_ok: ['Gracias, muchacho. Qué amable.', 'Ah, mira. Gracias, eh.'],
+  gift_bad: ['…Gracias, supongo. No es lo mío.', 'Mmm, bueno. Se lo voy a dar a alguien más.'],
+  date: ['Hace mucho que nadie me invitaba a dar la vuelta, como antes.', 'Me la pasé bien. ¿Repetimos el viernes?', 'Me gustó platicar sin prisas. Gracias.'],
+};
+const COMPLIMENTS = ['Qué bien se ve hoy, eh.', 'Usted es de lo mejor de este pueblo, de veras.', 'Siempre que paso por aquí me alegra el día.', 'Qué bonito le quedó eso.'];
+const TEASES = ['¿Y esa cara? ¿Le fue mal en el palenque?', 'Oiga, ¿y ese corte? ¿Se lo hizo en Sahuayo?', 'Ya hasta parece de Sahuayo, nomás le falta vender algo.', '¿Otra vez aquí? Ya nomás le falta una banca con su nombre.'];
+const SECRETS = ['Te digo algo, pero no lo andes contando: en el cerro, debajo de las piedras grandes, a veces la gente encuentra puntas de flecha. Mueve las piedras, a ver.', 'Si quieres ganar algo de dinero, Rubén Marín siempre necesita manos en la tortillería, en la mañana.', 'La lotería de Doña Lety, los viernes en la noche: el que se fija, gana.', 'Hay terrenos en venta junto al estadio. Barato no es, pero dicen que va a subir.', 'Güicho, el de Ferretuberías, casi nunca está. Si lo encuentras de buenas, te fía lo que sea.'];
+const POLITICO = ['Claro que sí, joven. Ya lo tenemos contemplado en el presupuesto. Para el próximo año, si Dios quiere.', 'Lo voy a subir al Cabildo. Usted no se preocupe: aquí trabajamos por el pueblo. (Te da una tarjeta con su foto.)', '¡Excelente propuesta! Hay que formar una comisión para analizarlo. Venga la otra semana.', 'Mire, eso le toca a Obras Públicas. Y Obras Públicas… pues está de vacaciones.'];

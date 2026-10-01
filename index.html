@@ -30,7 +30,7 @@
       <div class="pill money"><span class="peso">$</span><span id="moneyText">150</span></div>
       <button id="btnMenu" class="round" aria-label="Menú">☰</button>
     </div>
-    <div id="questTracker" class="tracker"></div>
+    <div id="questTracker" class="tracker" role="status"></div>
     <div id="compass" class="compass"><div id="compassNeedle"></div></div>
   </div>
 
@@ -53,10 +53,7 @@
         <div class="dlg-name"><span id="dlgName"></span><span id="dlgRole"></span></div>
         <div id="dlgText" class="dlg-text"></div>
         <div id="dlgChoices" class="dlg-choices"></div>
-        <form id="dlgAsk" class="dlg-ask hidden" autocomplete="off">
-          <input id="dlgInput" type="text" maxlength="200" placeholder="Di algo…" enterkeyhint="send">
-          <button type="submit">Decir</button>
-        </form>
+        <form id="dlgAsk" class="dlg-ask hidden" autocomplete="off"><input id="dlgInput" type="text" maxlength="200"><button type="submit">OK</button></form>
       </div>
       <div id="dlgNext" class="dlg-next">▾</div>
     </div>
@@ -71,11 +68,13 @@
   <div id="menu" class="menu hidden">
     <div class="menu-top">
       <div class="tabs" id="menuTabs">
-        <button data-tab="map" class="on">Mapa</button>
-        <button data-tab="journal">Diario</button>
-        <button data-tab="bag">Morral</button>
-        <button data-tab="self">Yo</button>
-        <button data-tab="settings">Ajustes</button>
+        <button data-tab="map" class="on"><span class="ti">🗺️</span>Mapa</button>
+        <button data-tab="journal"><span class="ti">📜</span>Misiones</button>
+        <button data-tab="people"><span class="ti">🫂</span>Gente</button>
+        <button data-tab="bag"><span class="ti">🎒</span>Morral</button>
+        <button data-tab="self"><span class="ti">🙂</span>Yo</button>
+        <button data-tab="props"><span class="ti">🏠</span>Propiedades</button>
+        <button data-tab="settings"><span class="ti">⚙️</span>Ajustes</button>
       </div>
       <button id="menuClose" class="round" aria-label="Cerrar">✕</button>
     </div>
@@ -86,7 +85,9 @@
       </section>
       <section id="tab-journal" class="tab"></section>
       <section id="tab-bag" class="tab"></section>
+      <section id="tab-people" class="tab"></section>
       <section id="tab-self" class="tab"></section>
+      <section id="tab-props" class="tab"></section>
       <section id="tab-settings" class="tab"></section>
     </div>
   </div>

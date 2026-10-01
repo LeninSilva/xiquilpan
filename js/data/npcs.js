@@ -9,7 +9,7 @@ const WKND = [0, 6];
 export const NAMED = [
   // --- family ------------------------------------------------------------
   {
-    id: 'abuela', name: 'Abuela Chayo', short: 'la abuela', role: 'tu abuela', noHilo: false,
+    id: 'abuela', name: 'Abuela Chayo', short: 'la abuela', role: 'tu abuela', noHilo: false, likes: ['chiles', 'ramo', 'pan'],
     look: { female: true, age: 'elder', hair: 'bun', hairColor: '#d9d4cc', top: 'blouse', topColor: '#8e6fae', bottom: 'longskirt', bottomColor: '#3b3350', rebozo: '#2f5d7a', glasses: true, apron: true, embroidery: '#e84a6a' },
     family: true,
     quirks: ['¡Mijo! ¿Ya comiste?', '¡Ay, mijo, qué bueno que llegas!', 'Ven acá, déjame verte.', '¿Y ahora qué traes, mijo?'],
@@ -37,7 +37,7 @@ export const NAMED = [
     noCerro: true,
   },
   {
-    id: 'tono', name: 'Don Toño', short: 'Don Toño', role: 'hermano de tu abuelo', acts: [2, 3, 4, 5],
+    id: 'tono', name: 'Don Toño', short: 'Don Toño', role: 'hermano de tu abuelo', acts: [2, 3, 4, 5], likes: ['mezcal'],
     look: { age: 'elder', hair: 'bald', hairColor: '#9a948c', mustache: true, beard: 'stubble', hat: 'sombrero', top: 'shirt', topColor: '#d8cfa8', bottom: 'pants', bottomColor: '#5b4a36', shoes: 'boots', girth: 1.2, holds: 'rifle' },
     family: true,
     quirks: ['¡Quihubo, sobrino!', '¡Ey, tú! Ven pa’cá.', 'Ah, mira nomás quién viene.'],
@@ -52,7 +52,7 @@ export const NAMED = [
   },
   // --- the plaza ---------------------------------------------------------------
   {
-    id: 'rosita', name: 'Rosita', role: 'vende café de olla en la plaza', shop: 'rosita', clue: 'rosita',
+    id: 'rosita', name: 'Rosita', role: 'vende café de olla en la plaza', shop: 'rosita', clue: 'rosita', likes: ['pan', 'ramo'],
     look: { female: true, age: 'adult', hair: 'braids', hairColor: '#2b1f18', top: 'bordado', topColor: '#f7f3ea', bottom: 'longskirt', bottomColor: '#6b2a3a', rebozo: '#7a2f3a', apron: true, embroidery: '#2fb3a0', girth: 1.1 },
     persona: 'Rosita, 52 años, vende café de olla, atole y pan de nata en el Jardín Zaragoza desde hace veinte años, desde las 6:30 am. Platicadora, madrugadora, de risa fácil. Le duele que La Cochera le quite clientes con su café caro.',
     knows: { abuelo: 'Su abuelo pasó el lunes antes de que saliera el sol. Llenó un termo con dos cafés y me dijo: “Vamos al cerro, Rosita, a ver si ahora sí bajan.” Don Toño iba con su rifle. Yo pensé que hablaban de venados.' },
@@ -79,7 +79,7 @@ export const NAMED = [
     sched: [{ h: [17, 22.5], map: 'town', at: [121.6, 110.6], act: 'vend', dir: 0, prop: { kind: 'cart', cartKind: 'churros', color: '#f2c230', sign: 'CHURROS', dx: 0, dy: -0.9 } }],
   },
   {
-    id: 'lety', name: 'Doña Lety', role: 'vende gelatinas con rompope', shop: 'gelatinas',
+    id: 'lety', name: 'Doña Lety', role: 'vende gelatinas con rompope', shop: 'gelatinas', likes: ['ramo'],
     look: { female: true, age: 'elder', hair: 'short_f', top: 'blouse', topColor: '#f7c6d9', bottom: 'skirt', bottomColor: '#5b2c2c', apron: true, glasses: true },
     persona: 'Doña Lety, 66 años, vende gelatinas de rompope y mosaico en la plaza al atardecer. Dulce, religiosa, le encanta aconsejar a los jóvenes sobre el amor.',
     sched: [{ h: [17, 22], map: 'town', at: [117.8, 110.6], act: 'vend', dir: 0, prop: { kind: 'cart', cartKind: 'gelatinas', color: '#e0457b', sign: 'GELATINAS', dx: 0, dy: -0.9 } }],
@@ -101,7 +101,7 @@ export const NAMED = [
     id: 'guero_tio', name: 'El Güero (el tío)', short: 'el tío del Güero', role: 'taquero del Jardín de la Paz', shop: 'taco_guero_salsa',
     look: { age: 'elder', skin: '#f1c8a6', hairColor: '#d9d4cc', hair: 'slick', top: 'guayabera', topColor: '#f5f0e6', bottom: 'pants', apron: true, mustache: true, girth: 1.2 },
     persona: 'El tío del Güero, 67 años; fundó el primer puesto "El Güero" hace treinta años. Sus tacos son buenos pero su salsa roja es aguada y él lo sabe; le duele que sus sobrinos lo superaran.',
-    sched: [{ h: [19, 23], map: 'town', at: [219.5, 161.0], act: 'vend', dir: 0, prop: { kind: 'cart', cartKind: 'tacos', color: '#c9ccd0', sign: 'EL GÜERO ORIG.', dx: 0, dy: -0.8 } }],
+    sched: [{ h: [19, 23], map: 'town', at: [164, 59.2], act: 'vend', dir: 0, prop: { kind: 'cart', cartKind: 'tacos', color: '#c9ccd0', sign: 'EL GÜERO ORIG.', dx: 0, dy: -0.8 } }],
   },
   {
     id: 'mary', name: 'Doña Mary', role: 'taquera de la Fuente de los Pescados', shop: 'taco_pescados',
@@ -124,14 +124,14 @@ export const NAMED = [
   },
   // --- taxis ----------------------------------------------------------------
   {
-    id: 'chuy', name: 'Chuy', role: 'taxista del sitio Gabino Ortiz', clue: 'chuy', taxi: true,
+    id: 'chuy', name: 'Chuy', role: 'taxista del sitio de la calle Abasolo', clue: 'chuy', taxi: true,
     look: { age: 'adult', hat: 'cap', top: 'polo', topColor: '#1b7a3e', bottom: 'jeans', uniform: 'taxi', mustache: true, girth: 1.15 },
     persona: 'Chuy, 50 años, taxista del sitio frente a la Biblioteca Gabino Ortiz; conoce cada bache del pueblo, escucha la radio, habla de fútbol y de política municipal.',
     knows: { abuelo: 'El lunes a las cinco de la mañana me tocó llevarlos al inicio de la brecha del cerro. Don Toño con su rifle y su botella, y su abuelo muy serio viendo para arriba. Me dijo: “Si no bajamos el miércoles, no te preocupes.” ¿Ya es jueves, verdad?' },
-    sched: [{ h: [7, 21], map: 'town', at: [137.2, 140.7], act: 'stand', dir: 0 }],
+    sched: [{ h: [7, 21], map: 'town', at: [160.8, 127.6], act: 'stand', dir: 0 }],
   },
   {
-    id: 'lalo', name: 'Lalo', role: 'taxista del sitio del Mercado', taxi: true,
+    id: 'lalo', name: 'Lalo', role: 'taxista del sitio de la calle Fajardo (junto al mercado)', taxi: true,
     look: { age: 'adult', top: 'polo', topColor: '#1b7a3e', bottom: 'jeans', uniform: 'taxi', hair: 'slick', glasses: true },
     persona: 'Lalo, 33 años, taxista del sitio del mercado junto al Palacio Municipal; joven, platicador, siempre con el celular, sueña con irse a Guadalajara.',
     sched: [{ h: [8, 22], map: 'town', at: [189.4, 101.5], act: 'phone', dir: 0 }],
@@ -196,8 +196,12 @@ export const NAMED = [
     look: { age: 'adult', hair: 'slick', hairColor: '#1b1410', mustache: true, top: 'shirt', topColor: '#1f4b7a', bottom: 'jeans', shoes: 'boots', chain: true },
     persona: 'Luis "Güicho", 46 años, dueño de Ferretuberías; casi nunca está en su negocio porque anda de fiesta o paseando con alguna muchacha, pero cuando abre se le llena de clientes porque tiene de todo y fía. Coqueto, simpático, irresponsable, generoso.',
     lines: ['¡Pásele, pásele! Hoy sí abrí, no se acostumbre.', 'Si no lo tengo, se lo consigo. Mañana. O pasado.'],
-    sched: [{ d: WEEK, h: [9, 13], map: 'ferretuberias', at: [7, 5.0], act: 'stand' }],
-    when: (g) => (g.clock.dayIndex * 7 + g.clock.weekday) % 3 !== 0,
+    likes: ['mezcal', 'ramo'],
+    sched: [
+      { d: WEEK, h: [9, 13], map: 'ferretuberias', at: [7, 5.0], act: 'stand', when: (g) => (g.clock.dayIndex * 7 + g.clock.weekday) % 3 !== 0 },
+      { h: [14, 24], map: 'santo_remedio', at: [3.4, 6.8], act: 'stand', when: (g) => g.quests.started('s_guicho') && !g.quests.done('s_guicho') },
+      { h: [9, 14], map: 'town', at: [247.6, 173.4], act: 'stand', when: (g) => g.quests.started('s_guicho') && !g.quests.done('s_guicho') },
+    ],
   },
   {
     id: 'gallero', name: 'Don Cirilo', role: 'gallero (entrenador de gallos) de Cotija',
@@ -218,6 +222,54 @@ export const NAMED = [
     look: { female: true, age: 'adult', apron: true, hair: 'bun', girth: 1.15 },
     persona: 'Doña Chencha, 52 años, esposa de Don Chencho; pone el otro cazo los fines de semana en Fajardo y 5 de Mayo, frente al atrio de San Francisco, para agarrar a la gente que sale de misa.',
     sched: [{ d: WKND, h: [8, 14], map: 'town', at: [189.2, 143.5], act: 'vend', dir: 0 }],
+  },
+  // --- the Ayuntamiento: the (very rarely seen) Presidente and the regidores of every party ---------
+  {
+    id: 'presidente', name: 'Lic. Aurelio Farías', short: 'el Presidente', role: 'Presidente Municipal', politico: true, noHilo: true,
+    look: { age: 'adult', hair: 'slick', hairColor: '#2b1f18', mustache: true, top: 'shirt', topColor: '#f5f5f5', bottom: 'pants', bottomColor: '#2d3436', shoes: 'shoes', shoeColor: '#1b1b1b', girth: 1.75, tie: true },
+    persona: 'El Lic. Aurelio Farías, 58 años, Presidente Municipal de Jiquilpan. Muy gordo, muy sonriente, casi nunca está en el Ayuntamiento: anda "en gira" o en Morelia. Promete todo y no cumple nada. Habla en frases de campaña. El pueblo hace chistes de él.',
+    lines: ['¡Jiquilpan avanza! Y usted, joven, es el futuro.', 'Ya vamos a tapar todos los baches. En el próximo trienio.', 'Mi puerta siempre está abierta. Nomás que yo casi nunca estoy.'],
+    sched: [{ d: [1], h: [10, 12], map: 'palacio', at: [13, 4.4], act: 'stand' }, { d: [5], h: [19, 21], map: 'town', at: [126, 94.6], act: 'stand', dir: 0, when: (g) => g.clock.dayIndex % 3 === 0 }],
+  },
+  { id: 'reg_morena', name: 'Regidora Lucía Zepeda', short: 'la regidora de Morena', role: 'regidora (Morena)', politico: true, noHilo: true,
+    look: { female: true, age: 'adult', hair: 'bun', top: 'blouse', topColor: '#7a1f2b', bottom: 'pants', glasses: true },
+    persona: 'Lucía Zepeda, regidora de Morena: habla de "la transformación" y de "los de antes", toma notas de todo y no resuelve nada.',
+    lines: ['Eso es herencia de los gobiernos anteriores, joven.', 'Lo vamos a revisar con mucho cuidado, con el pueblo.'],
+    sched: [{ d: [2, 4], h: [10, 12], map: 'palacio', at: [6, 7], act: 'stand', when: (g) => g.clock.dayIndex % 2 === 0 }] },
+  { id: 'reg_pan', name: 'Regidor Fernando Arteaga', short: 'el regidor del PAN', role: 'regidor (PAN)', politico: true, noHilo: true,
+    look: { age: 'adult', hair: 'short', top: 'polo', topColor: '#1f4fa0', bottom: 'pants', bottomColor: '#6b5a45', glasses: true },
+    persona: 'Fernando Arteaga, regidor del PAN: siempre de polo azul, propone "mesas de trabajo" y presume que va a misa diario.',
+    lines: ['Hay que hacer las cosas con orden y con valores.', 'Propongo una mesa de trabajo para analizarlo.'],
+    sched: [{ d: [2, 4], h: [10, 12], map: 'palacio', at: [20, 7], act: 'stand', when: (g) => g.clock.dayIndex % 2 === 1 }] },
+  { id: 'reg_pri', name: 'Regidor Beto Manzo', short: 'el regidor del PRI', role: 'regidor (PRI)', politico: true, noHilo: true,
+    look: { age: 'elder', hat: 'texana', mustache: true, top: 'guayabera', topColor: '#f5f1e6', girth: 1.3 },
+    persona: 'Don Beto Manzo, regidor del PRI: lleva treinta años en el Ayuntamiento con distintos cargos; conoce a todos, saluda a todos y no hace nada.',
+    lines: ['Yo conocí a tu abuelo cuando éramos jóvenes. Salúdamelo.', 'En mis tiempos esto se arreglaba con una llamada.'],
+    sched: [{ d: [1, 3], h: [11, 13], map: 'palacio', at: [9, 9.4], act: 'sit' }] },
+  { id: 'reg_prd', name: 'Regidora Tere Pulido', short: 'la regidora del PRD', role: 'regidora (PRD)', politico: true, noHilo: true,
+    look: { female: true, age: 'adult', hair: 'short_f', top: 'blouse', topColor: '#f2c230', bottom: 'jeans' },
+    persona: 'Tere Pulido, regidora del PRD: maestra jubilada, combativa, se queja de todos los demás partidos; escucha mucho, pero su voto nunca alcanza.',
+    lines: ['Yo sí voté a favor, pero me ganaron.', 'Esto lo vengo denunciando desde hace dos años.'],
+    sched: [{ d: [3, 5], h: [10, 12], map: 'palacio', at: [17, 9.4], act: 'stand', when: (g) => g.clock.dayIndex % 3 !== 1 }] },
+  { id: 'reg_mc', name: 'Regidor Iván Ceja', short: 'el regidor naranja', role: 'regidor (Movimiento Ciudadano)', politico: true, noHilo: true,
+    look: { age: 'adult', hair: 'spiky', top: 'tshirt', topColor: '#f39c12', bottom: 'jeans', phone: true },
+    persona: 'Iván Ceja, regidor de Movimiento Ciudadano ("el Naranja"): joven, siempre grabando videos para sus redes, todo lo convierte en un "live".',
+    lines: ['¡Esto lo subo ahorita! Dale like y comparte.', 'La política nueva se hace en redes, joven.'],
+    sched: [{ d: [1, 2, 4], h: [12, 14], map: 'palacio', at: [22, 4.4], act: 'phone', when: (g) => g.clock.dayIndex % 2 === 0 }] },
+  // --- the road to San Francisco: the ranchos ---------------------------------------------------
+  {
+    id: 'salazar', name: 'Don Celso Salazar', role: 'ranchero del Rancho de los Salazar', likes: ['mezcal', 'leche'],
+    look: { age: 'elder', hat: 'sombrero', mustache: true, beard: 'stubble', top: 'plaid', topColor: '#5b6b3a', bottom: 'jeans', shoes: 'boots' },
+    persona: 'Don Celso Salazar, 70 años, ranchero del camino a San Francisco; cría caballos y vacas, habla poco, desconfía de la gente del centro pero es leal como pocos.',
+    knows: { luces: 'Las luces bajan al agua. A la Piedrita. Los animales lo saben antes que uno: se ponen inquietos.' },
+    sched: [{ h: [6, 20], map: 'cerro', at: [17.5, 50.8], act: 'stand', dir: 0 }],
+  },
+  {
+    id: 'novoa', name: 'Doña Herminia Novoa', role: 'del Rancho de Novoa', likes: ['pan', 'ramo'],
+    look: { female: true, age: 'elder', hair: 'braids', hairColor: '#c9c3bb', top: 'bordado', bottom: 'longskirt', rebozo: '#3b5b3a', apron: true },
+    persona: 'Doña Herminia Novoa, 76 años, del Rancho de Novoa, al pie del cerro; hace quesos y requesón, y vende a los que suben. Cuenta historias de aparecidos con mucha calma.',
+    stories: ['Mi esposo bajaba del cerro de noche con la leche, y una vez vio una luz que lo siguió hasta la puerta. No le tuvo miedo: le dio las buenas noches.'],
+    sched: [{ h: [7, 19], map: 'cerro', at: [50.5, 14.8], act: 'stand', dir: 0 }],
   },
   // --- ranch / countryside --------------------------------------------------------
   {
@@ -323,7 +375,7 @@ export const NAMED = [
   },
   {
     id: 'brenda', name: 'Brenda', role: 'cajera del OXXO', shop: 'oxxo',
-    look: { female: true, age: 'teen', hair: 'ponytail', top: 'polo', topColor: '#e11b22', bottom: 'jeans', uniform: null },
+    look: { female: true, age: 'adult', hair: 'ponytail', top: 'polo', topColor: '#e11b22', bottom: 'jeans', uniform: null }, romance: true, likes: ['ramo', 'dulces', 'pan'],
     persona: 'Brenda, 19 años, cajera del OXXO de la entrada; estudia enfermería en línea, siempre cansada, sarcástica pero amable.',
     sched: [{ h: [0, 24], map: 'oxxo', at: [6, 4.3], act: 'stand' }],
   },
@@ -354,7 +406,7 @@ export const NAMED = [
   },
   {
     id: 'fer', name: 'Fer', role: 'estudiante y guía del museo de la UNAM',
-    look: { female: true, age: 'teen', hair: 'long', top: 'hoodie', topColor: '#003d79', bottom: 'jeans', glasses: false },
+    look: { female: true, age: 'adult', hair: 'long', top: 'hoodie', topColor: '#003d79', bottom: 'jeans', glasses: false }, romance: true, likes: ['ramo', 'foto_jeep', 'pan'],
     persona: 'Fer, 21 años, estudiante de historia que da recorridos en el museo de la UNAM; entusiasta, habla rápido, le encanta el jeep del General.',
     sched: [{ h: [10, 18], map: 'unam', at: [6, 9], act: 'stand' }],
   },
@@ -396,10 +448,10 @@ export const NAMED = [
     sched: [{ h: [9, 13], map: 'town', at: [121, 114.6], act: 'sit', dir: 1 }, { h: [17, 20], map: 'town', at: [121, 114.6], act: 'sit', dir: 1 }],
   },
   {
-    id: 'beto', name: 'Beto', role: 'niño del Jardín de la Paz',
+    id: 'beto', name: 'Beto', role: 'niño del Jardín de la Paz', likes: ['dulces', 'trompo'],
     look: { age: 'kid', hair: 'spiky', top: 'tshirt', topColor: '#27ae60', bottom: 'shorts', backpack: true },
     persona: 'Beto, 9 años, juega trompo en el Jardín de la Paz; perdió su trompo favorito que le hizo su abuelo.',
-    sched: [{ d: WEEK, h: [16, 19.5], map: 'town', at: [224, 163.5], act: 'wander', r: 2 }, { d: WKND, h: [11, 19], map: 'town', at: [126, 106.4], act: 'wander', r: 3 }],
+    sched: [{ d: WEEK, h: [16, 19.5], map: 'town', at: [171, 50.8], act: 'wander', r: 2 }, { d: WKND, h: [11, 19], map: 'town', at: [126, 106.4], act: 'wander', r: 3 }],
   },
   {
     id: 'karla', name: 'Karla', role: 'estudiante de prepa, tiktokera',
@@ -425,13 +477,13 @@ export const NAMED = [
     persona: 'Doña Toña, 80 años, vive junto a la capilla del pueblito de San Francisco, en lo alto del cerro; ha visto las luces toda su vida y no le teme a nada.',
     knows: { abuelo: 'Pasaron por aquí el lunes, sí. Subieron a la cruz, a la mera punta, donde se ve toda la Ciénega. Les dije: “No suban de noche.” ¿Y qué cree? Nadie hace caso a las viejas.', luces: 'Las luces vienen cuando el pueblo se olvida de algo. Mi abuela las vio en tiempos del General.' },
     believer: true,
-    sched: [{ h: [6, 21], map: 'cerro', at: [36, 83.6], act: 'stand', dir: 0 }],
+    sched: [{ h: [6, 21], map: 'cerro', at: [37, 92.6], act: 'stand', dir: 0 }],
   },
   {
     id: 'canelo_owner', name: 'Juanito', role: 'niño del pueblito de San Francisco',
     look: { age: 'kid', hair: 'buzz', top: 'tshirt', topColor: '#e74c3c', bottom: 'shorts' },
     persona: 'Juanito, 8 años, vive en el pueblito del cerro con su perro Canelo, que no quiere subir a la cruz desde hace meses.',
-    sched: [{ h: [8, 19], map: 'cerro', at: [42, 80], act: 'wander', r: 3 }],
+    sched: [{ h: [8, 19], map: 'cerro', at: [42, 94.5], act: 'wander', r: 3 }],
   },
   // --- villages ----------------------------------------------------------
   {

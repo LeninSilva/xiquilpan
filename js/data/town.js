@@ -32,10 +32,10 @@ export function buildTown() {
     if (y > 150) e += (y - 150) * 0.2;
     if (y < 25) e -= (25 - y) * 0.25;
     if (x < 110) e += (110 - x) * 0.07;                       // the west side is higher (water runs east)
-    e += (300 - x) * 0.025;                                   // …and the whole valley tilts gently east, toward the Jardín de la Paz and the river
+    e += (300 - x) * 0.012;                                   // …and the valley tilts a little east, toward the river
     const tq = ((x - 32) ** 2 + (y - 72) ** 2) / (2 * 17 * 17); e += 46 * Math.exp(-tq); // La Trasquila
     const sc = ((x - 40) ** 2 + (y - 30) ** 2) / (2 * 20 * 20); e += 22 * Math.exp(-sc); // San Cayetano
-    const jp = ((x - 224) ** 2 + (y - 166) ** 2) / (2 * 6 * 6); e -= 5 * Math.exp(-jp);  // Jardín de la Paz dip
+    const jp = ((x - 171) ** 2 + (y - 52) ** 2) / (2 * 7 * 7); e -= 5 * Math.exp(-jp);   // Jardín de la Paz sits in a dip
     m.elev[y * m.w + x] = e;
   }
 
@@ -52,21 +52,25 @@ export function buildTown() {
     [124, 'Calle Abasolo'], [140, 'Calle 5 de Mayo'], [156, 'Calle Vicente Guerrero']];
   const HILL = (x, y) => x < 58 && y > 44 && y < 108; // La Trasquila: no grid on the hill
   const cob = (name) => /Rioseco|Prieto|Caltzontzin|Ocampo|Allende|Constitución|Nicolás/.test(name) ? G.COBBLE : G.ASPHALT;
+  // Centro streets are one-way with a parking lane on one side (like the real town: narrow, but cars park)
+  const ONEWAY = { 40: ['E', 1], 60: ['E', 1], 80: ['W', 0], 124: ['E', 1], 140: ['W', 0], 74: ['N', 0], 94: ['N', 0], 110: ['S', 1], 186: ['N', 0], 210: ['S', 1] };
+  const ow = (k) => ONEWAY[k] ? { oneWay: ONEWAY[k][0], park: ONEWAY[k][1] } : {};
   for (const [y, name] of HY) {
     const segs = [[28, 262]];
     if (y === 60 || y === 80) segs[0][0] = 58;
     if (y === 140) segs.splice(0, 1, [28, 190], [210, 262]); // San Francisco's atrium interrupts 5 de Mayo
-    for (const [a, b] of segs) hStreet(m, name, a, b, y, 4, { surface: cob(name) });
+    for (const [a, b] of segs) hStreet(m, name, a, b, y, 4, { surface: cob(name), ...ow(y) });
   }
   for (const [x, name] of VX) {
     const y1 = x >= 210 ? 172 : 228;
     if (x < 58) { vStreet(m, name, x, 18, 44, 4, { surface: G.COBBLE }); vStreet(m, name, x, 106, y1, 4, { surface: G.COBBLE }); }
-    else vStreet(m, name, x, 18, y1, 4, { surface: cob(name) });
+    else vStreet(m, name, x, 18, y1, 4, { surface: cob(name), ...ow(x) });
   }
   // the avenue: formal cantera sidewalks, asphalt; north to Sahuayo, south to the bosques
   vStreet(m, 'Av. Presidente Lázaro Cárdenas Norte', 150, 0, 110, 6, { surface: G.ASPHALT, walkSurface: G.CANTERA });
   vStreet(m, 'Av. Presidente Lázaro Cárdenas Sur', 150, 110, 244, 6, { surface: G.ASPHALT, walkSurface: G.CANTERA });
-  vStreet(m, 'Camino al Cerro de San Francisco', 150, 244, m.h, 4, { surface: G.DIRTROAD, sidewalk: false });
+  vStreet(m, 'Camino del Bosque', 150, 244, m.h, 4, { surface: G.DIRTROAD, sidewalk: false });
+  hStreet(m, 'Camino al Cerro de San Francisco', 0, 28, 18, 4, { surface: G.DIRTROAD, sidewalk: false });
   vStreet(m, 'Av. Circunvalación', 258, 18, 179, 6, { surface: G.ASPHALT });
   // south side streets
   hStreet(m, 'Calle Felicitas del Río', 28, 150, 172, 4, { surface: G.ASPHALT });
@@ -78,7 +82,7 @@ export function buildTown() {
   for (let x = 28; x < 262; x++) for (const y of [110, 113]) if (!ROADS.has(m.get(x, y))) m.set(x, y, G.CANTERA);
   // dirt roads out of town
   vStreet(m, 'Camino a los corrales', 266, 22, 30, 3, { surface: G.DIRTROAD, sidewalk: false });
-  hStreet(m, 'Brecha del Chamacuero', 8, 28, 26, 3, { surface: G.DIRTROAD, sidewalk: false });
+  hStreet(m, 'Brecha del Chamacuero', 4, 28, 35, 3, { surface: G.DIRTROAD, sidewalk: false });
   // Av. Las Palmas: diagonal, planted with palms, climbing to La Trasquila
   diagonalRoad(m, 'Av. Las Palmas', PALMAS, 10, { median: 2 });
   for (let i = 0; i < PALMAS.length - 1; i++) {
@@ -98,6 +102,8 @@ export function buildTown() {
   m.fill(26, 64, 12, 9, G.PLAZA);
   sprite(m, 'monJuarez', 32, 69.5, { scale: 1.4, w: 44, up: 60, collide: [-17, -8, 34, 8], interact: 'juarez' });
   m.fill(31, 44, 3, 20, G.STAIRS);
+  for (let x = 26.4; x < 37.8; x += 1.1) if (x < 30.5 || x > 34.5) sprite(m, 'balustre', x, 64.7, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
+  for (let y = 65.5; y < 73; y += 1.1) for (const x of [26.4, 37.6]) sprite(m, 'balustre', x, y, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
   for (let y = 45; y < 64; y += 3) { sprite(m, 'balustre', 30.6, y + 0.6, { w: 8, up: 10, collide: [-2, -2, 4, 2] }); sprite(m, 'balustre', 34.4, y + 0.6, { w: 8, up: 10, collide: [-2, -2, 4, 2] }); }
   for (const [x, y] of [[40, 50], [54, 52], [20, 60], [14, 80], [44, 84], [22, 96], [50, 98], [12, 50], [48, 70]]) tree(m, x, y, 'jacaranda', { size: 1.1 });
   for (let i = 0; i < 70; i++) {
@@ -135,7 +141,7 @@ export function buildTown() {
   sprite(m, 'kiosco', 126, 104.2, { scale: 1.5, w: 90, up: 100, interact: 'kiosco', priority: true });
   m.setSolid(123, 100, 6, 4);
   light(m, 126, 99, 110, '#ffe2a8');
-  sprite(m, 'aguadora', 131.8, 109.3, { scale: 1.5, w: 64, up: 80, collide: [-24, -12, 48, 11], interact: 'aguadora' });
+  sprite(m, 'aguadora', 131.8, 109.3, { scale: 1.35, w: 76, up: 84, collide: [-26, -12, 52, 11], interact: 'aguadora' });
   light(m, 131.8, 107.9, 60, '#ff9a5a');
   for (const [bx, by] of [[118, 94.2], [132, 94.2], [123.2, 99.5], [129.8, 99.5], [118, 103.2], [123.5, 108.8], [133.5, 102.6]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
   for (const [lx, ly] of [[114.5, 93.8], [137.5, 93.8], [114.5, 109.4], [137.5, 109.4], [122, 101], [130, 101]]) { sprite(m, 'lamp', lx, ly, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 1, 70); }
@@ -170,7 +176,7 @@ export function buildTown() {
   m.fill(156, 105, 30, 5, G.PLAZA);
   door(m, 170, 104, 'palacio', 'Palacio Municipal', { hours: [8, 15] });
   area(m, 'Palacio Municipal (H. Ayuntamiento)', 156, 84, 30, 26, 'building');
-  sprite(m, 'bustoAbad', 160, 108.6, { scale: 1.2, w: 20, up: 40, collide: [-4, -4, 8, 4], interact: 'abad' });
+  sprite(m, 'bustoAbad', 160, 108.2, { scale: 1.1, w: 44, up: 58, collide: [-15, -6, 30, 6], interact: 'abad' });
   sprite(m, 'flagpole', 182, 108.6, { w: 30, up: 60, collide: [-1, -1, 2, 2] });
   building(m, 'mercado', 190, 84, 20, 26);
   door(m, 200, 109, 'mercado', 'Mercado Municipal', { hours: [7, 18] });
@@ -180,19 +186,24 @@ export function buildTown() {
   door(m, 195, 79, 'panaderia', 'Panadería Mendoza', { hours: [7, 21] });
   door(m, 205, 79, 'billar_mendoza', 'Billar (arriba de la Mendoza)', { hours: [12, 24] });
   area(m, 'Panadería Mendoza', 190, 64, 20, 16, 'building');
-  sprite(m, 'sitio', 189.5, 99, { scale: 1.2, w: 20, up: 24, collide: [-7, -3, 14, 3], interact: 'sitio', sitio: 'Mercado' });
-  area(m, 'Sitio de taxis del Mercado', 186, 92, 4, 12, 'taxi');
-  for (const ty of [93.5, 96, 103]) sprite(m, 'parkedCar', 187.9, ty, { color: '#f4f4f0', taxi: '#1b7a3e', w: 36, up: 24, collide: [-14, -6, 28, 6], notDays: [6] });
+  sprite(m, 'sitio', 189.5, 99, { scale: 1.2, w: 20, up: 24, collide: [-7, -3, 14, 3], interact: 'sitio', sitio: 'Fajardo' });
+  area(m, 'Sitio de taxis Fajardo', 186, 92, 4, 12, 'taxi');
+  for (const ty of [93.2, 95.6, 103.2]) sprite(m, 'parkedCarV', 187.5, ty, { color: '#f4f4f0', taxi: true, w: 20, up: 34, collide: [-6, -12, 12, 22], notDays: [6] });
 
   // --- south of the plaza along the avenue ----------------------------------------------------------
-  block(m, 114, 128, 16, 12);
+  block(m, 114, 128, 16, 12, { facades: [
+    { x: 114, w: 8, exact: true, kind: 'shop', sign: 'ESTÉTICA LUPITA', signBg: '#f7c6d9', signFg: '#8a2f5a', fh: 36 },
+    { x: 122, w: 8, exact: true, kind: 'shop', sign: 'ROPA Y NOVEDADES', signBg: '#f3d36b', signFg: '#1f4b7a', fh: 36 }] });
+  door(m, 118, 139, 'tienda_902_ESTÉTICA', 'Estética Lupita (cortes y rasurada)', { hours: [9, 20] });
+  door(m, 126, 139, 'tienda_903_NOVEDADES', 'Ropa y Novedades', { hours: [9, 21] });
   building(m, 'biblioteca', 130, 128, 20, 12, { tall: 90 });
   door(m, 140, 139, 'biblioteca', 'Biblioteca Pública Gabino Ortiz', { hours: [9, 19] });
   area(m, 'Biblioteca Pública Gabino Ortiz', 130, 128, 20, 12, 'building');
   sprite(m, 'plaque', 144.5, 140.2, { who: 'gabino', w: 12, up: 12, interact: 'plaque_gabino' });
-  sprite(m, 'sitio', 134.5, 140.95, { scale: 1.2, w: 20, up: 24, collide: [-7, -3, 14, 3], interact: 'sitio', sitio: 'Biblioteca' });
-  area(m, 'Sitio de taxis Gabino Ortiz', 128, 140, 12, 4, 'taxi');
-  for (const tx of [128.5, 131.5]) sprite(m, 'parkedCar', tx, 141.9, { color: '#f4f4f0', taxi: '#1b7a3e', flip: true, w: 36, up: 24, collide: [-14, -6, 28, 6] });
+  // Sitio de taxis on Calle Abasolo, between the avenue and Fajardo
+  sprite(m, 'sitio', 163.5, 127.95, { scale: 1.2, w: 20, up: 24, collide: [-7, -3, 14, 3], interact: 'sitio', sitio: 'Abasolo' });
+  area(m, 'Sitio de taxis Abasolo', 158, 124, 16, 4, 'taxi');
+  for (const tx of [167.5, 170.5, 173.5]) sprite(m, 'parkedCar', tx, 126.95, { color: '#f4f4f0', taxi: '#1b7a3e', w: 36, up: 24, collide: [-14, -6, 28, 6] });
   building(m, 'escuelaTipo', 114, 144, 36, 12, { tall: 60 });
   door(m, 132, 155, 'escuela_tipo', 'Escuela “La Tipo”', { hours: [7, 14] });
   area(m, 'Escuela “La Tipo”', 114, 144, 36, 12, 'building');
@@ -212,6 +223,8 @@ export function buildTown() {
   door(m, 195, 142, 'templo_sf', 'Parroquia de San Francisco de Asís', { hours: [6, 21] });
   door(m, 205, 140, 'curato', 'Curato de San Francisco', { hours: [9, 14] });
   for (const [x, y] of [[191, 150], [208.5, 150], [191, 154.5], [208.5, 154.5]]) tree(m, x, y, y < 152 ? 'jacaranda' : 'palma', { size: 0.95 });
+  sprite(m, 'estatuaFraile', 193.2, 146.6, { scale: 1.2, w: 24, up: 54, collide: [-7, -4, 14, 4], interact: 'fraile' });
+  tree(m, 206.5, 146.4, 'cipres', { size: 1.25, collide: [-2, -2, 4, 3] });
   for (const [bx, by] of [[196, 149], [203, 149]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
   area(m, 'Parroquia de San Francisco de Asís', 190, 128, 20, 15, 'building');
   area(m, 'Atrio de San Francisco', 190, 143, 20, 13, 'plaza');
@@ -222,11 +235,11 @@ export function buildTown() {
   door(m, 86, 101, 'templo_monjas', 'Templo de las Monjas', { hours: [7, 20] });
   tree(m, 79.5, 107, 'jacaranda', { size: 1 }); tree(m, 92.5, 107, 'jacaranda', { size: 1 });
   area(m, 'Templo de las Monjas', 78, 84, 16, 26, 'building');
-  m.fill(54, 114, 20, 26, G.COBBLE);
-  building(m, 'santuario', 57, 114, 14, 21, { tall: 170, ground: G.GARDEN });
-  door(m, 64, 134, 'santuario', 'Santuario del Sagrado Corazón', { hours: [6, 21] });
-  for (const [x, y] of [[55.5, 118], [72, 118], [55.5, 128], [72, 128]]) tree(m, x, y, 'ficus', { size: 0.9 });
-  area(m, 'Santuario del Sagrado Corazón', 54, 114, 20, 26, 'building');
+  m.fill(78, 64, 16, 16, G.PLAZA);
+  building(m, 'santuario', 80, 64, 12, 12, { tall: 170, ground: G.GARDEN });
+  door(m, 86, 75, 'santuario', 'Santuario del Sagrado Corazón', { hours: [6, 21] });
+  for (const [x, y] of [[78.8, 67], [93.2, 67], [78.8, 78.6], [93.2, 78.6]]) tree(m, x, y, 'ficus', { size: 0.85, collide: [-2, -2, 4, 3] });
+  area(m, 'Santuario del Sagrado Corazón', 78, 64, 16, 16, 'building');
   m.fill(78, 128, 16, 12, G.PLAZA); m.fill(80, 130, 12, 8, G.GARDEN); m.fill(84, 130, 4, 8, G.PLAZA);
   sprite(m, 'obelisco', 86, 136.5, { scale: 1.35, w: 60, up: 100, collide: [-10, -8, 20, 8], interact: 'obelisco' });
   for (const [x, y] of [[81, 131], [91, 131], [81, 138], [91, 138]]) tree(m, x, y, 'jacaranda', { size: 0.9 });
@@ -244,7 +257,21 @@ export function buildTown() {
   door(m, 84, 59, 'micheladas_lupita', 'Micheladas Lupita', { hours: [11, 24] });
   sprite(m, 'mesas', 84.5, 60.95, { color: '#d4302b', w: 44, up: 40, collide: [-18, -4, 36, 4] });
 
-  // --- east side: hospital, abuela, Jardín de la Paz, micheladas ---------------------------------------
+  // --- Jardín de la Paz (north, between the avenue and Fajardo) and the Cremería ---------------------------
+  m.fill(156, 44, 30, 16, G.PLAZA);
+  for (const [x, y, w, h] of [[158, 46, 11, 5], [173, 46, 11, 5], [158, 53, 11, 5], [173, 53, 11, 5]]) { m.fill(x, y, w, h, G.GARDEN); m.setSolid(x, y, w, h); m.structures.push({ kind: 'ironFence', x, y, w, h, layer: 3 }); }
+  for (const [x, y] of [[161, 48.6], [166, 49], [176, 48.6], [181, 49], [161, 55.6], [166, 56], [176, 55.6], [181, 56]]) tree(m, x, y, 'jacaranda', { size: 1, collide: [-2, -2, 4, 3] });
+  for (const [bx, by] of [[171, 45.6], [171, 59.2], [157.5, 52.4], [184.5, 52.4]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
+  sprite(m, 'fuenteChica', 171, 52.9, { w: 30, up: 30, collide: [-8, -4, 16, 5] });
+  for (const [lx, ly] of [[157, 45], [185, 45], [157, 59.6], [185, 59.6]]) { sprite(m, 'lamp', lx, ly, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 1, 70); }
+  m.floodZones.push({ x: 156, y: 44, w: 30, h: 16 });
+  area(m, 'Jardín de la Paz', 156, 44, 30, 16, 'plaza');
+  sprite(m, 'seTraspasa', 184.2, 45.4, { label: 'ELOTES Y ESQUITES', w: 30, up: 30, collide: [-2, -2, 4, 2], interact: 'negocio', biz: 'elotes' });
+  block(m, 156, 22, 30, 18, { facades: [{ x: 166, w: 9, exact: true, kind: 'shop', sign: 'CREMERÍA LA PAZ', signBg: '#f6f1e6', signFg: '#2f5d9a', fh: 36 }] });
+  door(m, 170, 39, 'tienda_901_CREMERÍA', 'Cremería La Paz', { hours: [8, 21] });
+  area(m, 'Cremería La Paz', 166, 22, 9, 18, 'shop');
+
+  // --- east side: hospital, abuela, micheladas ---------------------------------------
   building(m, 'hospital', 214, 128, 20, 12, { label: 'HOSPITAL GENERAL', tall: 60 });
   door(m, 224, 139, 'hospital', 'Hospital General');
   area(m, 'Hospital General', 214, 128, 20, 12, 'building');
@@ -253,13 +280,6 @@ export function buildTown() {
   m.fill(221, 144, 8, 3, G.ROOF); m.setSolid(221, 144, 8, 3);
   door(m, 225, 155, 'casa_abuela', 'Casa de la abuela Chayo');
   area(m, 'Casa de la abuela', 221, 144, 8, 12, 'home');
-  m.fill(214, 160, 20, 12, G.PLAZA);
-  for (const [x, y, w, h] of [[216, 162, 6, 3], [226, 162, 6, 3], [216, 167, 6, 3], [226, 167, 6, 3]]) { m.fill(x, y, w, h, G.GARDEN); m.setSolid(x, y, w, h); m.structures.push({ kind: 'ironFence', x, y, w, h, layer: 3 }); }
-  for (const [x, y] of [[219, 163.8], [229, 163.8], [219, 168.8], [229, 168.8]]) tree(m, x, y, 'jacaranda', { size: 1, collide: [-2, -2, 4, 3] });
-  for (const [bx, by] of [[224, 161.5], [224, 171], [215, 166.5], [233, 166.5]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
-  sprite(m, 'fuenteChica', 224, 166.9, { w: 30, up: 30, collide: [-8, -4, 16, 5] });
-  m.floodZones.push({ x: 214, y: 160, w: 20, h: 12 });
-  area(m, 'Jardín de la Paz', 214, 160, 20, 12, 'plaza');
   block(m, 238, 160, 20, 11, { facades: [{ x: 241, w: 8, exact: true, kind: 'shop', sign: 'MICHELADAS DE NICO', signBg: '#f2c230', signFg: '#1b1b1b', fh: 36 }] });
   door(m, 245, 170, 'micheladas_nico', 'Micheladas de Nico', { hours: [12, 24] });
   sprite(m, 'mesas', 244.5, 172.1, { color: '#f2c230', w: 44, up: 40, collide: [-18, -4, 36, 4] });
@@ -269,23 +289,26 @@ export function buildTown() {
 
   // --- stadium, UAER, Monumento a Lázaro Cárdenas -------------------------------------------------------
   const SX = 156, SY = 180, SW = 50, SH = 43;
-  m.fill(SX, SY, SW, SH, G.OUTFIELD);
+  m.fill(SX, SY, SW, SH, G.DIRT); // the field is bare earth, as in the photos
   const wall = (x, y, w, h) => { m.structures.push({ kind: 'wall', x, y, w, h, color: '#e6ddcc', layer: 3 }); m.setSolid(x, y, w, h); };
   wall(SX, SY, 12, 1); wall(SX + 18, SY, SW - 18, 1); wall(SX, SY, 1, SH); wall(SX + SW - 1, SY, 1, SH);
   wall(SX, SY + SH - 1, 38, 1); wall(SX + 42, SY + SH - 1, SW - 42, 1);
   m.fill(SX + 12, SY - 1, 6, 3, G.PLAZA); m.setSolid(SX + 12, SY, 6, 1, 0);
-  sprite(m, 'portadaEstadio', SX + 15, SY + 1.2, { scale: 1.45, w: 124, up: 100, interact: 'estadio' });
+  sprite(m, 'portadaEstadio', SX + 15, SY + 1.2, { scale: 1.3, w: 130, up: 80, interact: 'estadio' });
   area(m, 'Estadio 18 de Marzo', SX, SY, SW, SH, 'stadium');
   area(m, 'Portada del Estadio 18 de Marzo', SX + 10, SY - 2, 10, 4, 'monument');
   building(m, 'palenque', 188, 182, 16, 13, { tall: 40 });
   door(m, 196, 194, 'palenque', 'Palenque', { hours: [20, 28], season: 'palenque' });
   area(m, 'Palenque', 188, 182, 16, 13, 'building');
-  m.fill(158, 190, 22, 10, G.COURT);
-  m.structures.push({ kind: 'basketball', x: 159, y: 190, w: 10, h: 10, layer: 1, rot: true }, { kind: 'basketball', x: 169, y: 190, w: 10, h: 10, layer: 1 });
-  for (const [hx, hy] of [[164, 190.6], [174, 190.6], [164, 199.4], [174, 199.4]]) sprite(m, 'hoop', hx, hy, { w: 14, up: 44 });
-  area(m, 'Canchas de básquetbol', 158, 190, 22, 10, 'court');
+  // covered grandstand on the north side (facing the field), green bleachers beside it
+  sprite(m, 'gradas', 162, 186.6, { fw: 150, w: 170, up: 90 }); m.setSolid(157, 181, 10, 6);
+  sprite(m, 'gradas', 184, 186.6, { fw: 60, green: true, w: 70, up: 60 }); m.setSolid(182, 183, 5, 4);
+  m.fill(159, 190, 22, 10, G.COURT);
+  m.structures.push({ kind: 'basketball', x: 160, y: 190, w: 10, h: 10, layer: 1, rot: true }, { kind: 'basketball', x: 170, y: 190, w: 10, h: 10, layer: 1 });
+  for (const [hx, hy] of [[165, 190.6], [175, 190.6], [165, 199.4], [175, 199.4]]) sprite(m, 'hoop', hx, hy, { w: 14, up: 44 });
+  area(m, 'Canchas de básquetbol', 159, 190, 22, 10, 'court');
+  for (const [px, py] of [[166, 203.4], [166, 221.3]]) sprite(m, 'porteria', px, py, { w: 30, up: 16 });
   m.structures.push({ kind: 'diamond', x: 176, y: 199, w: 29, h: 23, layer: 1 });
-  sprite(m, 'gradas', 170, 221.5, { fw: 180, w: 190, up: 40, collide: [-90, -8, 180, 8] });
   area(m, 'Campo de béisbol', 176, 199, 29, 23, 'stadium');
   building(m, 'unam', 212, 180, 26, 14, { tall: 70 });
   door(m, 225, 193, 'unam', 'UNAM — Unidad Académica de Estudios Regionales', { hours: [9, 19] });
@@ -328,15 +351,7 @@ export function buildTown() {
   area(m, 'PEMEX', 264, 180, 12, 11, 'shop');
   block(m, 278, 180, 22, 11, { outskirts: true, facades: [{ x: 280, w: 6, exact: true, kind: 'shop', sign: 'BILLAR', signBg: '#10331f', signFg: '#f7f1d0', fh: 30 }] });
   door(m, 283, 190, 'billar_entrada', 'Billar de la entrada', { hours: [11, 24] });
-  m.fill(262, 194, 36, 32, G.CEMETERY);
-  for (const [x, y, w, h] of [[262, 194, 12, 1], [277, 194, 21, 1], [262, 194, 1, 32], [297, 194, 1, 32], [262, 225, 36, 1]]) { m.structures.push({ kind: 'wall', x, y, w, h, color: '#e9e2d4', layer: 3 }); m.setSolid(x, y, w, h); }
-  vStreet(m, 'Callejón del Panteón', 274, 191, 196, 3, { surface: G.DIRTROAD, sidewalk: false });
-  m.structures.push({ kind: 'tomb', x: 264, y: 198, w: 32, h: 26, layer: 4 });
-  for (let y = 198; y < 224; y++) for (let x = 264; x < 296; x++) if ((x - 264) % 3 !== 2 && (y - 198) % 3 !== 2 && !(x >= 273 && x <= 277)) m.setSolid(x, y);
-  sprite(m, 'panteonGate', 275.5, 195, { w: 60, up: 50 });
-  sprite(m, 'capilla', 275.5, 204, { color: '#ece6da', w: 60, up: 60 }); m.setSolid(273, 200, 6, 4);
-  for (const [tx, ty] of [[266, 210], [292, 212], [268, 222], [290, 222]]) tree(m, tx, ty, 'eucalipto', { size: 1.1 });
-  area(m, 'Panteón Municipal', 262, 194, 36, 32, 'cemetery');
+  for (const [tx, ty] of [[266, 200], [284, 206], [270, 214], [292, 196], [278, 222]]) tree(m, tx, ty, ty % 2 ? 'eucalipto' : 'fresno', { size: 1.1 });
   // Río Jiquilpan, coming from the east before it goes underground beneath Circunvalación
   for (let y = 60; y < 150; y++) for (let x = 262; x < 300; x++) if (m.get(x, y) !== G.ASPHALT && !ROADS.has(m.get(x, y))) m.set(x, y, fbm(x * 0.08, y * 0.08, 7) > 0.55 ? G.FIELD : G.GRASS);
   river(m, 'Río Jiquilpan', [[300, 104], [288, 110], [279, 118], [270, 122], [262, 126]], 3);
@@ -353,10 +368,26 @@ export function buildTown() {
   block(m, 54, 22, 20, 18, { outskirts: true, facades: [{ x: 58, w: 9, exact: true, kind: 'shop', sign: 'REBOZOS · TALLER', signBg: '#5b3f7a', signFg: '#f7e7c9', wall: '#f1e4d0', fh: 30 }] });
   door(m, 62, 39, 'reboceria', 'Taller de rebozos de Doña Amparo', { hours: [8, 19] });
   area(m, 'Taller de rebozos', 58, 22, 9, 18, 'shop');
-  building(m, 'chamacuero', 8, 16, 12, 9, { tall: 40 });
-  door(m, 14, 24, 'chamacuero', 'Mezcal El Chamacuero', { hours: [9, 20] });
-  area(m, 'El Chamacuero (mezcal)', 6, 14, 18, 16, 'shop');
-  for (let i = 0; i < 16; i++) sprite(m, 'agave', 4 + (i % 8) * 2.5, 32 + Math.floor(i / 8) * 2, { w: 22, up: 16, collide: [-3, -2, 6, 2] });
+  building(m, 'chamacuero', 8, 26, 12, 9, { tall: 40 });
+  door(m, 14, 34, 'chamacuero', 'Mezcal El Chamacuero', { hours: [9, 20] });
+  area(m, 'El Chamacuero (mezcal)', 6, 24, 18, 14, 'shop');
+  // Panteón Municipal (north-west), and the neighbourhood toward the Cerro de San Francisco
+  const PX0 = 60, PY0 = 2, PW0 = 30, PH0 = 14;
+  m.fill(PX0, PY0, PW0, PH0, G.CEMETERY);
+  for (const [x, y, w, h] of [[PX0, PY0, PW0, 1], [PX0, PY0 + PH0 - 1, 13, 1], [PX0 + 17, PY0 + PH0 - 1, PW0 - 17, 1], [PX0, PY0, 1, PH0], [PX0 + PW0 - 1, PY0, 1, PH0]]) { m.structures.push({ kind: 'wall', x, y, w, h, color: '#e9e2d4', layer: 3 }); m.setSolid(x, y, w, h); }
+  m.structures.push({ kind: 'tomb', x: PX0 + 2, y: PY0 + 2, w: PW0 - 4, h: PH0 - 4, layer: 4 });
+  for (let y = PY0 + 2; y < PY0 + PH0 - 2; y++) for (let x = PX0 + 2; x < PX0 + PW0 - 2; x++) if ((x - PX0) % 3 !== 2 && (y - PY0) % 3 !== 2 && !(x >= PX0 + 12 && x <= PX0 + 17)) m.setSolid(x, y);
+  sprite(m, 'panteonGate', PX0 + 15, PY0 + PH0, { w: 60, up: 50 });
+  sprite(m, 'capilla', PX0 + 15, PY0 + 7, { color: '#ece6da', w: 60, up: 60 }); m.setSolid(PX0 + 13, PY0 + 3, 5, 4);
+  for (const [tx, ty] of [[PX0 + 3, PY0 + 4], [PX0 + 26, PY0 + 5], [PX0 + 4, PY0 + 11], [PX0 + 25, PY0 + 11], [PX0 + 20, PY0 + 3]]) tree(m, tx, ty, 'cipres', { size: 1.05 });
+  area(m, 'Panteón Municipal', PX0, PY0, PW0, PH0, 'cemetery');
+  for (const [x, y, w, h] of [[4, 4, 22, 10], [30, 4, 12, 10], [44, 4, 14, 10], [92, 4, 16, 10], [4, 23, 3, 1]]) {
+    if (w < 4) continue;
+    block(m, x, y, w, h, { outskirts: true, facadeH: 30 }); addLotDoors(m, m.structures[m.structures.length - 1]);
+  }
+  area(m, 'Colonia del Panteón', 0, 0, 110, 18, 'district');
+  sprite(m, 'signpost', 3.5, 23, { text: '← SAN FRANCISCO · RANCHOS', bg: '#6b4a30', w: 70, up: 30 });
+  for (let i = 0; i < 16; i++) sprite(m, 'agave', 4 + (i % 8) * 2.5, 40 + Math.floor(i / 8) * 2, { w: 22, up: 16, collide: [-3, -2, 6, 2] });
   m.fill(266, 30, 28, 16, G.DIRT);
   for (const [x, y, w, h] of [[266, 30, 28, 1], [266, 45, 12, 1], [282, 45, 12, 1], [266, 30, 1, 16], [293, 30, 1, 16]]) { m.structures.push({ kind: 'fence', x, y, w, h, layer: 3 }); m.setSolid(x, y, w, h); }
   sprite(m, 'corralShade', 274, 36, { scale: 1.2, w: 60, up: 44, collide: [-12, -8, 24, 8], interact: 'pajarete' });
@@ -377,6 +408,9 @@ export function buildTown() {
   m.setSolid(186, 249, 2, 1); m.setSolid(193, 249, 2, 1); m.setSolid(200, 249, 2, 1);
   area(m, 'Portada del Bosque Juárez', 186, 246, 16, 8, 'monument');
   building(m, 'casitaPiedra', 24, 246, 10, 8, { tall: 40, ground: G.DIRT });
+  m.fill(27, 254, 5, 1, G.PLAZA); m.fill(28, 255, 3, 3, G.PLAZA);
+  for (const [bx, by] of [[25.4, 255.2], [33.6, 255.2], [26, 257.6], [33, 257.6]]) sprite(m, 'bush', bx, by, { seed: bx * 7, w: 24, up: 18, collide: [-4, -3, 8, 3] });
+  for (const [tx, ty] of [[22.5, 248], [35.5, 249], [21.5, 256], [37, 257]]) tree(m, tx, ty, ty > 252 ? 'jacaranda' : 'fresno', { size: 1.15 });
   door(m, 29, 253, 'casita_piedra', 'La Casita de Piedra (rebozos)', { hours: [9, 18] });
   area(m, 'La Casita de Piedra', 24, 246, 10, 8, 'shop');
   for (let x = 30; x < 290; x++) { if (x > 144 && x < 160) continue; m.set(x, 290, G.DIRT); m.set(x, 291, G.DIRT); }
@@ -391,9 +425,10 @@ export function buildTown() {
   sprite(m, 'mesas', 141.5, 248.4, { color: '#2e8b57', w: 44, up: 40, collide: [-18, -4, 36, 4] });
   sprite(m, 'cart', 145, 248.4, { cart: 'micheladas', color: '#2e8b57', sign: 'MICHELADAS DEL BOSQUE', umbrella: '#2e8b57', w: 34, up: 44, collide: [-11, -4, 22, 4], interact: 'vendor', vendor: 'micheladas_bosque' });
   area(m, 'Micheladas del Bosque', 138, 246, 10, 4, 'shop');
+  sprite(m, 'seTraspasa', 138.6, 249.2, { label: 'SE BUSCA SOCIO', w: 30, up: 30, collide: [-2, -2, 4, 2], interact: 'negocio', biz: 'micheladas' });
   for (const [lx, ly] of [[60, 253], [110, 253], [175, 253], [230, 253], [60, 325], [230, 325]]) { sprite(m, 'lamp', lx, ly, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 1, 70); }
-  sprite(m, 'signpost', 153, 330, { text: 'CERRO DE SAN FRANCISCO ↓', bg: '#6b4a30', w: 60, up: 30 });
-  m.exits.push({ x: 150, y: m.h - 1, w: 4, h: 1, to: 'cerro', tx: 40.5, ty: 2.6, dir: 0, label: 'Cerro de San Francisco' });
+  sprite(m, 'signpost', 156.5, 330, { text: 'BOSQUE · FIN DEL CAMINO', bg: '#6b4a30', w: 60, up: 30 });
+  m.exits.push({ x: 0, y: 18, w: 1, h: 4, to: 'cerro', tx: 40.5, ty: 2.6, dir: 0, label: 'Cerro de San Francisco' });
 
   // --- the remaining blocks of the grid (every lot gets a door) ------------------------------------------
   const vx = [28, 50, 74, 94, 110, 150, 186, 210, 234, 258];
@@ -418,7 +453,7 @@ export function buildTown() {
     }
     const outskirts = x < 50 || x > 234 || y < 40 || y > 180;
     const b = { x, y, w: x1 - x, h: y1 - y, outskirts, facadeH: outskirts ? 30 : 36 };
-    block(m, x, y, b.w, b.h, { outskirts, facadeH: b.facadeH });
+    block(m, x, y, b.w, b.h, { outskirts, facadeH: b.facadeH, centro: x >= 94 && x < 238 && y >= 60 && y < 160 });
     addLotDoors(m, m.structures[m.structures.length - 1]);
   }
   // doors for the special blocks too (skip the lots covered by named facades)
@@ -435,10 +470,10 @@ export function buildTown() {
   // --- tianguis ---------------------------------------------------------------------------------------------
   const stall = (x, y, props = {}) => ({ kind: 'stall', x: x * TILE + 8, y: y * TILE, fw: 26, w: 36, up: 40, seed: Math.floor(x * 7 + y * 3), collide: [-13, -5, 26, 5], interact: 'tianguis', ...props });
   const fri = [];
-  for (let y = 157; y < 176; y += 2.2) fri.push(stall(211.4, y));
-  for (let x = 214; x < 234; x += 2.2) fri.push(stall(x, 158.2));
+  for (let x = 157; x < 185; x += 2.3) fri.push(stall(x, 61.8));      // Madero, along the Jardín de la Paz
+  for (let y = 44.8; y < 59; y += 2.2) fri.push(stall(187.4, y));     // Fajardo
   m.daySprites[5] = fri;
-  m.closedByDay[5] = [[210, 156, 4, 20], [214, 156, 20, 4]];
+  m.closedByDay[5] = [[156, 60, 30, 4], [186, 44, 4, 16]];
   const sat = [];
   for (let y = 84.5; y < 110; y += 2.2) sat.push(stall(187.4, y));
   for (let x = 160; x < 250; x += 2.3) { if (x > 184 && x < 190) continue; sat.push(stall(x, 225.8)); }
@@ -450,7 +485,8 @@ export function buildTown() {
     { kind: 'cazo', x: 77.5 * TILE, y: 114.6 * TILE, w: 30, up: 30, collide: [-7, -3, 14, 3], interact: 'vendor', vendor: 'carnitas_esquina' },
     { kind: 'cazo', x: 189.5 * TILE, y: 144.4 * TILE, w: 30, up: 30, collide: [-7, -3, 14, 3], interact: 'vendor', vendor: 'carnitas_esquina' },
   ];
-  m.daySprites[0] = wk.slice(); m.daySprites[6] = m.daySprites[6].concat(wk);
+  const loteria = { kind: 'mesaLoteria', x: 116.5 * TILE, y: 108.9 * TILE, w: 40, up: 34, collide: [-15, -4, 30, 4], interact: 'loteria' };
+  m.daySprites[0] = wk.concat([loteria]); m.daySprites[6] = m.daySprites[6].concat(wk, [loteria]); m.daySprites[5] = m.daySprites[5].concat([loteria]);
 
   // “SE BUSCA” posters (act III)
   for (const [x, y] of [[113.5, 93.6], [149.2, 110.8], [138.4, 140.6], [189.4, 110.6], [96.6, 111], [150.8, 60.6], [223.5, 156.8], [153.4, 243.2]]) sprite(m, 'poster', x, y, { w: 16, up: 30, acts: [3], interact: 'poster' });
@@ -481,11 +517,47 @@ export function buildTown() {
   area(m, 'Av. Presidente Lázaro Cárdenas', 150, 0, 6, 244, 'street');
   area(m, 'Av. Las Palmas', 62, 10, 90, 36, 'street');
 
+  // --- the centro: flagstone (laja) streets, red-and-white street lamps -------------------------------------
+  const CENTRO = (x, y) => x >= 94 && x < 238 && y >= 60 && y < 160;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (!CENTRO(x, y) || (x >= 150 && x < 156)) continue; // the avenue stays asphalt
+    const g = m.get(x, y);
+    if (g === G.ASPHALT || g === G.COBBLE) m.set(x, y, G.LAJA);
+  }
+  let lampK = 0;
+  for (const y of [60, 80, 110, 124, 140, 156]) for (let x = 97; x < 236; x += 9) {
+    const row = (lampK++ % 2) ? y : y + 3;
+    const g = m.get(x, row);
+    if (g !== G.SIDEWALK && g !== G.CANTERA) continue;
+    if (m.doors.some(d => Math.abs(d.x - x) < 1 && Math.abs(d.y - row) <= 1)) continue;
+    sprite(m, 'farolCentro', x + 0.5, row === y ? row + 0.3 : row + 0.95, { w: 12, up: 40, collide: [-1.2, -1.2, 2.4, 2] });
+    light(m, x + 0.5, row + 0.2, 60, '#fff1c8');
+  }
+
+  // --- parked cars and Italikas along the parking lanes of the one-way streets ------------------------------
+  const noPark = (x, y) => Object.values(m.closedByDay).some(list => list.some(([rx, ry, rw, rh]) => x >= rx && x < rx + rw && y >= ry && y < ry + rh))
+    || (y >= 84 && y < 110 && x >= 186 && x < 190) || (y >= 124 && y < 128 && x >= 160 && x < 177);
+  const free = (x, y) => m.parking && m.parking[y * m.w + x] && !m.laneDir[y * m.w + x] && ROADS.has(m.get(x, y)) && !noPark(x, y);
+  const CARS = ['#c9ccd1', '#f4f4f0', '#b3201f', '#1f3f6f', '#2b2b2e', '#8a8f94', '#d8c79a', '#3e6b48', '#7a1f2b'];
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    const p = m.parking && m.parking[y * m.w + x];
+    if (!p) continue;
+    const h = hash2(x, y, 303);
+    if (p === 1 && free(x, y) && free(x + 1, y) && free(x - 1, y) && free(x + 2, y) && x % 3 === 0) {
+      if (h < 0.3) sprite(m, 'parkedCar', x + 1, y + 0.95, { color: CARS[Math.floor(hash2(x, y, 304) * CARS.length)], flip: hash2(x, y, 305) > 0.5, model: hash2(x, y, 306) > 0.8 ? 'pickup' : 'tsuru', w: 36, up: 24, collide: [-14, -6, 28, 6] });
+      else if (h < 0.4) sprite(m, 'parkedMoto', x + 0.5, y + 0.95, { color: ['#c0392b', '#1f4fa0', '#1b1b1b', '#f39c12'][Math.floor(h * 40) % 4], flip: h > 0.5, w: 20, up: 18, collide: [-5, -3, 10, 3] });
+    }
+    if (p === 2 && free(x, y) && free(x, y + 1) && free(x, y - 1) && free(x, y + 2) && y % 3 === 0) {
+      if (h < 0.3) sprite(m, 'parkedCarV', x + 0.5, y + 1.9, { color: CARS[Math.floor(hash2(x, y, 304) * CARS.length)], w: 20, up: 34, collide: [-6, -12, 12, 22] });
+      else if (h < 0.4) sprite(m, 'parkedMoto', x + 0.5, y + 0.95, { color: ['#c0392b', '#1f4fa0', '#1b1b1b', '#f39c12'][Math.floor(h * 40) % 4], vertical: true, w: 14, up: 20, collide: [-3, -4, 6, 4] });
+    }
+  }
+
   m.spawns = {
     start: { x: 225.5, y: 157.2 },
     plaza: { x: 126, y: 106.4 },
-    cerroPath: { x: 152, y: m.h - 3 },
-    sitioBiblioteca: { x: 134.5, y: 142.6 },
+    cerroPath: { x: 2.5, y: 20 },
+    sitioAbasolo: { x: 163.5, y: 128.6 },
     sitioMercado: { x: 188, y: 99 },
     sitioEntrada: { x: 290.5, y: 171.6 },
   };

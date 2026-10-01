@@ -52,21 +52,24 @@ El norte está arriba. La **Av. Presidente Lázaro Cárdenas** cruza el pueblo d
   - Adentro del estadio: el **palenque** (gallos y bailes de noviembre a Reyes), las canchas de básquet y el campo de béisbol.
   - Al oriente, la **UAER de la UNAM** (con el jeep del General) y el **Monumento a Lázaro Cárdenas**.
   - Al sur del estadio, **El Santo Remedio** (“el Santo Mugrero”) y **Ferretuberías**, cuyo dueño casi nunca está.
-- **Oriente:** la casa de la abuela, el **Jardín de la Paz** (tianguis de los viernes), el Hospital General y las micheladas de Nico y La Pantera Rosa. En la **entrada** están la glorieta “Pueblo Mágico”, los gallos, las letras blancas, el Hotel Palmira con su neón, el OXXO, la PEMEX, el panteón y el Río Jiquilpan.
+- **Norte:** el **Jardín de la Paz** está entre la avenida y la calle Fajardo, frente a la **Cremería La Paz**. Se inunda con los aguaceros, y los viernes se pone ahí el tianguis.
+- **Oriente:** la casa de la abuela, el Hospital General y las micheladas de Nico y La Pantera Rosa. En la **entrada** están la glorieta “Pueblo Mágico”, los gallos, las letras blancas, el Hotel Palmira con su neón, el OXXO, la PEMEX, el panteón y el Río Jiquilpan.
 - **Poniente:**
   - **Av. Las Palmas** en diagonal, con su camellón de palmeras, la **Fuente de los Pescados** y la tortillería (Maseca) en la curva.
-  - El **cerrito de La Trasquila**, con la escalinata y el **Monumento a Juárez**, y el obelisco (“la botella”).
+  - El **cerrito de La Trasquila**, con la escalinata, el mirador de balaustrada blanca y roja y el **Monumento a Juárez**, y el obelisco (“la botella”).
+- **Noroeste:** el **Santuario del Sagrado Corazón** y **Las Monjas**. Más allá están el **Panteón Municipal** y la colonia del panteón, de donde sale el camino de terracería al cerro.
 - **Sur:**
   - Los **bosques Cuauhtémoc y Juárez**, de eucalipto, jacaranda, fresno y matorral; sin pinos.
   - La **Portada de Juárez**, de piedra volcánica con sus dos arcos.
   - **La Casita de Piedra**, donde se venden los rebozos.
-  - Los caminos de tierra que suben al cerro.
 - **El Cerro de San Francisco:**
-  - Se sube desde el sur del pueblo. Primero está **la subida mágica**, donde los carros “suben solos”. Luego **La Piedrita**, una caidita de agua donde se ven las luces.
-  - Después vienen el pueblito con su capilla y la cruz en la cima. Los pinos crecen sólo allá arriba.
+  - Se sube por el noroeste, por un camino pedregoso donde casi no pasan carros (uno o dos al día). Primero está **la subida mágica**, donde los carros “suben solos”, con el **Rancho de Novoa**. Luego vienen **La Piedrita**, una caidita de agua donde se ven las luces, y el **Rancho de los Salazar** con sus caballos.
+  - Hasta arriba están el pueblito de San Francisco, con su capilla y un par de tiendas, la cruz y la antena. Los pinos crecen sólo allá arriba.
   - En las laderas hay magueyes gigantes, nopales, vacas, caballos y piedras por todos lados. Algunas se pueden mover, y debajo a veces hay algo.
 - **Calles y clima:**
-  - Las banquetas son de laja al estilo Pueblo Mágico, más formales, de cantera, sobre la avenida y la plaza. Las calles son de asfalto negro con baches, o empedradas; ninguna tiene raya a la mitad. La tierra y los empedrados empiezan hacia el bosque y el cerro.
+  - En el centro, las calles son de **laja** (losas irregulares de cantera rosa y café), con faroles rojo y blanco. Afuera hay asfalto negro con baches, o empedrado; ninguna calle tiene raya a la mitad.
+  - Las calles del centro son angostas y de un solo sentido, con un carril donde se estacionan carros e Italikas. Los carros ya no se atraviesan: respetan su carril, esperan su turno en las esquinas y se detienen si alguien está enfrente.
+  - Las casas del centro son blancas, con guardapolvo rojo, marcos de cantera y balcones de herrería. Las de las colonias son de colores, y algunas tienen el segundo piso en obra negra.
   - Cuando llueve fuerte, el agua corre por las orillas de las calles cuesta abajo (por la Vicente Guerrero, desde el lado alto de Las Palmas) y el **Jardín de la Paz se inunda**.
 - **Casas y negocios:**
   - Se puede entrar a casi todo. Cada casa es de una familia (Farías, Betancourt, Valencia, Moreno, Cárdenas, Silva, Martínez, Flores, Núñez, Grimaldo, Méndez, Mendoza, Ochoa, Coit…) y tiene roperos, baúles y macetas donde buscar dinero, recuerdos y pistas.
@@ -86,14 +89,33 @@ El norte está arriba. La **Av. Presidente Lázaro Cárdenas** cruza el pueblo d
 - **Pajaretes:** Don Refugio vende en sus corrales, al noreste. Un litro de leche cuesta $5, o te lo **fía**. Si no pagas, el pueblo se entera.
 - **Tianguis:** los viernes en el Jardín de la Paz. Los sábados cierran la Fajardo junto al mercado y la calle del bosque, con birria de Guatemala.
 
+## Vivir en Jiquilpan (al estilo Fable)
+
+- **Conversaciones cerradas:** no se escribe texto libre. En cada plática escoges una respuesta: **amable**, **chistosa**, **honesta** o **grosera**. Eso cambia tus valores, tu título en el pueblo (“El Muchacho Amable”, “El Chistoso de los Portales”…) y lo que cada quien piensa de ti.
+- **Relaciones:** en *Convivir…* puedes hacer cumplidos, echar carrilla, dar regalos (a cada quien le gustan cosas distintas) y pedir favores de amigos. Las relaciones van de *Mal visto* a *Compadre*. Con los amigos hay precio de amigo en sus tiendas. Con algunas personas puedes salir a dar la vuelta a la plaza y llegar a ser novios. La pestaña **Gente** muestra a todos los que conoces y cómo te ven.
+- **Ropa y look:** en Ropa y Novedades (calle Abasolo), en el tianguis y en la Estética Lupita compras camisas, guayaberas, texanas, huaraches, cortes de pelo, bigote o barba. Te cambias desde la pestaña **Yo** o en el ropero de tu casa.
+- **Tu casa:** junto al estadio y cerca del río hay terrenos con letrero de **SE VENDE**. Compras uno y contratas al maestro albañil. Escoges el estilo (colonial, adobe y teja, ladrillo o de colores) y pagas cada etapa: cimientos, muros, techo y acabados. Cada etapa tarda días, y ves cómo va subiendo la obra. Después le puedes agregar barandal, jardín con jacaranda, segundo piso o un local.
+- **Negocios:** puedes comprar el puesto de elotes del Jardín de la Paz, hacerte socio de las Micheladas del Bosque o poner un taxi en el sitio de Abasolo. Si tu casa tiene local o segundo piso, puedes abrir una tiendita o una taquería, o rentar el cuarto. Cada mañana cobras lo que dejaron. La pestaña **Propiedades** lleva las cuentas.
+- **Minijuegos:** la **lotería** de Doña Lety (viernes a domingo en la noche, con sus versos) y los turnos en la **Tortillería Marín**, donde volteas las tortillas cuando se inflan. También hay billar, peleas de gallos en el palenque (en temporada) y el trompo.
+- **El Ayuntamiento:** el Presidente Municipal casi nunca está, y los regidores de Morena, PAN, PRI, PRD y Movimiento Ciudadano escuchan… y no hacen nada. El pueblo se ríe de ellos.
+- **Misiones nuevas:**
+  - *La foto de 1979*: Don Nacho Marín guarda una foto de las luces, y el historiador Álvaro Ochoa la autentifica.
+  - *¿Dónde anda Güicho?*: hay que encontrar al dueño de Ferretuberías, que nunca está.
+  - *Manos de tortillero*: un turno en la Tortillería Marín.
+  - *El bache de la Vicente Guerrero*: juntas firmas, vas con los políticos y al final lo tapan los vecinos.
+  - *¡Lotería!*: ganarle una partida a Doña Lety.
+  - *Lucero, el caballo de los Salazar*: encontrar a la yegua y llevarla de vuelta.
+  - *Una casa en Jiquilpan*: construir tu casa.
+  - *La plática del historiador*.
+
 ## Quién eres cambia (al estilo Fable)
 
 Tu personaje tiene cuatro valores: **Corazón** (bondad), **Palabra** (honestidad y deudas), **Fama** (lo que el pueblo cree de ti) y **Panza** (lo bien que comes). Cambian tu aspecto: si eres muy bondadoso te rodea un aura, si eres grosero tu ropa se ve descuidada y los perros te ladran, y los tacos se te notan en la panza. Enchilarse y “andar alegre” también se ven. Los vecinos comentan todo eso cuando les hablas.
 
 ## Conversaciones que siempre son nuevas
 
-- **Sin conexión:** un generador de diálogos arma lo que dice cada vecino a partir del clima, la hora, el día, el lugar, tu reputación, el capítulo, los chismes y la personalidad de cada quien. También entiende texto libre por palabras clave.
-- **Con IA (opcional):** en *Ajustes → Conversación libre con IA* puedes poner una API key de Anthropic o la URL de tu propio proxy. Cada personaje responde en vivo con Claude (`claude-opus-5-5` por defecto), con su personalidad, lo que sabe y el contexto del momento. La key se guarda sólo en tu dispositivo. Para una versión pública conviene usar un proxy para no exponer la key.
+- **Sin conexión:** un generador de diálogos arma lo que dice cada vecino a partir del clima, la hora, el día, el lugar, tu reputación, el capítulo, los chismes y la personalidad de cada quien. 
+- **Con IA (opcional):** las respuestas del jugador siempre se eligen de una lista. En *Ajustes → Voces con IA* puedes poner una API key de Anthropic o la URL de tu propio proxy. Con eso, lo que cada personaje te dice al platicar se genera en vivo con Claude (`claude-opus-5-5` por defecto), según su personalidad y el momento. La key se guarda sólo en tu dispositivo. Para una versión pública conviene usar un proxy para no exponer la key.
 
 ## Clima y hora reales
 
@@ -108,6 +130,8 @@ js/game.js          estado, jugador, interacciones, tiendas, taxis, guardado
 js/renderer.js      chunks del terreno, sprites ordenados por Y, luz, clima
 js/render/*.js      arte vectorial: terreno, casas, monumentos, personajes
 js/render/jiquilpan.js  edificios y monumentos propios de Jiquilpan (a partir de fotos)
+js/life.js          relaciones, ropa, terrenos, construcción y negocios
+js/minigames.js     lotería y tortillería
 js/data/town.js     trazo del pueblo (calles, manzanas, monumentos, tianguis)
 js/data/regions.js  Cerro de San Francisco y los pueblos cercanos
 js/data/interiors.js interiores (mercado, templos, biblioteca, UNAM…)

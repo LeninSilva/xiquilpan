@@ -120,8 +120,9 @@ export async function runCutscene(game, name) {
 async function intro(game) {
   const d = game.dialog;
   const abuela = () => game.npcs.named.get('abuela') || { name: 'Abuela Chayo', role: 'tu abuela' };
+  game.ui.cinema(true);
   game.ui.banner('¿Han visto a mi abuelo?', 'Capítulo I');
-  await wait(1800);
+  await wait(3600);
   await d.scene(async d => {
     await d.narrate('Jiquilpan de Juárez, Michoacán. Jueves 1 de octubre. Todavía huele a lluvia de anoche.');
     await d.say(abuela(), `¡${game.state.name}! Qué bueno que llegaste, mijo. Siéntate. No, no te sientes. Escúchame.`);
@@ -134,8 +135,9 @@ async function intro(game) {
     if (c.value === 'm') { game.addStat('corazon', -3); await d.say(abuela(), 'No le faltes el respeto a tu abuelo. Chocheando o no, es tu sangre. Ándale, ve.'); }
     else { game.addStat('corazon', 3); await d.say(abuela(), 'Dios te bendiga, mijo.'); }
     await d.say(abuela(), 'Pregunta en el pueblo. Tu abuelo siempre toma café con Rosita en la plaza, y los taxistas ven pasar a todo mundo. Toño… ese seguro fue al Chamacuero por su mezcal.');
-    await d.narrate('Pistas: habla con la gente. Toca “¿No ha visto a mi abuelo?” en las conversaciones. Abre el mapa con el botón ☰.');
+    await d.narrate('Habla con la gente: en cada plática escoges qué decir, y eso va formando quién eres. Pregunta “¿No ha visto a mi abuelo?”. En el menú ☰ están el mapa, tus misiones, la gente que conoces y tus propiedades.');
   });
+  game.ui.cinema(false);
   game.quests.set('main', 1);
 }
 

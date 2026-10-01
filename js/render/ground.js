@@ -16,7 +16,7 @@ const FLAT = {
   [G.DIRT]: '#b58e62', [G.DIRTROAD]: '#ae885d', [G.ROCKROAD]: '#a48a6a', [G.ROCK]: '#a09a8e', [G.SAND]: '#c8ab80',
   [G.ASPHALT]: '#303235', [G.WATER]: '#4a8fb0', [G.ROOF]: '#b5654a', [G.COURT]: '#3f8a73', [G.INFIELD]: '#c68657',
   [G.STAIRS]: '#cfc3ae', [G.WALL]: '#efe6d6', [G.VOID]: '#16171c', [G.CARPET]: '#8e2f35', [G.FLOOR_WOOD]: '#a8744a',
-  [G.FLOOR_TILE]: '#e4d8c2', [G.FLOOR_STONE]: '#bfb09b', [G.MARKET]: '#cbbfa9',
+  [G.FLOOR_TILE]: '#e4d8c2', [G.FLOOR_STONE]: '#bfb09b', [G.MARKET]: '#cbbfa9', [G.LAJA]: '#b08472',
 };
 
 const SUB = 4; // sub-cells per tile edge for smooth colour fields
@@ -140,6 +140,10 @@ export function drawTile(ctx, map, tx, ty, smooth = false) {
       running(ctx, X, Y, 8, 8, 21, (i, j) => mix('#c7b4a0', '#d8c7b3', hash2(i, j, 22)), '#a9957f');
       break;
     case G.HEX: hexPave(ctx, X, Y, 31); break;
+    case G.LAJA: // Pueblo Mágico street: big irregular flagstones in pink and brown cantera, pale mortar
+      mosaic(ctx, X, Y, 6.6, 77, (i, j) => { const k = hash2(i, j, 78); return mix(mix('#a2766a', '#c79d88', k), '#8d6a5e', hash2(i, j, 79) > 0.85 ? 0.4 : 0); }, '#c9b8a4', 0.5, 0.75);
+      curb(ctx, map, tx, ty, X, Y);
+      break;
     case G.COBBLE: // empedrado: river stones
       mosaic(ctx, X, Y, 3.4, 41, (i, j) => mix('#6f675c', '#a89c88', hash2(i, j, 42)), '#4d463e', 0.5, 0.7);
       if (isPothole(map, tx, ty)) pothole(ctx, X, Y, tx, ty, map);

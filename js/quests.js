@@ -2,16 +2,16 @@
 import { TILE } from './util.js';
 
 export const HILOS_GOAL = 12;
-const CLUE_NPC = { rosita: 'Rosita (café de la plaza)', chuy: 'Chuy (sitio Gabino Ortiz)', lupe: 'Don Lupe (El Chamacuero)', refugio: 'Don Refugio (pajaretes)', tona: 'Doña Toña (pueblito del cerro)' };
+const CLUE_NPC = { rosita: 'Rosita (café de la plaza)', chuy: 'Chuy (sitio de Abasolo)', lupe: 'Don Lupe (El Chamacuero)', refugio: 'Don Refugio (pajaretes)', tona: 'Doña Toña (pueblito del cerro)' };
 
 // Where things are, for the compass & map pins: [map, tileX, tileY]
 const PLACES = {
-  home: ['town', 225, 156.5], rosita: ['town', 120.5, 102.2], chuy: ['town', 137.2, 141.4], lupe: ['town', 15.5, 26.2], refugio: ['town', 275.5, 39],
-  cerro: ['town', 152, 332], summit: ['cerro', 41.5, 118.6], tona: ['cerro', 36, 84.4], kiosco: ['town', 126, 105.4], unam: ['town', 225, 194.5],
-  palacio: ['town', 170, 105.6], hospital: ['town', 224, 140.4], templo: ['town', 195, 143.4], beto: ['town', 224, 164.2], escuela: ['town', 132, 156.6],
+  home: ['town', 225, 156.5], rosita: ['town', 120.5, 102.2], chuy: ['town', 160.8, 128.3], lupe: ['town', 15.5, 26.2], refugio: ['town', 275.5, 39],
+  cerro: ['town', 1.5, 20], summit: ['cerro', 41.5, 118.6], tona: ['cerro', 37, 93.4], kiosco: ['town', 126, 105.4], unam: ['town', 225, 194.5],
+  palacio: ['town', 170, 105.6], hospital: ['town', 224, 140.4], templo: ['town', 195, 143.4], beto: ['town', 171, 51.5], escuela: ['town', 132, 156.6],
   chema: ['town', 121, 115.4], poncho: ['town', 156.5, 248.4], chon: ['town', 222, 217.2], guero: ['town', 125, 84.2], biblioteca: ['town', 140, 140.4],
-  tianguis_fri: ['town', 222, 158.6], mercado: ['town', 200, 110.4], cochera: ['town', 118, 115], chamacuero: ['town', 14.5, 25.6], parque: ['town', 32, 72],
-  bosque: ['town', 194, 253.5], marin: ['town', 119, 93.4], reboceria: ['town', 62, 40.4], casita: ['town', 29, 254.4],
+  tianguis_fri: ['town', 171, 61], mercado: ['town', 200, 110.4], cochera: ['town', 118, 115], chamacuero: ['town', 14.5, 25.6], parque: ['town', 32, 72],
+  bosque: ['town', 194, 253.5], loteria: ['town', 119.5, 108.8], marin: ['town', 119, 93.4], reboceria: ['town', 62, 40.4], casita: ['town', 29, 254.4],
 };
 
 export class Quests {
@@ -45,7 +45,7 @@ export class Quests {
         if (main.stage < 1) return { title: '¿Han visto a mi abuelo?', text: 'Habla con tu abuela.', at: PLACES.home };
         if (main.stage < 2) return { title: '¿Han visto a mi abuelo?', text: `Pregunta en el pueblo por Don Miguel y Don Toño. Pistas: ${s.clues.length}/3`, at: this.nearestClue() };
         if (!g.hasItem('linterna')) return { title: 'Rumbo al cerro', text: 'Consigue una linterna (OXXO, “Frijoles”, el tianguis… o pídesela a tu abuela).', at: PLACES.home };
-        return { title: 'Rumbo al cerro', text: 'Sube al Cerro de San Francisco: sal al sur por la avenida, cruza el bosque y sigue el camino de terracería.', at: PLACES.cerro };
+        return { title: 'Rumbo al cerro', text: 'Sube al Cerro de San Francisco: sal por el poniente, por la colonia del panteón, y sigue el camino de terracería.', at: PLACES.cerro };
       case 2:
         if (!this.f.found_grandpas) return { title: 'El Cerro de San Francisco', text: 'Busca a tu abuelo en la cima, junto a la cruz.', at: PLACES.summit };
         return { title: 'La noche en el cerro', text: 'Habla con tu abuelo junto a la fogata.', at: PLACES.summit };
@@ -247,6 +247,14 @@ export class Quests {
         ['Tacos al costo, compa. Y le digo a mi primo y a mi tío: tres Güeros en la plaza, por primera vez juntos. Ya era hora.']));
     }
 
+    // --- small business offers ---
+    if (id === 'chuy' && !(g.state.businesses || []).includes('taxi')) opt('Chuy, ¿y si pongo un taxi a trabajar?', async d => {
+      await d.say(npc, 'Mi sobrino lo maneja, tú pones el carro. Un Tsuru bien cuidado anda en $6,000. Deja unos $210 diarios, limpios. ¿Le entras?');
+      const c = await d.choose([{ text: 'Trato hecho ($6,000)', tag: 'money', value: 1 }, { text: 'Lo voy a pensar', value: 0 }], npc);
+      if (!c.value) return;
+      if (g.state.money < 6000) { await d.say(npc, 'Junta primero, compa. Aquí te espero.'); return; }
+      g.buyBusiness('taxi'); await d.say(npc, '¡Bienvenido al gremio! Cada mañana te paso tu cuenta.');
+    }, 'money');
     // --- side quests ---
     for (const [qid, def] of Object.entries(SIDE)) {
       if (def.options) for (const o of def.options(g, npc, this) || []) out.push(o);
@@ -347,6 +355,11 @@ export class Quests {
         await d.say(g.npcs.named.get('miguel') || { name: 'Don Miguel' }, 'No, hermano. Mira las jacarandas. Es marzo.');
       });
     }
+  }
+  onEvent(ev) {
+    const g = this.game;
+    if (ev === 'loteria_win' && this.started('s_loteria') && !this.done('s_loteria')) this.q('s_loteria').stage = 2;
+    if (ev === 'politico' && this.started('s_baches') && this.q('s_baches').stage === 2) { this.q('s_baches').stage = 3; g.ui.toast('Te prometieron todo. Ahora toca esperar… o hacerlo ustedes.', 'quest'); }
   }
   onPickup(item) {
     if (item === 'trompo' && this.started('s_trompo')) this.set('s_trompo', 2);
@@ -566,6 +579,155 @@ export const SIDE = {
         Q.finish('s_jeep', 'La foto del jeep');
       } }];
       return [];
+    },
+  },
+  // ---- round 3: intriguing errands around town ----------------------------------------------------
+  s_foto79: {
+    title: 'La foto de 1979', giver: 'nacho_marin', desc: 'Don Nacho Marín vio las luces con tu abuelo en 1979 y guarda una foto.',
+    step: (g) => g.hasItem('foto_luces') ? (g.flags.foto_ochoa ? 'Regrésale la foto a Don Nacho y cuéntale.' : 'Llévale la foto al historiador Álvaro Ochoa (jueves en la Casa de la Cultura, viernes en la UAER).') : 'Busca la foto en el ropero de la casona de los Marín.',
+    target: (g) => g.hasItem('foto_luces') ? (g.flags.foto_ochoa ? 'nacho_marin' : 'alvaro_ochoa') : null,
+    options: (g, npc, Q) => {
+      const id = npc.def?.id;
+      if (id === 'nacho_marin' && !Q.started('s_foto79')) return [{ text: 'Don Nacho, ¿usted vio las luces?', tag: 'quest', run: async d => {
+        await d.say(npc, 'Septiembre del 79. Tu abuelo y yo, en la cruz del cerro. Tomé una foto con una Kodak prestada. Salió movida, pero salió. Nadie la quiso ver.');
+        await d.say(npc, 'Está en mi ropero, abajo de las camisas. Búscala. Y llévasela a ese historiador que viene de Zamora, Ochoa. Que diga él si estoy loco.');
+        Q.start('s_foto79');
+      } }];
+      if (id === 'alvaro_ochoa' && g.hasItem('foto_luces') && !g.flags.foto_ochoa) return [{ text: 'Doctor, ¿qué opina de esta foto?', tag: 'quest', run: async d => {
+        await d.say(npc, 'Kodak Instamatic, revelado en Zamora, 1979: mire el sello del laboratorio atrás. No es un truco de cuarto oscuro. Qué son esas luces, no lo sé. Pero la foto es auténtica y la fecha coincide con un recorte del periódico de Sahuayo.');
+        await d.say(npc, 'El historiador no cree ni descree, joven: documenta. Dígale a Don Nacho que su foto va a ir al archivo de la Unidad. Con su nombre.');
+        g.flags.foto_ochoa = true; g.addStat('fama', 4);
+      } }];
+      if (id === 'nacho_marin' && g.flags.foto_ochoa && !Q.done('s_foto79')) return [{ text: 'Don Nacho, Ochoa dice que su foto es auténtica', tag: 'kind', run: async d => {
+        g.takeItem('foto_luces');
+        await d.say(npc, '…Cuarenta y siete años esperando que alguien dijera eso. Gracias, muchacho. Toma, esto era de mi padre: que te dé suerte.');
+        g.addMoney(150); g.addStat('corazon', 5); Q.finish('s_foto79', 'La foto de 1979'); if (g.flags.mancha) g.gainHilo(npc);
+      } }];
+      return [];
+    },
+  },
+  s_guicho: {
+    title: '¿Dónde anda Güicho?', giver: 'ruben_marin', desc: 'A la máquina de tortillas de los Marín se le rompió una pieza. Sólo Güicho, de Ferretuberías, la tiene… y nunca está.',
+    step: (g) => g.hasItem('codo') ? 'Llévale la pieza a Rubén, en la Tortillería Marín.' : 'Encuentra a Güicho. Dicen que anda en El Santo Remedio por las tardes, o en las micheladas de Nico.',
+    target: (g) => g.quests.started('s_guicho') && !g.quests.done('s_guicho') ? (g.hasItem('codo') ? 'ruben_marin' : 'guicho') : null,
+    options: (g, npc, Q) => {
+      const id = npc.def?.id;
+      if (id === 'ruben_marin' && !Q.started('s_guicho')) return [{ text: '¿Por qué tan apurado, Rubén?', tag: 'quest', run: async d => {
+        await d.say(npc, 'Se me tronó un codo de la máquina. Sin eso, la masa sale chueca. Sólo Güicho tiene la pieza, pero ese hombre nunca abre. Si lo encuentras, te lo agradezco con tortillas de por vida.');
+        Q.start('s_guicho');
+      } }];
+      if (id === 'guicho' && Q.started('s_guicho') && !g.hasItem('codo') && !Q.done('s_guicho')) return [{ text: 'Güicho, Rubén Marín necesita un codo de fierro', tag: 'quest', run: async d => {
+        await d.say(npc, '¿El de la tortillería? ¡Claro! Traigo uno en la camioneta, siempre traigo de todo. Llévatelo; me lo paga en tortillas. Y si alguien pregunta, yo estaba trabajando, ¿eh?');
+        g.giveItem('codo');
+      } }];
+      if (id === 'ruben_marin' && g.hasItem('codo') && !Q.done('s_guicho')) return [{ text: 'Aquí está la pieza', tag: 'kind', run: async d => {
+        g.takeItem('codo');
+        await d.say(npc, '¡Lo encontraste! ¿Dónde estaba? …No, no me digas. Mi papá dice que eres igualito a tu abuelo: necio pa\' buscar. Cuando quieras trabajar un turno, aquí hay chamba.');
+        g.addMoney(120); g.addStat('corazon', 3); Q.finish('s_guicho', '¿Dónde anda Güicho?');
+      } }];
+      return [];
+    },
+  },
+  s_tortillas: {
+    title: 'Manos de tortillero', giver: 'ruben_marin', desc: 'Trabaja un turno en la Tortillería Marín (de 6 a 3) y saca al menos 10 tortillas buenas.',
+    step: () => 'Habla con Rubén Marín y pide un turno. Voltea las tortillas cuando se inflen.',
+    options: (g, npc, Q) => {
+      if (npc.def?.id !== 'ruben_marin') return [];
+      return [{ text: 'Trabajar un turno en la tortillería', tag: 'money', run: async d => {
+        if (!Q.started('s_tortillas')) Q.start('s_tortillas');
+        await d.say(npc, 'Ándale, ponte el mandil. Cuando se inflen, las volteas; cuando se inflen otra vez, las sacas. Si se queman, me las cobras… no, es broma.');
+        d.ui.hideDialog();
+        const res = await g.tortillasShift(npc);
+        if (!res) return;
+        await d.say(npc, res.good >= 10 ? `¡${res.good} buenas! Tienes manos de tortillero, como mi papá.` : `${res.good} buenas. Mañana te sale mejor.`);
+        if (res.good >= 10 && !Q.done('s_tortillas')) Q.finish('s_tortillas', 'Manos de tortillero');
+      } }];
+    },
+  },
+  s_baches: {
+    title: 'El bache de la Vicente Guerrero', giver: 'chuy', desc: 'Un bache se tragó la llanta del taxi de Chuy. Nadie en el Ayuntamiento hace nada.',
+    step: (g) => { const q = g.quests.q('s_baches'); return q.stage === 1 ? `Junta firmas de vecinos (${g.state.firmas || 0}/5).` : q.stage === 2 ? 'Lleva la petición al Palacio: al Presidente o a algún regidor.' : q.stage === 3 ? 'Prometieron todo. Compra un bulto de cemento (Ferretuberías o una tlapalería) y llévaselo a Chuy.' : ''; },
+    target: (g) => { const q = g.quests.q('s_baches'); return q.stage === 3 && g.hasItem('cemento') ? 'chuy' : null; },
+    options: (g, npc, Q) => {
+      const id = npc.def?.id, q = Q.q('s_baches');
+      if (id === 'chuy' && !Q.started('s_baches')) return [{ text: '¿Qué le pasó al taxi, Chuy?', tag: 'quest', run: async d => {
+        await d.say(npc, '¡Ese bache de la Vicente Guerrero! Ya se tragó dos llantas y la suspensión. Hay que llevarle firmas al Ayuntamiento, a ver si ahora sí. Junta cinco vecinos que firmen, ándale.');
+        Q.start('s_baches'); g.state.firmas = 0; g.state.firmados = [];
+      } }];
+      if (q.stage === 1 && id && !npc.def.crowd && id !== 'chuy' && !(g.state.firmados || []).includes(id) && !npc.def.politico) return [{ text: 'Firmar la petición del bache', tag: 'quest', run: async d => {
+        g.state.firmados.push(id); g.state.firmas = (g.state.firmas || 0) + 1;
+        await d.say(npc, pick1(['¡Claro que firmo! Ese bache ya tiene nombre: le dicen “el Presidente”, porque nunca se va.', 'Firmo, pero no te hagas ilusiones. Aquí los baches duran más que los gobiernos.', 'Dame la pluma. A mi compadre se le rompió el eje ahí mismo.']));
+        if (g.state.firmas >= 5) { q.stage = 2; g.ui.toast('Ya tienes 5 firmas. Llévalas al Palacio Municipal.', 'quest'); }
+      } }];
+      if (q.stage === 2 && npc.def?.politico) return [{ text: 'Le traigo una petición firmada por los vecinos', tag: 'honest', run: async d => {
+        await d.say(npc, pick1(['¡Excelente! Esto es democracia, joven. Lo vamos a turnar a la comisión correspondiente. (Mete los papeles en un cajón lleno de papeles.)', 'Muy bien, muy bien. Lo vemos en la próxima sesión de Cabildo… o en la siguiente. Usted confíe.']));
+        q.stage = 3; g.ui.toast('Te prometieron todo. Ahora toca esperar… o hacerlo ustedes.', 'quest');
+      } }];
+      if (id === 'chuy' && q.stage === 3 && g.hasItem('cemento')) return [{ text: 'Chuy, traje cemento. Lo tapamos nosotros', tag: 'kind', run: async d => {
+        g.takeItem('cemento');
+        await d.say(npc, '¡Ese es mi muchacho! Le hablo a los vecinos. Así se hacen las cosas en Jiquilpan: el Ayuntamiento promete, y el pueblo tapa.');
+        await d.narrate('Esa tarde, entre cinco vecinos, Chuy y tú, el bache queda tapado. Alguien escribe con un palito en el cemento fresco: “ESTE NO LO HIZO EL AYUNTAMIENTO”.');
+        g.addStat('fama', 8); g.addStat('corazon', 4); g.addMoney(80); Q.finish('s_baches', 'El bache de la Vicente Guerrero');
+      } }];
+      return [];
+    },
+  },
+  s_loteria: {
+    title: '¡Lotería!', giver: 'lety', desc: 'Doña Lety juega lotería en la plaza los viernes, sábados y domingos en la noche. Gana una partida.',
+    step: (g) => g.quests.q('s_loteria').stage >= 2 ? 'Cuéntale a Doña Lety que ganaste.' : 'Juega en la mesa de la lotería de la plaza (viernes a domingo, de 5 a 11 de la noche).',
+    target: (g) => g.quests.q('s_loteria').stage >= 2 && !g.quests.done('s_loteria') ? 'lety' : null,
+    options: (g, npc, Q) => {
+      if (npc.def?.id !== 'lety') return [];
+      if (!Q.started('s_loteria')) return [{ text: 'Doña Lety, ¿y esa mesa con cartas?', tag: 'quest', run: async d => {
+        await d.say(npc, '¡La lotería! Viernes, sábado y domingo en la noche. Diez pesos la tabla. El gritón soy yo, y nadie canta “el borracho” como yo. Si me ganas una, te regalo una gelatina de las grandes.');
+        Q.start('s_loteria');
+      } }];
+      if (Q.q('s_loteria').stage >= 2 && !Q.done('s_loteria')) return [{ text: '¡Le gané una partida!', tag: 'kind', run: async d => {
+        await d.say(npc, '¡Ya me contaron! Ten tu gelatina, y la próxima te pongo la tabla de la suerte: la del gallo.');
+        g.giveItem('gelatina'); Q.finish('s_loteria', '¡Lotería!');
+      } }];
+      return [];
+    },
+  },
+  s_caballo: {
+    title: 'Lucero, el caballo de los Salazar', giver: 'salazar', desc: 'A Don Salazar se le escapó su yegua Lucero en el cerro.',
+    step: (g) => g.flags.lucero_follow ? 'Lleva a Lucero de regreso al Rancho de los Salazar.' : 'Busca a Lucero por La Piedrita: le gusta el agua.',
+    target: (g) => g.quests.started('s_caballo') && !g.quests.done('s_caballo') && g.flags.lucero_follow ? 'salazar' : null,
+    options: (g, npc, Q) => {
+      if (npc.def?.id !== 'salazar') return [];
+      if (!Q.started('s_caballo')) return [{ text: '¿Qué busca, señor?', tag: 'quest', run: async d => {
+        await d.say(npc, 'A mi yegua, la Lucero. Blanca, con una mancha café en la frente. Anoche se espantó con unas luces y rompió la cerca. Le gusta el agua de La Piedrita. Si me la traes, te pago bien.');
+        Q.start('s_caballo');
+      } }];
+      if (g.flags.lucero_follow && !Q.done('s_caballo')) return [{ text: 'Aquí está Lucero', tag: 'kind', run: async d => {
+        await d.say(npc, '¡Lucero, mi reina! Mira nomás, ni un rasguño. Ten, muchacho, y una cosa más: la noche que se escapó, las luces bajaron hasta el agua. Yo no digo nada… pero las vi.');
+        g.flags.lucero_follow = false; g.flags.lucero_home = true; g.addMoney(180); g.addStat('corazon', 4); Q.finish('s_caballo', 'Lucero, el caballo de los Salazar');
+      } }];
+      return [];
+    },
+  },
+  s_casa: {
+    title: 'Una casa en Jiquilpan', giver: 'paty', desc: 'Compra un terreno, contrata albañiles y construye tu casa.',
+    step: (g) => (g.state.properties || []).length ? 'Habla con el maestro albañil en tu terreno para seguir la obra.' : 'Junta dinero y compra un terreno con letrero de SE VENDE (junto al estadio o cerca del río).',
+    options: (g, npc, Q) => {
+      if (npc.def?.id !== 'paty' || Q.started('s_casa')) return [];
+      return [{ text: '¿Hay terrenos en venta en el pueblo?', tag: 'quest', run: async d => {
+        await d.say(npc, 'Hay unos lotes junto al estadio y otros por el río, en la salida a Totolán. Tienen su letrero de “Se vende”. Aquí se hace la escritura. Y el maestro Nacho Zepeda le construye lo que quiera, si le paga por adelantado.');
+        Q.start('s_casa');
+      } }];
+    },
+  },
+  s_ochoa: {
+    title: 'La plática del historiador', giver: 'alvaro_ochoa', desc: 'Álvaro Ochoa da una plática sobre la historia de la Ciénega.',
+    step: () => 'Escucha la plática del Dr. Ochoa.',
+    options: (g, npc, Q) => {
+      if (npc.def?.id !== 'alvaro_ochoa' || Q.done('s_ochoa')) return [];
+      return [{ text: 'Escuchar la plática', tag: 'kind', run: async d => {
+        if (!Q.started('s_ochoa')) Q.start('s_ochoa');
+        await d.say(npc, 'Xiquilpan: “lugar del jiquilite”, la planta del añil. Aquí se teñía de azul desde antes de los españoles. Luego vinieron los conventos, la Independencia, la Reforma… Juárez, por eso “de Juárez”.');
+        await d.say(npc, 'Y de este pueblo chico salió un presidente que expropió el petróleo, un poeta que cantó a las jacarandas, un jesuita que murió en Bolonia escribiendo en latín. Los pueblos no se miden por su tamaño, sino por lo que se acuerdan.');
+        g.addStat('fama', 2); Q.finish('s_ochoa', 'La plática del historiador'); if (g.flags.mancha) g.gainHilo(npc);
+      } }];
     },
   },
   s_mezcal: { title: 'Mezcal para Toño', desc: 'Don Toño quiere una botella del Chamacuero.', step: (g) => g.hasItem('mezcal') ? 'Llévale el mezcal a Don Toño.' : 'Compra una botella en El Chamacuero.', target: (g) => g.hasItem('mezcal') ? 'tono' : null },

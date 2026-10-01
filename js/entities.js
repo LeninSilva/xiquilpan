@@ -169,6 +169,7 @@ export function findPath(map, sx, sy, tx, ty, maxNodes = 9000) {
       const nx = cx + (k === 0 ? 1 : k === 1 ? -1 : 0), ny = cy + (k === 2 ? 1 : k === 3 ? -1 : 0);
       if (nx < 0 || ny < 0 || nx >= W || ny >= map.h || map.isSolidTile(nx, ny)) continue;
       const ni = ny * W + nx;
+      if (map.colBlock && map.colBlock[ni] && ni !== goal) continue;
       const cost = gc + (ROADS.has(map.ground[ni]) ? 1.7 : 1);
       if (_stamp[ni] === _gen && _g[ni] <= cost) continue;
       _stamp[ni] = _gen; _g[ni] = cost; _came[ni] = cur;
@@ -194,6 +195,10 @@ export class Vehicle extends Entity {
     this.honk = 0;
     this.stuck = 0;
   }
+  occupied(tx, ty) {
+    for (const v of this.fleet || []) if (v !== this && !v.dead && v.tx === tx && v.ty === ty) return true;
+    return false;
+  }
   laneAt(x, y) {
     const m = this.map;
     if (!m.inb(x, y)) return 0;
@@ -203,22 +208,41 @@ export class Vehicle extends Entity {
   }
   update(dt, game) {
     const m = this.map;
-    if (this.dir === null) { this.pickDir(); if (this.dir === null) { this.dead = true; return; } }
+    if (this.dir === null) { this.pickDir(); if (this.dir === null) { this.giveUp(game); return; } }
     const [dx, dy] = dvec(this.dir);
-    // anything ahead? (player, npc, other vehicle)
-    const ax = this.x + dx * (this.radius + 10), ay = this.y + dy * (this.radius + 8);
+    this.nx = this.tx + dx; this.ny = this.ty + dy;
+    // Is anything in the box ahead of us? (people, animals, carts, other vehicles)
+    const len = this.radius + 14, half = this.radius > 8 ? 7 : 4;
+    const bx0 = dx ? Math.min(this.x, this.x + dx * len) : this.x - half, bx1 = dx ? Math.max(this.x, this.x + dx * len) : this.x + half;
+    const by0 = dy ? Math.min(this.y, this.y + dy * len) : this.y - half, by1 = dy ? Math.max(this.y, this.y + dy * len) : this.y + half;
     let blocked = false;
     for (const o of game.entities) {
       if (o === this || o.map !== m || o.hidden || !o.solid) continue;
-      if (Math.abs(o.x - ax) < 10 && Math.abs(o.y - ay) < 9) { blocked = true; if (o === game.player && this.honk <= 0) { this.honk = 4; game.sfx?.('honk'); } break; }
+      const r = o instanceof Vehicle ? o.radius * 0.6 : (o.radius || 4);
+      if (o.x + r > bx0 && o.x - r < bx1 && o.y + r * 0.6 > by0 && o.y - r * 0.6 < by1) {
+        // a vehicle that is beside us going the same way (overtaking lane) doesn't block
+        blocked = true;
+        if (o === game.player && this.honk <= 0) { this.honk = 4; game.sfx?.('honk'); }
+        break;
+      }
+    }
+    // Tile reservation: never enter a tile another vehicle is in, or is about to enter ahead of us
+    if (!blocked && this.progress > TILE * 0.35) {
+      for (const v of game.npcs?.vehicles || []) {
+        if (v === this || v.dead || v.map !== m) continue;
+        if ((v.tx === this.nx && v.ty === this.ny) || (v.nx === this.nx && v.ny === this.ny && (v.progress > this.progress || (v.progress === this.progress && v.id < this.id)))) { blocked = true; break; }
+      }
     }
     this.honk -= dt;
-    if (blocked) { this.stuck += dt; if (this.stuck > 8) { this.dead = true; } return; }
+    if (blocked) {
+      this.stuck += dt;
+      if (this.stuck > 6 && !game.onScreen?.(this.x, this.y, 40)) this.dead = true; // only ever vanish off-screen
+      return;
+    }
     this.stuck = 0;
     const sp = this.speed * (game.env.rainAmt > 0.5 ? 0.8 : 1);
-    // pothole slowdown
     const g = m.get(Math.floor(this.x / TILE), Math.floor(this.y / TILE));
-    const slow = (g === G.DIRTROAD || g === G.ROCKROAD) ? 0.7 : 1;
+    const slow = (g === G.DIRTROAD || g === G.ROCKROAD) ? 0.7 : g === G.LAJA || g === G.COBBLE ? 0.85 : 1;
     this.progress += sp * slow * dt;
     this.x += dx * sp * slow * dt; this.y += dy * sp * slow * dt;
     if (this.progress >= TILE) {
@@ -226,9 +250,15 @@ export class Vehicle extends Entity {
       this.tx += dx; this.ty += dy;
       this.x = this.tx * TILE + 8 + dx * this.progress; this.y = this.ty * TILE + 8 + dy * this.progress;
       this.pickDir();
-      if (this.dir === null) this.dead = true;
+      if (this.dir === null) this.giveUp(game);
     }
     this.animT = (this.animT || 0) + dt;
+  }
+  // No way forward: wait where we are (visible) or quietly leave (off-screen).
+  giveUp(game) {
+    if (!game.onScreen?.(this.x, this.y, 40)) { this.dead = true; return; }
+    this.dir = this.lastDir || DIR.E; this.stuck += 0.02;
+    if (this.stuck > 30) this.dead = true;
   }
   pickDir() {
     const cur = this.laneAt(this.tx, this.ty);
@@ -246,9 +276,10 @@ export class Vehicle extends Entity {
         const [dx, dy] = dvec(this.dir);
         for (const s of [-1, 1]) {
           const ox = dy !== 0 ? s : 0, oy = dx !== 0 ? s : 0;
-          if (this.laneAt(this.tx + ox + dx, this.ty + oy + dy) & this.dir) { this.tx += ox; this.ty += oy; return; }
+          if (this.laneAt(this.tx + ox + dx, this.ty + oy + dy) & this.dir && !this.occupied(this.tx + ox, this.ty + oy)) { this.tx += ox; this.ty += oy; this.x += ox * TILE; this.y += oy * TILE; return; }
         }
       }
+      if (this.dir) this.lastDir = this.dir;
       this.dir = null; return;
     }
     // keep straight most of the time
@@ -339,6 +370,11 @@ export class Animal extends Entity {
       if (d > 120) this.barked = false;
     }
     if (this.bubbleT > 0) this.bubbleT -= dt;
+    if (this.follow && p.map === this.map) { // a led horse walks a few steps behind you
+      const d = dist(p.x, p.y, this.x, this.y);
+      if (d > 26) { this.target = { x: p.x - Math.sign(p.x - this.x) * 18, y: p.y + 4 }; this.wait = 0; this.speed = d > 80 ? 60 : 34; }
+      else { this.target = null; this.moving = false; return; }
+    }
     if (this.wait > 0) { this.wait -= dt; this.moving = false; return; }
     if (!this.target) {
       const a = Math.random() * Math.PI * 2, r = Math.random() * this.home.r;
@@ -348,7 +384,7 @@ export class Animal extends Entity {
     if (d < 2) { this.target = null; this.wait = 1 + Math.random() * (this.kind === 'cow' ? 8 : 4); this.moving = false; return; }
     const vx = dx / d * this.speed, vy = dy / d * this.speed;
     const nx = this.x + vx * dt, ny = this.y + vy * dt;
-    if (this.map.blocked(nx, ny, 5, 3)) { this.target = null; this.wait = 1; return; }
+    if (this.map.blocked(nx, ny, 5, 3)) { if (this.follow) { this.x = nx; this.y = ny; this.moving = true; return; } this.target = null; this.wait = 1; return; }
     this.x = nx; this.y = ny; this.moving = true;
     if (Math.abs(vx) > 0.1) this.dir = vx < 0 ? 2 : 3;
   }
@@ -363,5 +399,28 @@ export class Animal extends Entity {
     else if (this.kind === 'horse') drawHorse(ctx, this.dir === 2 ? -1 : 1, t + this.id, this.color, this.moving);
     ctx.restore();
     if (this.bubbleT > 0) drawBubble(ctx, this.x, this.y - 14, '¡Guau! ¡Guau!');
+  }
+}
+
+// A pickup that very rarely drives up or down the rocky road of the cerro, following waypoints.
+export class RoadTruck extends Entity {
+  constructor(map, pts, color) {
+    super(map, pts[0][0] * TILE + 8, pts[0][1] * TILE + 8);
+    this.pts = pts; this.i = 1; this.color = color; this.speed = 26; this.solid = true; this.radius = 12; this.dir = DIR.S; this.honk = 0;
+  }
+  update(dt, game) {
+    const t = this.pts[this.i]; if (!t) { this.dead = true; return; }
+    const tx = t[0] * TILE + 8, ty = t[1] * TILE + 8, dx = tx - this.x, dy = ty - this.y, d = Math.hypot(dx, dy);
+    if (d < 2) { this.i++; return; }
+    const p = game.player, ux = dx / d, uy = dy / d;
+    if (p.map === this.map && dist(p.x, p.y, this.x + ux * 22, this.y + uy * 22) < 16) { if ((this.honk -= dt) <= 0) { this.honk = 4; game.sfx?.('honk'); } return; }
+    this.x += ux * this.speed * dt; this.y += uy * this.speed * dt;
+    this.dir = Math.abs(ux) > Math.abs(uy) ? (ux > 0 ? DIR.E : DIR.W) : (uy > 0 ? DIR.S : DIR.N);
+  }
+  draw(ctx) {
+    ctx.save(); ctx.translate(this.x, this.y + 4);
+    if (this.dir === DIR.E || this.dir === DIR.W) drawCarSide(ctx, this.color, 'pickup', this.dir === DIR.E, null);
+    else drawCarTop(ctx, this.color, this.dir === DIR.N, false, 'pickup');
+    ctx.restore();
   }
 }

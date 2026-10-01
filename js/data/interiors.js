@@ -145,6 +145,7 @@ const BUILDERS = {
       shelf(20, 3.4, 30, { goods: ['#d9c7a8', '#f5f0e6', '#b8a888', '#e8e2d2'] }),
       shelf(23.5, 3.4, 24, { goods: ['#d9c7a8', '#f5f0e6', '#b8a888'] }),
       { kind: 'bench', x: 5, y: 10, w: 20, up: 12, collide: [-8, -4, 16, 4] }, { kind: 'bench', x: 21, y: 10, w: 20, up: 12, collide: [-8, -4, 16, 4] },
+      counter(13, 10.4, 90, { color: '#5b3a22', sign: 'SALA DE CABILDO', signBg: '#3f3a33', signFg: '#f1e2b8' }),
     ], lights: [[13, 6, 150]] }),
   templo_sf: () => church('templo_sf', 'Parroquia de San Francisco de Asís', '#e3d3b8', ['#e0b54a', '#a8662e']),
   santuario: () => church('santuario', 'Santuario del Sagrado Corazón', '#f1d4cf', ['#f0c4bd', '#b85c56']),
@@ -341,9 +342,9 @@ function genericHouse(id) {
   return m;
 }
 const SHOP_FOR = { ABARROTES: 'tiendita', TIENDITA: 'tiendita', 'MISCELÁNEA': 'tiendita', 'CREMERÍA': 'tiendita', CARNES: 'carniceria', 'RECAUDERÍA': 'tiendita', 'FRUTERÍA': 'tiendita',
-  FARMACIA: 'farmacia', 'PAPELERÍA': 'papeleria', CIBER: 'papeleria', CELULARES: 'papeleria', NOVEDADES: 'papeleria', REGALOS: 'papeleria', 'MERCERÍA': 'papeleria', 'ÓPTICA': 'papeleria',
+  FARMACIA: 'farmacia', 'PAPELERÍA': 'papeleria', CIBER: 'papeleria', CELULARES: 'papeleria', NOVEDADES: 'ropa', REGALOS: 'flores', 'MERCERÍA': 'ropa', 'ÓPTICA': 'papeleria',
   'FERRETERÍA': 'ferreteria', 'TLAPALERÍA': 'ferreteria', REFACCIONES: 'ferreteria', 'DULCERÍA': 'dulceria', 'PALETERÍA': 'dulceria', PURIFICADORA: 'purificadora',
-  'ESTÉTICA': 'servicios', 'LAVANDERÍA': 'servicios', 'ZAPATERÍA': 'servicios' };
+  'ESTÉTICA': 'estetica', 'LAVANDERÍA': 'servicios', 'ZAPATERÍA': 'ropa' };
 function genericShop(id) {
   const [, seedS, signEnc] = id.split('_');
   const sign = decodeURIComponent(signEnc || 'ABARROTES'), seed = +seedS || 1;

@@ -1,7 +1,7 @@
 // Population manager: named NPCs on schedules, the crowd, traffic and animals.
 import { TILE, dist, rng, pick, hash2 } from './util.js';
 import { G, ROADS } from './world.js';
-import { Person, Vehicle, Animal, Entity, findPath } from './entities.js';
+import { Person, Vehicle, Animal, Entity, findPath, RoadTruck } from './entities.js';
 import { makeLook } from './render/people.js';
 import { NAMED, MERCADO_VENDORS } from './data/npcs.js';
 import { SPRITES } from './render/landmarks.js';
@@ -30,6 +30,20 @@ export class NPC extends Person {
     this.path = null; this.pathI = 0; this.wait = 0; this.home = { x, y };
     this.behaviour = 'stand'; this.speed = 30 + R() * 10;
   }
+  // Caught on a corner or a bush: step free, then find a new way to where we were going.
+  recover(game) {
+    this.stuck = 0; this.recoveries = (this.recoveries || 0) + 1;
+    this.unstick();
+    const goal = this.path && this.path[this.path.length - 1];
+    if (goal && this.recoveries < 4) {
+      const p = findPath(this.map, this.x / TILE, this.y / TILE, goal[0], goal[1], 6000);
+      if (p) { this.path = p; this.pathI = 1; return; }
+    }
+    // give up on this walk: stand here, or (if nobody is looking) jump to the destination
+    if (goal && !game.onScreen(this.x, this.y, 30)) { this.x = goal[0] * TILE + 8; this.y = goal[1] * TILE + 10; }
+    this.path = null; this.recoveries = 0;
+    if (this.onArrive) this.onArrive(game);
+  }
   update(dt, game) {
     this.updateAnim(dt);
     this.moving = false;
@@ -44,16 +58,22 @@ export class NPC extends Person {
       if (d < 2) { this.pathI++; return; }
       const vx = dx / d * this.speed, vy = dy / d * this.speed;
       const others = game.entities;
-      if (!this.tryMove(vx, vy, dt, others)) { this.stuck = (this.stuck || 0) + dt; if (this.stuck > 2) { this.path = null; this.stuck = 0; } }
-      else this.stuck = 0;
+      const bx = this.x, by = this.y;
+      this.tryMove(vx, vy, dt, others);
+      if (Math.hypot(this.x - bx, this.y - by) < this.speed * dt * 0.3) { // barely moved: we are caught on something
+        this.stuck = (this.stuck || 0) + dt;
+        if (this.stuck > 1.2) this.recover(game);
+      } else this.stuck = 0;
       this.moving = true; this.setDirFromVec(vx, vy);
       return;
     }
+    if ((this.behaviour === 'wander' || this.behaviour === 'walk') && this.map.blocked(this.x, this.y, 4, 2.5)) this.unstick(); // never stand inside a bush
     if (this.behaviour === 'wander') {
       this.wait -= dt;
       if (this.wait <= 0) {
         const r = (this.wanderR || 3) * TILE;
-        const tx = this.home.x + (R() - 0.5) * 2 * r, ty = this.home.y + (R() - 0.5) * 2 * r;
+        let tx = this.home.x + (R() - 0.5) * 2 * r, ty = this.home.y + (R() - 0.5) * 2 * r;
+        if (this.map.blocked(tx, ty, 5, 4)) { tx = this.home.x; ty = this.home.y; }
         const path = findPath(this.map, this.x / TILE, this.y / TILE, tx / TILE, ty / TILE, 400);
         if (path && path.length < 16) { this.path = path; this.pathI = 1; }
         this.wait = 2 + R() * 5;
@@ -87,7 +107,7 @@ const POIS = {
   santuario: [[64, 136.5]], sanfrancisco: [[195, 146], [200, 152]], monjas: [[86, 103]],
   bosque: [[60, 252.6], [110, 252.6], [175, 252.6], [230, 252.6], [194, 254.5]],
   juarez: [[29, 70], [35, 71], [32, 62]],
-  paz: [[224, 163.5], [224, 169.5], [215, 165.5], [232.5, 165.5]],
+  paz: [[171, 51], [163, 52], [179, 52], [165, 45.2]],
   escuela: [[132, 157], [124, 157]],
   entrada: [[284, 171.6], [268, 172], [292, 171.6]],
   palmas: [[104, 28.5], [120, 22.3], [80, 38.6], [134, 16.6]],
@@ -122,6 +142,7 @@ export class NPCManager {
     for (const s of def.sched || []) {
       if (s.acts && !s.acts.includes(act)) continue;
       if (s.d && !s.d.includes(d)) continue;
+      if (s.when && !s.when(g)) continue;
       if (h < s.h[0] || h >= s.h[1]) continue;
       return s;
     }
@@ -242,7 +263,7 @@ export class NPCManager {
       const x = g.player.x + Math.cos(a) * d, y = g.player.y + Math.sin(a) * d * 0.8;
       const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
       const gnd = map.get(tx, ty);
-      if (map.isSolidTile(tx, ty) || ROADS.has(gnd)) continue;
+      if (map.isSolidTile(tx, ty) || ROADS.has(gnd) || map.blocked(tx * TILE + 8, ty * TILE + 10, 5, 4)) continue;
       if (g.onScreen(x, y, 20)) continue;
       const seed = this.seed++;
       const look = (CROWD[type] || CROWD.stroll)(seed);
@@ -315,6 +336,13 @@ export class NPCManager {
     for (const v of this.vehicles) {
       if (v.map !== map || dist(v.x, v.y, g.player.x, g.player.y) > 34 * TILE) { v.dead = true; }
     }
+    if (map.id === 'cerro' && map.road) { // one or two cars a day go up the rocky road
+      if (!this.vehicles.some(v => !v.dead) && Math.random() < 0.004) {
+        const up = Math.random() < 0.5, pts = up ? map.road : map.road.slice().reverse();
+        const v = new RoadTruck(map, pts, pick(R, ['#8a1f1f', '#e8e2d2', '#2b4c8a', '#5b6b3a'])); this.vehicles.push(v); this.add(v);
+      }
+      return;
+    }
     if (map.id !== 'town' || !map.laneDir) return;
     const h = g.clock.hour;
     let target = h < 6 ? 2 : h < 8 ? 6 : h < 21 ? 9 : h < 23 ? 6 : 3;
@@ -350,7 +378,7 @@ export class NPCManager {
     const v = new Vehicle(this.game.map, at[0], at[1], kind, this.seed++);
     if (kind === 'moto' || kind === 'bici') v.riderLook = makeLook(this.seed++, { age: pick(R, ['teen', 'adult', 'adult']), hat: kind === 'moto' ? pick(R, ['cap', null, 'helmet']) : 'cap', rebozo: null, holds: null });
     if (kind === 'moto') v.color = pick(R, ['#c0392b', '#1f4fa0', '#1b1b1b', '#f39c12', '#e0e0e0']); // Italika colours
-    this.vehicles.push(v); this.add(v);
+    v.fleet = this.vehicles; this.vehicles.push(v); this.add(v);
   }
   spawnRinos() {
     const at = this.findLaneTile(false);
@@ -361,14 +389,14 @@ export class NPCManager {
     lead.riderLook = makeLook(this.seed++, { uniform: 'rino' });
     lead.pickDir();
     if (lead.dir === null) return;
-    this.vehicles.push(lead); this.add(lead);
+    lead.fleet = this.vehicles; this.vehicles.push(lead); this.add(lead);
     // followers spawn behind the leader
     let k = 1;
     const spawnNext = () => {
       if (k > 5) return;
       const v = new Vehicle(map, at[0], at[1], 'rino', this.seed++);
       v.riderLook = makeLook(this.seed++, { uniform: 'rino', female: R() < 0.35 });
-      v.dir = lead.dir; v.speed = lead.speed;
+      v.dir = lead.dir; v.speed = lead.speed; v.fleet = this.vehicles;
       this.vehicles.push(v); this.add(v); k++;
       setTimeout(spawnNext, 700);
     };
@@ -394,8 +422,15 @@ export class NPCManager {
       const dogs = [[172, 111.6, '#b5854f'], [60, 111.6, '#2b2b2b'], [100, 157.6, '#d9c9a8'], [200, 62.6, '#8a5a34'], [130, 41.6, '#c9a06a'], [224, 158.4, '#e8e2d4']];
       for (const [x, y, c] of dogs) add(new Animal(map, x * TILE, y * TILE, 'dog', { color: c, r: 90 }));
     } else if (map.id === 'cerro') {
-      add(new Animal(map, 43 * TILE, 81 * TILE, 'dog', { color: '#c8743a', r: 50 })); // Canelo
-      for (let i = 0; i < 6; i++) add(new Animal(map, (33 + i * 2) * TILE, (84.5 + (i % 2)) * TILE, 'chicken', { r: 40 }));
+      add(new Animal(map, 43 * TILE, 95 * TILE, 'dog', { color: '#c8743a', r: 50 })); // Canelo
+      for (let i = 0; i < 6; i++) add(new Animal(map, (33 + i * 2) * TILE, (98.5 + (i % 2)) * TILE, 'chicken', { r: 40 }));
+      // Lucero, the Salazars' runaway mare (side quest)
+      if (g.quests.started('s_caballo') && !g.quests.done('s_caballo')) {
+        const near = g.flags.lucero_follow;
+        const h = new Animal(map, near ? g.player.x + 20 : 61 * TILE, near ? g.player.y : 36 * TILE, 'horse', { color: '#f2efe8', r: 30 });
+        h.def = { id: 'lucero', name: 'Lucero', crowd: true }; h.horse = true; h.follow = near;
+        add(h);
+      }
       // cows and horses loose on the slopes
       const free = (x, y) => !map.isSolidTile(Math.floor(x), Math.floor(y));
       const herd = [[20, 34, 'cow'], [26, 36, 'cow'], [58, 60, 'cow'], [16, 58, 'cow'], [60, 96, 'cow'], [22, 100, 'cow'], [48, 16, 'horse'], [52, 18, 'horse'], [18, 88, 'horse'], [60, 70, 'horse']];

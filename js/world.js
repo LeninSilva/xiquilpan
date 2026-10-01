@@ -5,14 +5,14 @@ export const G = {
   GRASS: 0, DIRT: 1, ASPHALT: 2, COBBLE: 3, SIDEWALK: 4, PLAZA: 5, WATER: 6, ROCK: 7,
   FIELD: 8, FOREST: 9, ROOF: 10, MEDIAN: 11, COURT: 12, INFIELD: 13, STAIRS: 14, SLOPE: 15,
   FLOOR_WOOD: 16, FLOOR_TILE: 17, FLOOR_STONE: 18, WALL: 19, CEMETERY: 20, GARDEN: 21, VOID: 22,
-  ROCKROAD: 23, CARPET: 24, MARKET: 25, OUTFIELD: 26, DIRTROAD: 27, CANTERA: 28, HEX: 29, SAND: 30,
+  ROCKROAD: 23, CARPET: 24, MARKET: 25, OUTFIELD: 26, DIRTROAD: 27, CANTERA: 28, HEX: 29, SAND: 30, LAJA: 31,
 };
 
 // Which ground types a person can walk on (others collide).
 const WALKABLE = new Set([G.GRASS, G.DIRT, G.ASPHALT, G.COBBLE, G.SIDEWALK, G.PLAZA, G.ROCK, G.FIELD,
   G.FOREST, G.MEDIAN, G.COURT, G.INFIELD, G.STAIRS, G.FLOOR_WOOD, G.FLOOR_TILE, G.FLOOR_STONE,
-  G.CEMETERY, G.ROCKROAD, G.CARPET, G.MARKET, G.OUTFIELD, G.DIRTROAD, G.CANTERA, G.HEX, G.SAND]);
-export const ROADS = new Set([G.ASPHALT, G.COBBLE, G.DIRTROAD, G.ROCKROAD]);
+  G.CEMETERY, G.ROCKROAD, G.CARPET, G.MARKET, G.OUTFIELD, G.DIRTROAD, G.CANTERA, G.HEX, G.SAND, G.LAJA]);
+export const ROADS = new Set([G.ASPHALT, G.COBBLE, G.DIRTROAD, G.ROCKROAD, G.LAJA]);
 
 export class GameMap {
   constructor(id, name, w, h, opts = {}) {
@@ -123,6 +123,16 @@ export class GameMap {
       }
       return false;
     };
+    // tiles whose middle is taken by a sprite collider (bushes, benches, lamps, trees…): pathfinding avoids them
+    this.colBlock = new Uint8Array(this.w * this.h);
+    for (const c of this.colliders) {
+      if (c.s.acts || c.s.nightOnly) continue;
+      for (let ty = Math.floor(c.y0 / TILE); ty <= Math.floor(c.y1 / TILE); ty++) for (let tx = Math.floor(c.x0 / TILE); tx <= Math.floor(c.x1 / TILE); tx++) {
+        if (!this.inb(tx, ty)) continue;
+        const X = tx * TILE, Y = ty * TILE;
+        if (c.x1 > X + 3 && c.x0 < X + 13 && c.y1 > Y + 4 && c.y0 < Y + 14) this.colBlock[ty * this.w + tx] = 1;
+      }
+    }
     // sort sprites into row buckets for quick culling
     this.spriteRows = new Map();
     for (const s of this.sprites) {

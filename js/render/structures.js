@@ -7,7 +7,7 @@ export const STRUCTURE_DRAW = {};
 // Palette of the Jiquilpan historic centre: white walls with an oxide-red
 // guardapolvo (lower band), clay tile eaves, wooden doors, iron window grilles.
 const WALLS = ['#f4efe4', '#f7f2e8', '#efe7d7', '#f2ece0'];
-const OUTSKIRT_WALLS = ['#f0e4c8', '#e8c9a8', '#d9e3cf', '#f1d7c9', '#e4d6ef', '#f5e3a8', '#c9dde6', '#f0efe8'];
+const OUTSKIRT_WALLS = ['#f0e4c8', '#f0a35e', '#d9e3cf', '#f1c0b0', '#e4d6ef', '#f5d36b', '#9fcbb8', '#f0efe8', '#e98f8f', '#c9dde6'];
 const BANDS = ['#8e2f24', '#9b3526', '#86291f'];
 const DOORS = ['#6b3f22', '#5a331d', '#7a4a28', '#4d6a4f', '#3e5670'];
 const SIGNS = ['ABARROTES', 'FARMACIA', 'PAPELERÍA', 'TIENDITA', 'ESTÉTICA', 'REFACCIONES', 'CREMERÍA', 'FERRETERÍA',
@@ -68,7 +68,7 @@ function courtyardTree(ctx, cx, cy, s, r) {
 // A facade for one lot seen from the south, `fh` units tall, occupying [x, x+w] and ending at baseY.
 export function drawFacade(ctx, x, baseY, w, fh, opts, r) {
   const top = baseY - fh;
-  const wall = opts.wall || pick(r, opts.outskirts ? OUTSKIRT_WALLS : WALLS);
+  const wall = opts.wall || (opts.centro ? pick(r, WALLS) : pick(r, opts.outskirts ? OUTSKIRT_WALLS : WALLS));
   const band = opts.band || (opts.outskirts && r() < 0.5 ? shade(wall, -0.25) : pick(r, BANDS));
   // wall body with subtle vertical gradient
   const grad = ctx.createLinearGradient(0, top, 0, baseY);
@@ -134,7 +134,7 @@ export function drawFacade(ctx, x, baseY, w, fh, opts, r) {
     for (let i = 0; i < nw; i++) {
       if (wx + 5 > doorX - 1 && wx < doorX + doorW + 1) wx = doorX + doorW + 1.5;
       if (wx + 5 > x + w - 1) break;
-      window1(ctx, wx, baseY - doorH + 1, 5, 7, r, opts.flower);
+      window1(ctx, wx, baseY - doorH + 1, 5, 7, r, opts.flower, false, opts.centro);
       wx += 7;
     }
   }
@@ -149,7 +149,14 @@ export function drawFacade(ctx, x, baseY, w, fh, opts, r) {
     ctx.fillStyle = '#2f6a2a'; for (let i = x + 2; i < x + w - 2; i += 5) { if (i > doorX - 2 && i < doorX + doorW + 1) continue; ctx.beginPath(); ctx.arc(i, baseY - 6, 1.4, 0, 7); ctx.fill(); }
   }
   if (fh > 42) { // second storey windows / balcony
-    for (let wx = x + 2.5; wx + 5 < x + w - 1; wx += 8) window1(ctx, wx, top + 5, 5, 8, r, false, true);
+    for (let wx = x + 2.5; wx + 5 < x + w - 1; wx += 8) window1(ctx, wx, top + 5, 5, 8, r, false, true, opts.centro);
+  }
+  if (opts.outskirts && !opts.sign && r() < 0.22) { // an unfinished second floor: bare brick, grey concrete posts, rebar
+    const bh = 10;
+    ctx.fillStyle = '#b8664a'; ctx.fillRect(x + 1, top - bh - 2.6, w - 2, bh);
+    ctx.fillStyle = 'rgba(80,30,20,0.35)'; for (let yy = top - bh - 2; yy < top - 2.6; yy += 1.6) ctx.fillRect(x + 1, yy, w - 2, 0.3);
+    ctx.fillStyle = '#9a9690'; for (const px of [x + 1, x + w - 3]) ctx.fillRect(px, top - bh - 2.6, 2, bh);
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 0.3; for (const px of [x + 1.6, x + 2.4, x + w - 2.4, x + w - 1.6]) { ctx.beginPath(); ctx.moveTo(px, top - bh - 2.6); ctx.lineTo(px, top - bh - 6.5); ctx.stroke(); }
   }
   // occasional details: number plate, lamp, plants, wires
   if (r() < 0.35) { ctx.fillStyle = '#2f5d9a'; ctx.fillRect(doorX + doorW + 0.6, baseY - doorH - 2, 2.2, 1.6); ctx.fillStyle = '#fff'; ctx.fillRect(doorX + doorW + 1.1, baseY - doorH - 1.5, 1.2, 0.5); }
@@ -162,8 +169,9 @@ export function drawFacade(ctx, x, baseY, w, fh, opts, r) {
   }
 }
 
-function window1(ctx, x, y, w, h, r, flower, upper) {
-  ctx.fillStyle = '#d4c1a3'; ctx.fillRect(x - 0.7, y - 0.7, w + 1.4, h + 1.6);
+function window1(ctx, x, y, w, h, r, flower, upper, centro) {
+  ctx.fillStyle = centro ? '#a64a3a' : '#d4c1a3'; ctx.fillRect(x - 0.7, y - 0.7, w + 1.4, h + 1.6);
+  if (centro) { ctx.fillStyle = '#a64a3a'; ctx.fillRect(x - 1.4, y - 2.2, w + 2.8, 1.2); } // cantera lintel moulding
   ctx.fillStyle = r() < 0.5 ? '#2c3a44' : '#41505c'; ctx.fillRect(x, y, w, h);
   ctx.fillStyle = 'rgba(180,210,230,0.25)'; ctx.fillRect(x + 0.4, y + 0.4, w * 0.4, h - 0.8);
   // wooden shutters half open
@@ -200,7 +208,7 @@ export function blockLots(s) {
     const kind = s.allHouses ? 'house' : (lr() < (s.outskirts ? 0.22 : 0.42) ? 'shop' : 'house');
     const doorW = kind === 'shop' ? Math.min(lw - 4, 12 + lr() * 4) : 5.5 + lr() * 1.5;
     const doorX = kind === 'shop' ? x + (lw - doorW) / 2 : x + 2 + lr() * Math.max(0, lw - doorW - 4);
-    const tall = !s.outskirts && lr() < 0.2;
+    const tall = !s.outskirts && lr() < (s.centro ? 0.5 : 0.2);
     out.push({ x, w: lw, kind, doorW, doorX, fh: fh + (tall ? 8 : 0), barandal: kind === 'house' && lr() < 0.35, ocote: kind === 'house' && lr() < 0.12,
       sign: pick(lr, SIGNS), surname: pick(lr, SURNAMES), seed: Math.floor(x * 13 + (s.seed || 1)) });
     x += lw;
@@ -280,7 +288,7 @@ STRUCTURE_DRAW.block = (ctx, s) => {
     }
     const ov = overrides.find(o => !o.exact && o.x * TILE >= lx - 1 && o.x * TILE < lx + lw);
     const lotR = rng(spec.seed + 5);
-    drawFacade(ctx, lx, Y + H, lw, spec.fh, { outskirts, kind: spec.kind, doorX: spec.doorX, doorW: spec.doorW, barandal: spec.barandal, sign: spec.sign, ...(ov || {}) }, lotR);
+    drawFacade(ctx, lx, Y + H, lw, spec.fh, { outskirts, centro: s.centro, kind: spec.kind, doorX: spec.doorX, doorW: spec.doorW, barandal: spec.barandal, sign: spec.sign, ...(ov || {}) }, lotR);
   }
   // named overrides that carry their own exact position (e.g. famous shops)
   for (const o of overrides) {
@@ -313,8 +321,8 @@ STRUCTURE_DRAW.tope = (ctx, s) => { // speed bump, yellow & black
 
 STRUCTURE_DRAW.basketball = (ctx, s) => {
   const X = s.x * TILE, Y = s.y * TILE, W = s.w * TILE, H = s.h * TILE;
-  ctx.fillStyle = '#2f7d6a'; ctx.fillRect(X, Y, W, H);
-  ctx.fillStyle = '#c0573f'; ctx.fillRect(X + 4, Y + 4, W - 8, H - 8);
+  ctx.fillStyle = '#2a6e52'; ctx.fillRect(X, Y, W, H);
+  ctx.fillStyle = '#34875f'; ctx.fillRect(X + 4, Y + 4, W - 8, H - 8);
   ctx.strokeStyle = '#f5f0e2'; ctx.lineWidth = 0.9;
   ctx.strokeRect(X + 4, Y + 4, W - 8, H - 8);
   ctx.beginPath(); ctx.moveTo(X + 4, Y + H / 2); ctx.lineTo(X + W - 4, Y + H / 2); ctx.stroke();

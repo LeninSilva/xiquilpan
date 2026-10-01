@@ -5,6 +5,7 @@ import { drawPerson, PEOPLE_SCALE } from './render/people.js';
 import { ITEMS, SHOPS } from './data/items.js';
 import { HILOS_GOAL } from './quests.js';
 import { drawGrayPortrait } from './cutscene.js';
+import { peopleHTML, propsHTML, CLOTHES, wearOutfit, relLevel } from './life.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -81,7 +82,7 @@ export class UI {
         e.needle.style.transform = `rotate(${ang}rad)`;
       }
     } else if (at && at[0] !== g.map.id && g.map.id === 'town' && at[0] === 'cerro') {
-      e.compass.style.display = ''; const ang = Math.atan2(g.map.h * TILE - g.player.y, 152 * TILE - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
+      e.compass.style.display = ''; const ang = Math.atan2(20 * TILE - g.player.y, 0 - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
     } else if (at && g.map.id === 'cerro' && at[0] === 'town') {
       e.compass.style.display = ''; const ang = Math.atan2(0 - g.player.y, 40 * TILE - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
     } else e.compass.style.display = 'none';
@@ -111,12 +112,12 @@ export class UI {
     f.classList.toggle('on', on);
     return new Promise(r => setTimeout(r, ms + 30));
   }
-  cinema(on) { document.body.classList.toggle('cine', on); this.showHUD(!on); }
+  cinema(on) { document.body.classList.toggle('cine', on); this.showHUD(!on); this.prompt(null); }
 
   // ---- dialogue ----------------------------------------------------------------
   dialogSpeaker(who) {
     const e = this.el;
-    e.dialog.classList.remove('hidden');
+    e.dialog.classList.remove('hidden'); document.body.classList.add('talking');
     this.prompt(null);
     const name = who ? (who.def?.name || who.name || '') : '';
     e.dlgName.textContent = name;
@@ -178,7 +179,7 @@ export class UI {
     return new Promise(resolve => {
       options.forEach((o, i) => {
         const b = document.createElement('button');
-        const tag = o.tag ? `<span class="tag ${o.tag}">${{ quest: 'misión', side: 'misión', kind: 'amable', mean: 'grosero', honest: 'honesto', money: '$' }[o.tag] || o.tag}</span>` : '';
+        const tag = o.tag ? `<span class="tag ${o.tag}">${{ quest: 'misión', side: 'misión', kind: 'amable', mean: 'grosero', honest: 'honesto', money: '$', funny: 'chistoso' }[o.tag] || o.tag}</span>` : '';
         b.innerHTML = `${tag}<span>${escapeHTML(o.text)}</span>`;
         b.addEventListener('click', (ev) => { ev.stopPropagation(); e.dlgChoices.innerHTML = ''; this.choiceResolve = null; this.game.sfx('select'); resolve(o); });
         e.dlgChoices.appendChild(b);
@@ -199,7 +200,7 @@ export class UI {
   }
   hideDialog() {
     const e = this.el;
-    e.dialog.classList.add('hidden'); e.dlgChoices.innerHTML = ''; e.dlgAsk.classList.add('hidden');
+    e.dialog.classList.add('hidden'); document.body.classList.remove('talking'); e.dlgChoices.innerHTML = ''; e.dlgAsk.classList.add('hidden');
     this.advanceResolve = null; this.choiceResolve = null; this.askResolve = null;
   }
 
@@ -254,6 +255,8 @@ export class UI {
     if (tab === 'journal') this.renderJournal();
     if (tab === 'bag') this.renderBag();
     if (tab === 'self') this.renderSelf();
+    if (tab === 'people') this.renderPeople();
+    if (tab === 'props') { $('tab-props').innerHTML = propsHTML(g, escapeHTML); }
     if (tab === 'settings') this.renderSettings();
     g.sfx('menu');
   }
@@ -288,6 +291,15 @@ export class UI {
     t.querySelectorAll('[data-use]').forEach(b => b.addEventListener('click', () => { g.consumeItem(b.dataset.use); this.renderBag(); }));
     t.querySelectorAll('[data-spin]').forEach(b => b.addEventListener('click', () => { this.closeMenu(); g.spinTrompo(); }));
   }
+  renderPeople() {
+    const g = this.game, t = $('tab-people');
+    t.innerHTML = peopleHTML(g, escapeHTML);
+    t.querySelectorAll('canvas[data-look]').forEach(c => {
+      const def = g.npcs.defs.find(d => d.id === c.dataset.look); if (!def) return;
+      const L = { ...g.npcs.lookFor(def), body: 1 / PEOPLE_SCALE };
+      const ctx = c.getContext('2d'); ctx.scale(96 / 30, 96 / 30); ctx.translate(-1, -8); drawPerson(ctx, L, 0, 'idle');
+    });
+  }
   renderSelf() {
     const g = this.game, t = $('tab-self'), s = g.stats;
     const meter = (label, v, c, uni) => `<div class="statrow"><span>${label}</span><div class="meter ${uni ? 'uni' : ''}" style="--c:${c}"><i style="${uni ? `width:${clamp(v, 0, 100)}%` : v >= 0 ? `width:${v / 2}%` : `left:${50 + v / 2}%;width:${-v / 2}%`}"></i></div><b>${Math.round(v)}</b></div>`;
@@ -304,10 +316,13 @@ export class UI {
       <div class="card"><h4>Quién eres (cambia con lo que haces)</h4>
       ${meter('Corazón', s.corazon, '#c2413c')}${meter('Palabra', s.palabra, '#2b4c8a')}${meter('Fama', s.fama, '#b58a1f')}${meter('Panza', s.panza, '#8a5a34', true)}
       <p style="font-size:12px;color:#7a6a5a">Corazón: bondad. Palabra: honestidad y deudas. Fama: lo que el pueblo cree de ti. Panza: lo bien que comes.</p></div>
+      <div class="card"><h4>Tu fama en el pueblo</h4><p class="title-badge">${titleFor(g)}</p><p style="font-size:12px;color:#7a6a5a">Tu título cambia con cómo hablas: amable, chistoso, honesto o grosero.</p></div>
+      <div class="card"><h4>Tu ropa</h4><div class="wardrobe">${(g.state.wardrobe || []).map(id => CLOTHES[id] ? `<button data-wear="${id}" class="${g.state.outfit?.[CLOTHES[id].slot] === id ? 'on' : ''}">${CLOTHES[id].ico} ${CLOTHES[id].name}</button>` : '').join('')}</div><p style="font-size:12px;color:#7a6a5a">Compra ropa en Ropa y Novedades (Abasolo), en el tianguis o córtate el pelo en la Estética Lupita.</p></div>
       <div class="card"><h4>Estado</h4><p>${[g.status.enchilado > 0 ? '🌶️ Enchilado' : '', g.status.buzz > 30 ? '🍺 Alegre' : '', g.state.debt > 0 ? `💸 Debes $${g.state.debt} a Don Refugio` : '', '🧶 Hilos: ' + g.state.hilos].filter(Boolean).join(' · ')}</p>
       <p>Conversaciones: ${s.talks || 0} · Días en el pueblo: ${g.clock.dayIndex + 1}</p></div>`;
+    t.querySelectorAll('[data-wear]').forEach(b => b.addEventListener('click', () => { wearOutfit(g, b.dataset.wear); this.renderSelf(); }));
     const c = $('selfPortrait'); const ctx = c.getContext('2d'); const L = { ...g.player.look, body: 1 / PEOPLE_SCALE };
-    ctx.scale(140 / 30, 140 / 30); ctx.translate(-1, -8); drawPerson(ctx, L, 0, 'idle');
+    ctx.scale(140 / 32, 140 / 32); ctx.translate(0, -3); drawPerson(ctx, L, 0, 'idle');
   }
   renderSettings() {
     const g = this.game, t = $('tab-settings'), st = g.settings;
@@ -319,8 +334,8 @@ export class UI {
         <div class="set-row"><span>Sonido</span><button class="toggle ${st.sound ? 'on' : ''}" data-t="sound"></button></div>
         <div class="set-row"><span>Acercamiento</span><select id="setZoom"><option value="0.8">Lejos</option><option value="1">Normal</option><option value="1.25">Cerca</option></select></div>
       </div>
-      <div class="card"><h3>Conversación libre con IA</h3>
-        <p>Con una API key de Anthropic (o un proxy propio), los personajes responden en vivo con Claude y cada plática es distinta. Sin ella, el juego usa su propio generador de diálogos.</p>
+      <div class="card"><h3>Voces con IA (opcional)</h3>
+        <p>Las conversaciones siempre se eligen de opciones, como en los juegos de rol clásicos. Con una API key de Anthropic (o un proxy propio), lo que cada personaje te dice al platicar se genera en vivo con Claude, según su personalidad. Sin ella, el juego usa su propio generador.</p>
         <div class="set-row"><span>Activar</span><button class="toggle ${st.llmEnabled ? 'on' : ''}" data-t="llmEnabled"></button></div>
         <div class="set-row"><span>API key</span><input type="password" id="setKey" placeholder="sk-ant-…" value="${escapeHTML(st.apiKey || '')}"></div>
         <div class="set-row"><span>Proxy (opcional)</span><input type="text" id="setBase" placeholder="https://tu-proxy.example" value="${escapeHTML(st.baseURL || '')}"></div>
@@ -356,7 +371,7 @@ export class UI {
       [G.GRASS]: '#cfd6a6', [G.FOREST]: '#a9c48a', [G.FIELD]: '#d9d59c', [G.SLOPE]: '#b9b58a', [G.ROCK]: '#cbbf9f', [G.DIRT]: '#dcc49a', [G.DIRTROAD]: '#c8a67a',
       [G.ROCKROAD]: '#b89a78', [G.ASPHALT]: '#8d8a86', [G.COBBLE]: '#a39a8c', [G.SIDEWALK]: '#e4dac6', [G.PLAZA]: '#e7cfae', [G.ROOF]: '#c98e6e', [G.MEDIAN]: '#a9c48a',
       [G.GARDEN]: '#a9c48a', [G.COURT]: '#8fb3a0', [G.OUTFIELD]: '#b9d28f', [G.INFIELD]: '#d9a57a', [G.STAIRS]: '#e2d2b4', [G.CEMETERY]: '#c2cc9a', [G.WATER]: '#8fc0d6',
-      [G.FLOOR_STONE]: '#e2d2b4', [G.WALL]: '#d9cdb4', [G.MARKET]: '#ddd', [G.VOID]: '#b8a888',
+      [G.FLOOR_STONE]: '#e2d2b4', [G.WALL]: '#d9cdb4', [G.MARKET]: '#ddd', [G.VOID]: '#b8a888', [G.LAJA]: '#cfa894', [G.HEX]: '#e2d6c6', [G.CANTERA]: '#e8d8bf',
     };
     ctx.fillStyle = '#efe2c4'; ctx.fillRect(0, 0, c.width, c.height);
     for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) {
@@ -462,6 +477,16 @@ function pin(ctx, x, y, color, z) {
   ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-8, -10, -6, -18, 0, -18); ctx.bezierCurveTo(6, -18, 8, -10, 0, 0); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, -12, 2.5, 0, 7); ctx.fill();
   ctx.restore();
+}
+
+function titleFor(g) {
+  const st = g.stats.style || {}, s = g.stats;
+  const top = Object.entries(st).sort((a, b) => b[1] - a[1])[0];
+  if (s.corazon > 60) return '✨ El Buen Corazón del pueblo';
+  if (s.corazon < -50) return '😠 El Malora de la Trasquila';
+  if (s.fama < -30) return '👽 El Marciano del Cerro';
+  if (!top || top[1] < 4) return '🙂 El nieto de Don Miguel';
+  return { kind: '🤲 El Muchacho Amable', funny: '😂 El Chistoso de los Portales', honest: '🗣️ El de Palabra', mean: '🌶️ El Picoso (no te le acerques)' }[top[0]];
 }
 
 export function escapeHTML(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }

@@ -23,7 +23,11 @@ export function hStreet(map, name, x0, x1, y, w = 4, opts = {}) {
       else if (!edge) {
         map.set(x, yy, surf);
         const mid = y + w / 2;
-        map.laneDir[yy * map.w + x] |= (yy + 0.5 < mid ? DIR.W : DIR.E);
+        if (opts.oneWay) { // one lane drives, the other is a parking lane
+          const row = yy - y - walk; // 0 = first road row, 1 = second
+          if (row === opts.park) markParking(map, x, yy, 'h');
+          else map.laneDir[yy * map.w + x] |= DIR[opts.oneWay];
+        } else map.laneDir[yy * map.w + x] |= (yy + 0.5 < mid ? DIR.W : DIR.E);
       }
     }
   }
@@ -44,11 +48,21 @@ export function vStreet(map, name, x, y0, y1, w = 4, opts = {}) {
       else {
         map.set(xx, y, surf);
         const mid = x + w / 2;
-        map.laneDir[y * map.w + xx] |= (xx + 0.5 < mid ? DIR.S : DIR.N);
+        if (opts.oneWay) {
+          const col = xx - x - walk;
+          if (col === opts.park) markParking(map, xx, y, 'v');
+          else map.laneDir[y * map.w + xx] |= DIR[opts.oneWay];
+        } else map.laneDir[y * map.w + xx] |= (xx + 0.5 < mid ? DIR.S : DIR.N);
       }
     }
   }
   map.markStreet(x, y0, w, y1 - y0, name);
+}
+
+// Parking lanes: remembered per tile ('h' along a horizontal street, 'v' along a vertical one).
+function markParking(map, x, y, o) {
+  if (!map.parking) map.parking = new Uint8Array(map.w * map.h);
+  map.parking[y * map.w + x] = o === 'h' ? 1 : 2;
 }
 
 // Lay a one-lane path of lane directions along a polyline (used by one-way loops).

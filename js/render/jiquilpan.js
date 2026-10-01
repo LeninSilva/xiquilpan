@@ -934,3 +934,438 @@ SPRITES.rollingCar = {
     ctx.save(); ctx.globalAlpha = a; ctx.translate(0, k * 110); drawCarSide(ctx, '#8a1f1f', 'tsuru', false); ctx.restore();
   },
 };
+
+// =====================================================================================================
+// Round 3: details from the photos
+// Fuente de la Aguadora: a pink cantera templete (two pilasters, an arch, an ornate crest with a round
+// medallion) sheltering the bronze woman with her cántaro, over a large round basin on two steps.
+SPRITES.aguadora = {
+  draw(ctx, s) {
+    shadowBlob(ctx, 4, -2, 34, 11, 0.28);
+    const c0 = '#c98f78', c1 = '#b67a64', c2 = '#9c6552', c3 = '#e0ab93';
+    // two round steps
+    ctx.fillStyle = c2; ctx.beginPath(); ctx.ellipse(0, -1, 34, 12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = c1; ctx.beginPath(); ctx.ellipse(0, -3, 33, 11.4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = c2; ctx.beginPath(); ctx.ellipse(0, -4.5, 29, 10, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = c0; ctx.beginPath(); ctx.ellipse(0, -6, 28.5, 9.8, 0, 0, 7); ctx.fill();
+    // basin: thick rim and water
+    ctx.fillStyle = c1; ctx.fillRect(-26, -12, 52, 6); ctx.beginPath(); ctx.ellipse(0, -6, 26, 8.6, 0, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = c0; ctx.beginPath(); ctx.ellipse(0, -12, 26, 8.6, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#4f8fa8'; ctx.beginPath(); ctx.ellipse(0, -12.4, 23, 7.2, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.ellipse(-8, -14, 9, 1.8, 0, 0, 7); ctx.fill();
+    // the templete: square base, two pilasters, arch
+    const bw = 20, top = -58;
+    ctx.fillStyle = c1; ctx.fillRect(-bw / 2 - 1, -18, bw + 2, 6);
+    ctx.fillStyle = vgrad(ctx, top, -18, c3, c1); ctx.fillRect(-bw / 2, top, bw, 40);
+    // arch opening (dark interior) with the statue
+    ctx.fillStyle = '#5b3a30'; ctx.beginPath(); ctx.moveTo(-6, -18); ctx.lineTo(-6, -40); ctx.arc(0, -40, 6, Math.PI, 0); ctx.lineTo(6, -18); ctx.fill();
+    bronzeAguadora(ctx, 0, -18);
+    ctx.strokeStyle = c2; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.arc(0, -40, 6.6, Math.PI, 0); ctx.stroke();
+    // pilasters with capitals and bases
+    for (const px of [-bw / 2, bw / 2 - 3]) { ctx.fillStyle = c0; ctx.fillRect(px, top + 2, 3, 38); ctx.fillStyle = c2; ctx.fillRect(px - 0.6, top + 2, 4.2, 1.6); ctx.fillRect(px - 0.6, -20, 4.2, 2); ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(px + 0.4, top + 4, 0.6, 34); }
+    // entablature
+    ctx.fillStyle = c2; ctx.fillRect(-bw / 2 - 2, top - 1, bw + 4, 3);
+    ctx.fillStyle = c3; ctx.fillRect(-bw / 2 - 2, top - 2, bw + 4, 1.2);
+    // ornate crest: scrolls and a round medallion with a finial
+    ctx.fillStyle = c0;
+    ctx.beginPath(); ctx.moveTo(-bw / 2, top - 1); ctx.quadraticCurveTo(-bw / 2 + 1, top - 8, -4, top - 10); ctx.quadraticCurveTo(0, top - 16, 4, top - 10); ctx.quadraticCurveTo(bw / 2 - 1, top - 8, bw / 2, top - 1); ctx.fill();
+    ctx.strokeStyle = c2; ctx.lineWidth = 0.7;
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.arc(d * 7, top - 4, 2, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = c3; ctx.beginPath(); ctx.arc(0, top - 9, 3.4, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(0, top - 9, 1.4, 0, 7); ctx.fill();
+    ctx.fillStyle = c0; ctx.fillRect(-0.8, top - 17, 1.6, 4); ctx.beginPath(); ctx.arc(0, top - 17.6, 1.4, 0, 7); ctx.fill();
+    for (const d of [-1, 1]) { ctx.fillStyle = c0; ctx.fillRect(d * (bw / 2) - 1.2, top - 5, 2.4, 3); ctx.beginPath(); ctx.arc(d * (bw / 2), top - 5.6, 1.4, 0, 7); ctx.fill(); }
+    // spouts
+    ctx.fillStyle = c2; for (const d of [-1, 1]) ctx.fillRect(d * 10 - 1, -22, 2, 2);
+  },
+  anim(ctx, s, t) {
+    ctx.strokeStyle = 'rgba(200,235,255,0.75)'; ctx.lineWidth = 0.8;
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 10, -21); ctx.quadraticCurveTo(d * 14, -22, d * 16 + Math.sin(t * 7) * 0.3, -13); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    for (let i = 0; i < 4; i++) { const a = (t * 1.6 + i * 0.5) % 2; ctx.globalAlpha = 1 - a / 2; ctx.beginPath(); ctx.ellipse(i % 2 ? 16 : -16, -12.6, 1 + a * 2, 0.5 + a * 0.6, 0, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  },
+};
+function bronzeAguadora(ctx, x, y) {
+  const c = '#6d5a44', d = '#4a3c2e', h = '#8f7a5c';
+  ctx.fillStyle = d; ctx.beginPath(); ctx.moveTo(x - 3.6, y); ctx.quadraticCurveTo(x - 3.4, y - 9, x - 2, y - 14); ctx.lineTo(x + 2, y - 14); ctx.quadraticCurveTo(x + 3.4, y - 9, x + 3.6, y); ctx.fill();
+  ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x - 2.8, y); ctx.quadraticCurveTo(x - 2.6, y - 9, x - 1.6, y - 14); ctx.lineTo(x + 0.4, y - 14); ctx.quadraticCurveTo(x + 0.8, y - 8, x + 0.2, y); ctx.fill();
+  ctx.fillStyle = c; ctx.fillRect(x - 2, y - 19, 4, 5.5);
+  ctx.beginPath(); ctx.arc(x, y - 21, 1.7, 0, 7); ctx.fill();
+  ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - 1.8, y - 18.5); ctx.lineTo(x - 3, y - 22); ctx.lineTo(x - 1.8, y - 24.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + 1.8, y - 18.5); ctx.lineTo(x + 2.6, y - 14.5); ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.fillStyle = d; ctx.beginPath(); ctx.ellipse(x, y - 26, 2.6, 2.4, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = h; ctx.fillRect(x - 0.9, y - 29.4, 1.8, 1.2); ctx.beginPath(); ctx.ellipse(x - 0.9, y - 26.6, 0.6, 1.2, 0, 0, 7); ctx.fill();
+}
+
+// Portada del Estadio 18 de Marzo (after the photo): a whitewashed wall with a scalloped cantera coping,
+// four cantera pilasters topped by urns, a big arch lettered “18 DE MARZO”, the eagle over a cartouche,
+// and Cárdenas' words painted in black script on each side.
+SPRITES.portadaEstadio = {
+  draw(ctx, s) {
+    shadowBlob(ctx, 4, -1, 60, 7);
+    const W = 116, wall = '#f2eee4', cant = '#a8715a', cantD = '#8a5a47', cantL = '#c28d74';
+    const H = 36;
+    // wall with scalloped coping (lower at the ends, rising to the centre)
+    const coping = () => {
+      ctx.beginPath(); ctx.moveTo(-W / 2, -H + 6);
+      ctx.quadraticCurveTo(-W / 2 + 10, -H + 2, -W / 2 + 14, -H + 8); ctx.quadraticCurveTo(-W / 2 + 22, -H + 1, -W / 2 + 32, -H - 2);
+      ctx.quadraticCurveTo(-20, -H - 4, -14, -H - 10); ctx.quadraticCurveTo(-7, -H - 20, 0, -H - 22);
+      ctx.quadraticCurveTo(7, -H - 20, 14, -H - 10); ctx.quadraticCurveTo(20, -H - 4, W / 2 - 32, -H - 2);
+      ctx.quadraticCurveTo(W / 2 - 22, -H + 1, W / 2 - 14, -H + 8); ctx.quadraticCurveTo(W / 2 - 10, -H + 2, W / 2, -H + 6);
+    };
+    ctx.fillStyle = wall; coping(); ctx.lineTo(W / 2, 0); ctx.lineTo(-W / 2, 0); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = cant; ctx.lineWidth = 2.2; coping(); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(-W / 2, -6, W, 6);
+    // the big arch with its lettered voussoirs
+    const ar = 13, ay = -H + 6;
+    ctx.fillStyle = vgrad(ctx, ay - ar, 0, '#9fc3dc', '#d9d0bb');
+    ctx.beginPath(); ctx.moveTo(-ar, 0); ctx.lineTo(-ar, ay); ctx.arc(0, ay, ar, Math.PI, 0); ctx.lineTo(ar, 0); ctx.fill();
+    ctx.fillStyle = 'rgba(80,110,70,0.35)'; ctx.fillRect(-ar, -10, ar * 2, 4); // trees beyond
+    ctx.strokeStyle = cant; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(-ar - 1.6, 0); ctx.lineTo(-ar - 1.6, ay); ctx.arc(0, ay, ar + 1.6, Math.PI, 0); ctx.lineTo(ar + 1.6, 0); ctx.stroke();
+    ctx.save(); ctx.fillStyle = '#4a2a1e'; ctx.font = 'bold 2.4px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = '18 DE MARZO';
+    for (let i = 0; i < txt.length; i++) { const a = Math.PI + (i + 0.5) / txt.length * Math.PI; ctx.save(); ctx.translate(Math.cos(a) * (ar + 1.6), ay + Math.sin(a) * (ar + 1.6)); ctx.rotate(a + Math.PI / 2); ctx.fillText(txt[i], 0, 0.1); ctx.restore(); }
+    ctx.restore();
+    // pilasters with urns
+    const pil = (px, ph) => {
+      ctx.fillStyle = vgrad(ctx, -ph, 0, cantL, cantD); ctx.fillRect(px - 3, -ph, 6, ph);
+      ctx.fillStyle = cantD; ctx.fillRect(px - 3.6, -ph - 1.4, 7.2, 1.8); ctx.fillRect(px - 3.6, -2, 7.2, 2);
+      ctx.strokeStyle = 'rgba(60,30,20,0.35)'; ctx.lineWidth = 0.4; ctx.strokeRect(px - 1.6, -ph + 5, 3.2, ph - 12);
+      ctx.fillStyle = cant; ctx.beginPath(); ctx.ellipse(px, -ph - 4, 2.2, 2.8, 0, 0, 7); ctx.fill(); ctx.fillRect(px - 0.8, -ph - 8.6, 1.6, 2.2); ctx.beginPath(); ctx.arc(px, -ph - 9.2, 1, 0, 7); ctx.fill();
+    };
+    pil(-W / 2 + 2, H - 6); pil(-ar - 7, H + 6); pil(ar + 7, H + 6); pil(W / 2 - 2, H - 6);
+    // cartouche and eagle
+    ctx.fillStyle = cant; ctx.beginPath(); ctx.moveTo(-4, -H - 20); ctx.lineTo(4, -H - 20); ctx.lineTo(3, -H - 12); ctx.lineTo(0, -H - 10); ctx.lineTo(-3, -H - 12); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = cantD; ctx.beginPath(); ctx.arc(0, -H - 16, 1.6, 0, 7); ctx.fill();
+    stoneEagle(ctx, 0, -H - 21, cantL, cant);
+    // side panels: painted quotes and small shuttered windows
+    for (const d of [-1, 1]) {
+      const cx = d * 36;
+      const lines = d < 0 ? ['Los recursos naturales del', 'país deben servir para', 'su propia prosperidad'] : ['Entregarlos a intereses', 'extraños es', 'traicionar a la patria'];
+      ctx.fillStyle = '#2a2420'; ctx.font = 'italic 2.5px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      lines.forEach((l, i) => ctx.fillText(l, cx, -H + 10 + i * 3.4));
+      ctx.fillStyle = '#7a5236'; ctx.fillRect(cx - 5, -12, 10, 8); ctx.strokeStyle = '#5a3a26'; ctx.lineWidth = 0.4; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(cx - 5, -11 + k * 2); ctx.lineTo(cx + 5, -11 + k * 2); ctx.stroke(); }
+    }
+  },
+};
+function stoneEagle(ctx, x, y, light, mid) {
+  ctx.save(); ctx.translate(x, y);
+  for (const d of [-1, 1]) {
+    ctx.fillStyle = mid;
+    ctx.beginPath(); ctx.moveTo(d * 1.5, -5); ctx.quadraticCurveTo(d * 6, -16, d * 13, -19); ctx.lineTo(d * 12, -15); ctx.lineTo(d * 14, -13); ctx.lineTo(d * 10.5, -11); ctx.lineTo(d * 12, -8.5); ctx.lineTo(d * 6, -6); ctx.quadraticCurveTo(d * 3, -3, d * 1, -2); ctx.fill();
+    ctx.fillStyle = light; ctx.beginPath(); ctx.moveTo(d * 2, -6); ctx.quadraticCurveTo(d * 6, -15, d * 12, -18); ctx.lineTo(d * 10, -15.5); ctx.quadraticCurveTo(d * 5, -12, d * 2, -5); ctx.fill();
+  }
+  ctx.fillStyle = mid; ctx.beginPath(); ctx.ellipse(0, -4, 2.6, 5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = light; ctx.beginPath(); ctx.arc(-0.4, -10, 1.8, 0, 7); ctx.fill();
+  ctx.fillStyle = mid; ctx.beginPath(); ctx.moveTo(-2, -10.2); ctx.lineTo(-3.8, -9.6); ctx.lineTo(-2, -9.2); ctx.fill();
+  ctx.restore();
+}
+
+// The covered grandstand of the stadium: white concrete steps, red posts, corrugated roof and the sign.
+SPRITES.gradas = {
+  draw(ctx, s) {
+    const w = s.fw || 160, steps = 7;
+    ctx.fillStyle = 'rgba(20,20,35,0.2)'; ctx.fillRect(-w / 2 + 4, -2, w, 4);
+    for (let i = 0; i < steps; i++) {
+      const y = -4 - i * 4.2;
+      ctx.fillStyle = s.green && i % 2 ? '#3f8a5a' : i % 2 ? '#e4e1d8' : '#f2efe7'; ctx.fillRect(-w / 2, y - 4.2, w, 4.2);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(-w / 2, y - 0.8, w, 0.8);
+    }
+    ctx.fillStyle = '#f2efe7'; ctx.fillRect(-7, -22, 14, 22); ctx.fillStyle = '#2d2a26'; ctx.fillRect(-5, -16, 10, 16); // tunnel
+    for (let i = 0; i < 3; i++) { ctx.fillStyle = '#d8d4ca'; ctx.fillRect(-4, -1.4 - i * 1.2, 8, 1.2); }
+    // roof on red posts
+    const rt = -4 - steps * 4.2 - 16;
+    for (let x = -w / 2 + 6; x <= w / 2 - 6; x += (w - 12) / 6) { ctx.fillStyle = '#8e2f24'; ctx.fillRect(x - 0.8, rt + 2, 1.6, -rt - 6); }
+    ctx.fillStyle = '#7d8388'; ctx.beginPath(); ctx.moveTo(-w / 2 - 4, rt + 4); ctx.lineTo(w / 2 + 4, rt + 4); ctx.lineTo(w / 2 + 2, rt - 6); ctx.lineTo(-w / 2 - 2, rt - 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,45,50,0.4)'; ctx.lineWidth = 0.4; for (let x = -w / 2; x < w / 2; x += 2) { ctx.beginPath(); ctx.moveTo(x, rt + 4); ctx.lineTo(x + 0.4, rt - 6); ctx.stroke(); }
+    ctx.fillStyle = '#9da3a8'; ctx.fillRect(-w / 2 - 4, rt + 3.6, w + 8, 1);
+    // sign on the roof
+    ctx.fillStyle = '#f7f4ec'; ctx.fillRect(-32, rt - 16, 64, 10); ctx.strokeStyle = '#8e2f24'; ctx.lineWidth = 0.6; ctx.strokeRect(-32, rt - 16, 64, 10);
+    text(ctx, 'ESTADIO 18 DE MARZO', 2, rt - 11, 5, '#8e2f24', 'Georgia, serif');
+    ctx.fillStyle = '#8e2f24'; ctx.fillRect(-30, rt - 14.5, 5, 7);
+    // chain-link fence with red posts in front
+    ctx.strokeStyle = 'rgba(150,150,150,0.6)'; ctx.lineWidth = 0.3;
+    for (let x = -w / 2; x < w / 2; x += 1.6) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 1.6, -6); ctx.moveTo(x + 1.6, 0); ctx.lineTo(x, -6); ctx.stroke(); }
+    ctx.fillStyle = '#8e2f24'; for (let x = -w / 2; x <= w / 2; x += 16) ctx.fillRect(x - 0.5, -7, 1, 7); ctx.fillRect(-w / 2, -1, w, 1);
+  },
+};
+
+// Soccer goal on the dirt field
+SPRITES.porteria = {
+  draw(ctx) {
+    ctx.strokeStyle = '#f4f4f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-12, -12); ctx.lineTo(12, -12); ctx.lineTo(12, 0); ctx.stroke();
+    ctx.strokeStyle = 'rgba(240,240,240,0.5)'; ctx.lineWidth = 0.3;
+    for (let x = -12; x <= 12; x += 2) { ctx.beginPath(); ctx.moveTo(x, -12); ctx.lineTo(x + 2, -6); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(-12, -12); ctx.lineTo(-9, -6); ctx.lineTo(9, -6); ctx.lineTo(12, -12); ctx.stroke();
+  },
+};
+
+// Bust of Diego José Abad in its niche: a red scallop-shell half dome on two red columns against a white
+// wall, red pedestal with a bronze plaque, on a round white-edged step.
+SPRITES.bustoAbad = {
+  draw(ctx) {
+    shadowBlob(ctx, 2, -1, 20, 5);
+    const red = '#b8452f', redD = '#8e3222', wh = '#f4f1ea';
+    ctx.fillStyle = wh; ctx.beginPath(); ctx.ellipse(0, -1.5, 18, 4.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#c4553c'; ctx.beginPath(); ctx.ellipse(0, -2.6, 17, 4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = wh; ctx.fillRect(-15, -44, 30, 42);
+    ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(-15, -44, 30, 42);
+    // shell half-dome
+    ctx.fillStyle = red; ctx.beginPath(); ctx.moveTo(-17, -36); ctx.arc(0, -36, 17, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = redD; ctx.beginPath(); ctx.moveTo(-12, -36); ctx.arc(0, -36, 12, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#d0634a'; ctx.lineWidth = 1.2;
+    for (let i = 0; i <= 10; i++) { const a = Math.PI + i / 10 * Math.PI; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 3, -36 + Math.sin(a) * 3); ctx.lineTo(Math.cos(a) * 16.4, -36 + Math.sin(a) * 16.4); ctx.stroke(); }
+    ctx.fillStyle = red; for (let i = 0; i <= 12; i++) { const a = Math.PI + i / 12 * Math.PI; ctx.beginPath(); ctx.arc(Math.cos(a) * 16.6, -36 + Math.sin(a) * 16.6, 1.4, 0, 7); ctx.fill(); }
+    // columns
+    for (const d of [-1, 1]) {
+      ctx.fillStyle = vgrad(ctx, -36, -3, '#cf5a40', redD); ctx.fillRect(d * 14.5 - 2.2, -36, 4.4, 33);
+      ctx.fillStyle = wh; ctx.fillRect(d * 14.5 - 2.8, -5, 5.6, 2.2);
+      ctx.fillStyle = redD; ctx.fillRect(d * 14.5 - 2.8, -37.5, 5.6, 2);
+    }
+    // pedestal and plaque
+    ctx.fillStyle = vgrad(ctx, -20, -3, '#c9543c', redD); ctx.fillRect(-6, -20, 12, 17);
+    ctx.fillStyle = wh; ctx.fillRect(-6.5, -4, 13, 1.4);
+    ctx.fillStyle = '#b8964e'; ctx.fillRect(-4, -16, 8, 7); ctx.strokeStyle = '#7a5e28'; ctx.lineWidth = 0.3; ctx.strokeRect(-3.6, -15.6, 7.2, 6.2);
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = 'rgba(80,60,20,0.6)'; ctx.fillRect(-3, -15 + i * 1.1, 6, 0.35); }
+    // bronze bust
+    const b = '#7c8a78', bl = '#9aa894';
+    ctx.fillStyle = b; ctx.beginPath(); ctx.moveTo(-5, -20); ctx.quadraticCurveTo(-5, -25, 0, -25.5); ctx.quadraticCurveTo(5, -25, 5, -20); ctx.fill();
+    ctx.fillStyle = bl; ctx.beginPath(); ctx.arc(0, -28, 2.8, 0, 7); ctx.fill();
+    ctx.fillStyle = b; ctx.beginPath(); ctx.arc(0, -28.8, 2.8, Math.PI, 0); ctx.fill();
+  },
+};
+
+// Statue of San Francisco (the friar with his arm out) on a square cantera pedestal, in the atrium.
+SPRITES.estatuaFraile = {
+  draw(ctx) {
+    shadowBlob(ctx, 2, -1, 10, 3);
+    const st = '#c8b394';
+    ctx.fillStyle = vgrad(ctx, -22, 0, shade(st, 0.08), shade(st, -0.2)); ctx.fillRect(-7, -22, 14, 22);
+    ctx.fillStyle = shade(st, -0.25); ctx.fillRect(-8, -23.5, 16, 2); ctx.fillRect(-8, -2, 16, 2);
+    ctx.fillStyle = 'rgba(90,70,50,0.25)'; ctx.fillRect(-5, -16, 3, 4); ctx.fillRect(2, -9, 3, 3);
+    const c = '#8d8272', d = '#6f6558';
+    ctx.fillStyle = d; ctx.beginPath(); ctx.moveTo(-4.5, -23); ctx.quadraticCurveTo(-4, -34, -2.5, -40); ctx.lineTo(2.5, -40); ctx.quadraticCurveTo(4, -34, 4.5, -23); ctx.fill();
+    ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(-3.6, -23); ctx.quadraticCurveTo(-3.2, -34, -2, -40); ctx.lineTo(0.6, -40); ctx.quadraticCurveTo(1, -32, 0.4, -23); ctx.fill();
+    ctx.fillStyle = d; ctx.beginPath(); ctx.arc(0, -42, 2.6, 0, 7); ctx.fill(); // hood
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0.2, -41.6, 1.7, 0, 7); ctx.fill();
+    ctx.strokeStyle = c; ctx.lineWidth = 1.4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(2, -37); ctx.lineTo(8, -35); ctx.stroke(); ctx.lineCap = 'butt';
+    ctx.strokeStyle = d; ctx.lineWidth = 0.4; ctx.beginPath(); ctx.moveTo(-1, -30); ctx.lineTo(-1.4, -24); ctx.stroke(); // cord
+  },
+};
+
+// La Casita de Piedra (after the photo): a stone house under a low dark tile roof with a porch of stone
+// pillars, stone steps and a flagstone path, among trees and clipped shrubs.
+SPRITES.casitaPiedra = {
+  draw(ctx, s) {
+    const W = s.fw, D = s.fd, x = -W / 2, fh = 26;
+    ctx.fillStyle = 'rgba(20,20,40,0.22)'; ctx.fillRect(x + 4, -2, W, 5);
+    // low hipped roof of dark clay tile, overhanging the porch
+    ctx.fillStyle = '#6e3b2c'; ctx.beginPath(); ctx.moveTo(x - 6, -fh - 4); ctx.lineTo(x + 10, -D); ctx.lineTo(x + W - 10, -D); ctx.lineTo(x + W + 6, -fh - 4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.14)'; for (let y = -D + 3; y < -fh - 4; y += 3) ctx.fillRect(x - 6, y, W + 12, 0.7);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)'; for (let i = x; i < x + W; i += 3) ctx.fillRect(i, -D, 1.3, D - fh - 4);
+    ctx.fillStyle = '#4e2a1f'; ctx.fillRect(x - 6, -fh - 5, W + 12, 2.4);
+    // back wall of the porch (stone) with door and windows
+    rubble(ctx, x + 4, -fh, W - 8, fh - 4, 1717, '#8c8174');
+    ctx.fillStyle = '#5a3a26'; ctx.fillRect(-6, -21, 12, 17); ctx.fillStyle = '#3d2618'; ctx.fillRect(-0.3, -21, 0.6, 17);
+    for (const wx of [x + 12, x + W - 24]) { ctx.fillStyle = '#3a2f28'; ctx.fillRect(wx, -19, 12, 9); ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 0.4; for (let i = wx + 1.5; i < wx + 12; i += 1.8) { ctx.beginPath(); ctx.moveTo(i, -19); ctx.lineTo(i, -10); ctx.stroke(); } }
+    // rebozos on a line in the porch
+    ['#2b3f8f', '#5b3f7a', '#8e2f24', '#1f6b5a', '#c28a2c'].forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(x + 28 + i * 5, -22, 3.8, 10); });
+    // porch floor and stone pillars
+    ctx.fillStyle = '#a79d8f'; ctx.fillRect(x + 2, -5, W - 4, 5);
+    for (let px = x + 5; px <= x + W - 5; px += (W - 10) / 4) rubble(ctx, px - 2.4, -fh - 3, 4.8, fh - 2, Math.floor(px * 7), '#7f7568');
+    // stone steps and flagstone path
+    for (let i = 0; i < 3; i++) { ctx.fillStyle = i % 2 ? '#9a9184' : '#b2a999'; ctx.fillRect(-9 + i, -1 + i * 2, 18 - i * 2, 2); }
+    plaque(ctx, -16, -fh - 1, 32, 3.6, 'LA CASITA DE PIEDRA', '#3f2f22', '#efd9a8');
+  },
+};
+
+// Parked car seen from above (on a north–south street) and parked Italikas
+SPRITES.parkedCarV = {
+  draw(ctx, s) {
+    const color = s.color || '#c9ccd1';
+    ctx.save(); ctx.translate(0, -10);
+    ctx.fillStyle = 'rgba(20,20,35,0.28)'; ctx.beginPath(); ctx.ellipse(1, 2, 8, 14, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1a1a1a'; for (const [wx, wy] of [[-7.6, -10], [5.6, -10], [-7.6, 5], [5.6, 5]]) ctx.fillRect(wx, wy, 2, 5);
+    ctx.fillStyle = color; roundRect(ctx, -6.6, -14, 13.2, 26, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(3.5, -13, 3, 24);
+    ctx.fillStyle = '#30414d'; ctx.fillRect(-5, -8, 10, 5); ctx.fillRect(-5, 5, 10, 3);
+    ctx.fillStyle = color; ctx.fillRect(-5, -2, 10, 6);
+    if (s.taxi) { ctx.fillStyle = '#1b7a3e'; ctx.fillRect(-6.6, -2, 1.2, 6); ctx.fillRect(5.4, -2, 1.2, 6); ctx.fillStyle = '#fff'; ctx.fillRect(-2.5, 0, 5, 2.4); ctx.fillStyle = '#1b7a3e'; ctx.font = 'bold 1.6px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('TAXI', 0, 1.8); }
+    ctx.restore();
+  },
+};
+SPRITES.parkedMoto = {
+  draw(ctx, s) {
+    const c = s.color || '#c0392b';
+    shadowBlob(ctx, 0, 0, s.vertical ? 3 : 8, 2);
+    if (s.vertical) { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-0.9, -14, 1.8, 5); ctx.fillRect(-0.9, -4, 1.8, 5); ctx.fillStyle = c; ctx.fillRect(-1.8, -11, 3.6, 8); ctx.fillStyle = '#222'; ctx.fillRect(-1.4, -8, 2.8, 3); return; }
+    ctx.save(); if (s.flip) ctx.scale(-1, 1);
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(-5.5, -3, 3, 0, 7); ctx.arc(5.5, -3, 3, 0, 7); ctx.stroke();
+    ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(-6, -5.5); ctx.lineTo(3, -7); ctx.lineTo(6, -3.5); ctx.lineTo(-3, -3); ctx.fill();
+    ctx.fillStyle = '#222'; ctx.fillRect(-4.5, -8.2, 5.5, 1.8); ctx.fillStyle = '#9aa3aa'; ctx.fillRect(4, -10, 0.8, 5); ctx.fillRect(3, -10.4, 3, 0.8);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 1.3px sans-serif'; ctx.fillText('ITALIKA', -3, -4.2);
+    ctx.restore();
+  },
+};
+
+// Street lamp of the centro: a red-and-white post with a white globe
+SPRITES.farolCentro = {
+  draw(ctx) {
+    ctx.fillStyle = 'rgba(20,20,35,0.25)'; ctx.beginPath(); ctx.ellipse(1, 0, 3, 1, 0, 0, 7); ctx.fill();
+    for (let y = 0; y < 26; y += 4) { ctx.fillStyle = (y / 4) % 2 ? '#f4f1ea' : '#b8322a'; ctx.fillRect(-0.9, -y - 4, 1.8, 4); }
+    ctx.fillStyle = '#b8322a'; ctx.fillRect(-1.6, -2, 3.2, 2);
+    ctx.fillStyle = '#e8e4da'; ctx.fillRect(-4, -27, 8, 1);
+    for (const d of [-3.4, 3.4]) { ctx.fillStyle = '#f8f6ef'; ctx.beginPath(); ctx.arc(d, -29, 2.1, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 0.3; ctx.stroke(); }
+    ctx.fillStyle = '#f8f6ef'; ctx.beginPath(); ctx.arc(0, -31.5, 2.3, 0, 7); ctx.fill(); ctx.stroke();
+  },
+  anim(ctx, s, t, night) { if (!night) return; ctx.fillStyle = 'rgba(255,240,190,0.5)'; for (const [x, y, r] of [[-3.4, -29, 2.1], [3.4, -29, 2.1], [0, -31.5, 2.3]]) { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); } },
+};
+
+// Ranch house on the way to San Francisco: adobe, tile roof, porch on wooden posts, a painted name
+SPRITES.ranchHouse = {
+  draw(ctx, s) {
+    const W = s.fw, D = s.fd, x = -W / 2, fh = 24;
+    ctx.fillStyle = 'rgba(20,20,40,0.22)'; ctx.fillRect(x + 4, -2, W, 5);
+    ctx.fillStyle = '#a24f37'; ctx.fillRect(x - 3, -D, W + 6, D - fh + 3);
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'; for (let y = -D + 3; y < -fh + 3; y += 3) ctx.fillRect(x - 3, y, W + 6, 0.7);
+    wallFace(ctx, x, -fh, W, fh, '#dcc6a4', '#8e5a3a', 5);
+    ctx.fillStyle = 'rgba(120,90,60,0.25)'; for (let i = 0; i < 18; i++) ctx.fillRect(x + (i * 37) % W, -fh + 3 + (i * 13) % 16, 5, 2.4); // adobe showing
+    ctx.fillStyle = '#5a3a22'; ctx.fillRect(-5, -17, 10, 17);
+    for (const wx of [x + 8, x + W - 16]) rectWindow(ctx, wx, -16, 8, 7, '#8e5a3a', '#2f3a40', true);
+    ctx.fillStyle = '#6b4a30'; for (let px = x + 3; px <= x + W - 3; px += (W - 6) / 4) ctx.fillRect(px - 0.8, -fh - 1, 1.6, fh + 1);
+    ctx.fillStyle = '#a24f37'; ctx.fillRect(x - 3, -fh - 3, W + 6, 3);
+    if (s.name) { ctx.fillStyle = '#f2ead8'; ctx.fillRect(-18, -fh + 2, 36, 5); text(ctx, s.name, 0, -fh + 4.6, 3.2, '#5a2d0c', 'Georgia, serif'); }
+  },
+};
+
+// Microwave antenna at the top of the cerro
+SPRITES.antenna = {
+  draw(ctx) {
+    shadowBlob(ctx, 4, 0, 10, 3);
+    ctx.strokeStyle = '#c9ccd0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(-1, -80); ctx.moveTo(6, 0); ctx.lineTo(1, -80); ctx.stroke();
+    ctx.lineWidth = 0.5; for (let y = -6; y > -78; y -= 6) { const k = 1 + y / 80 * 0.85; ctx.beginPath(); ctx.moveTo(-6 * k, y); ctx.lineTo(6 * (1 + (y - 6) / 80 * 0.85), y - 6); ctx.moveTo(6 * k, y); ctx.lineTo(-6 * (1 + (y - 6) / 80 * 0.85), y - 6); ctx.stroke(); }
+    ctx.fillStyle = '#e04a3a'; for (let y = -10; y > -80; y -= 20) ctx.fillRect(-1.4, y - 3, 2.8, 3);
+    ctx.fillStyle = '#e8e8e8'; ctx.beginPath(); ctx.arc(3, -60, 3.2, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(-3, -46, 3, 0, 7); ctx.fill();
+    ctx.fillStyle = '#d9d4ca'; ctx.fillRect(-10, -8, 8, 8);
+  },
+  anim(ctx, s, t, night) { if (Math.sin(t * 3) > 0.2) { ctx.fillStyle = 'rgba(255,60,50,0.9)'; ctx.beginPath(); ctx.arc(0, -82, 1.6, 0, 7); ctx.fill(); } },
+};
+
+// Balustrade of the Juárez mirador: white balusters under a red coping
+SPRITES.balustre.draw = function (ctx) {
+  ctx.fillStyle = '#f2efe8'; ctx.fillRect(-2, -8, 4, 8);
+  ctx.fillStyle = '#d9d4ca'; ctx.fillRect(0.8, -8, 1.2, 8);
+  ctx.fillStyle = '#b8322a'; ctx.fillRect(-2.8, -10, 5.6, 2);
+};
+
+// Cypress (in the panteón and the atrium)
+const baseTree2 = SPRITES.tree.draw;
+SPRITES.tree.draw = function (ctx, s) {
+  if (s.tree !== 'cipres') return baseTree2.call(this, ctx, s);
+  const k = s.size || 1, r = rng(s.seed || 3);
+  shadowBlob(ctx, 4 * k, 0, 9 * k, 3 * k, 0.28);
+  trunk(ctx, 0, 0, 2.4 * k, 6 * k, '#5b3d27');
+  for (let i = 0; i < 9; i++) {
+    const y = -6 * k - i * 5.6 * k, w = (8 - Math.abs(i - 3) * 1.1) * k;
+    ctx.fillStyle = i % 2 ? '#2f4d33' : '#3a5d3c'; ctx.beginPath(); ctx.ellipse((r() - 0.5) * 1.5, y - 3 * k, Math.max(2, w), 4.6 * k, 0, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(160,200,140,0.25)'; ctx.beginPath(); ctx.ellipse(-2 * k, -30 * k, 2 * k, 14 * k, 0, 0, 7); ctx.fill();
+};
+
+// ---- property: lots, construction, your house ----------------------------------------------------
+SPRITES.seVende = {
+  draw(ctx, s) {
+    shadowBlob(ctx, 1, 0, 8, 2);
+    ctx.fillStyle = '#6b4a30'; ctx.fillRect(-7, -18, 1.4, 18); ctx.fillRect(5.6, -18, 1.4, 18);
+    ctx.fillStyle = '#f5d33b'; ctx.fillRect(-10, -26, 20, 11); ctx.strokeStyle = '#b8322a'; ctx.lineWidth = 0.6; ctx.strokeRect(-10, -26, 20, 11);
+    text(ctx, 'SE VENDE', 0, -22.5, 3.4, '#b8322a'); text(ctx, '$' + (s.price || 0).toLocaleString('es-MX'), 0, -18, 2.6, '#1b1b1b');
+    // stakes and string marking the lot
+    ctx.strokeStyle = 'rgba(240,240,230,0.8)'; ctx.lineWidth = 0.3; ctx.beginPath(); ctx.moveTo(-18, 2); ctx.lineTo(18, 2); ctx.stroke();
+  },
+};
+SPRITES.seTraspasa = {
+  draw(ctx, s) {
+    shadowBlob(ctx, 1, 0, 7, 2);
+    ctx.fillStyle = '#6b4a30'; ctx.fillRect(-0.7, -14, 1.4, 14);
+    ctx.fillStyle = '#f6f1e6'; ctx.fillRect(-10, -24, 20, 10); ctx.strokeStyle = '#1f4b7a'; ctx.lineWidth = 0.6; ctx.strokeRect(-10, -24, 20, 10);
+    text(ctx, 'SE TRASPASA', 0, -20.6, 2.8, '#1f4b7a'); text(ctx, s.label || 'NEGOCIO', 0, -16.6, 2, '#333');
+  },
+};
+SPRITES.albaniles = {
+  draw(ctx) {
+    shadowBlob(ctx, 2, 0, 14, 3);
+    // wheelbarrow, sand pile, cement bags
+    ctx.fillStyle = '#c9a76a'; ctx.beginPath(); ctx.ellipse(-8, -2, 8, 4, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#d9d4ca'; for (let i = 0; i < 3; i++) ctx.fillRect(4 + i * 3.4, -5 - (i % 2) * 2, 3.2, 4);
+    ctx.fillStyle = '#5a6b73'; ctx.beginPath(); ctx.moveTo(-2, -3); ctx.lineTo(10, -3); ctx.lineTo(8, 0); ctx.lineTo(0, 0); ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.arc(-3, 0, 1.6, 0, 7); ctx.stroke();
+  },
+};
+SPRITES.miCasa = {
+  draw(ctx, s) {
+    const W = s.fw, D = s.fd, x = -W / 2, st = s.style || 'colonial', stage = s.stage || 0;
+    const ext = (s.extras || '').split(',');
+    const pal = { colonial: ['#f4efe4', '#8e2f24', '#a64a3a', '#b0583d'], adobe: ['#d9c09a', '#8e5a3a', '#6b4a30', '#a24f37'], ladrillo: ['#b8664a', '#6e3b2c', '#2d2d2d', '#cfc6b6'], colores: ['#f0a35e', '#b8452f', '#f4f1ea', '#cfc6b6'] }[st];
+    ctx.fillStyle = 'rgba(20,20,40,0.18)'; ctx.fillRect(x + 4, -2, W, 4);
+    if (stage === 0) { // stakes and string
+      ctx.strokeStyle = 'rgba(245,245,235,0.9)'; ctx.lineWidth = 0.4; ctx.strokeRect(x + 4, -D + 6, W - 8, D - 8);
+      ctx.fillStyle = '#6b4a30'; for (const [a, b] of [[x + 4, -D + 6], [x + W - 4, -D + 6], [x + 4, -2], [x + W - 4, -2]]) ctx.fillRect(a - 0.6, b - 3, 1.2, 3);
+      ctx.fillStyle = '#b7a58a'; ctx.beginPath(); ctx.ellipse(x + 12, -8, 7, 3.5, 0, Math.PI, 0); ctx.fill();
+      return;
+    }
+    if (stage === 1) { // foundations: stone and cement footing
+      ctx.fillStyle = '#8f8a80'; ctx.fillRect(x + 4, -D + 6, W - 8, 3); ctx.fillRect(x + 4, -5, W - 8, 3); ctx.fillRect(x + 4, -D + 6, 3, D - 8); ctx.fillRect(x + W - 7, -D + 6, 3, D - 8);
+      ctx.fillStyle = '#b0aba0'; for (let i = 0; i < 20; i++) ctx.fillRect(x + 5 + (i * 11) % (W - 10), -D + 7 + (i * 17) % (D - 10), 1.4, 1);
+      return;
+    }
+    const fh = ext.includes('piso2') && stage >= 4 ? 44 : 30;
+    // roof / slab
+    if (stage >= 3) { ctx.fillStyle = st === 'adobe' || st === 'colonial' ? pal[3] : '#cfc6b6'; ctx.fillRect(x + 2, -D + 4, W - 4, D - fh - 2); if (st === 'adobe' || st === 'colonial') { ctx.fillStyle = 'rgba(0,0,0,0.12)'; for (let y = -D + 6; y < -fh + 2; y += 3) ctx.fillRect(x + 2, y, W - 4, 0.6); } else { ctx.fillStyle = '#2a2b2e'; ctx.fillRect(x + W - 16, -D + 8, 8, 6); } }
+    else { ctx.fillStyle = '#9a958c'; ctx.fillRect(x + 2, -D + 4, W - 4, 3); ctx.fillRect(x + 2, -D + 4, 3, D - fh - 2); ctx.fillRect(x + W - 5, -D + 4, 3, D - fh - 2); }
+    // front wall
+    const wall = stage >= 4 ? pal[0] : '#9a958c';
+    ctx.fillStyle = wall; ctx.fillRect(x + 2, -fh, W - 4, fh);
+    if (stage < 4) { // grey block with castillos and rebar
+      ctx.fillStyle = 'rgba(60,60,60,0.25)'; for (let yy = -fh + 2; yy < 0; yy += 3) for (let xx = x + 2 + ((yy / 3) & 1) * 3; xx < x + W - 2; xx += 6) ctx.fillRect(xx, yy, 0.4, 3);
+      for (let yy = -fh + 3; yy < 0; yy += 3) ctx.fillRect(x + 2, yy, W - 4, 0.3);
+      ctx.fillStyle = '#b8b3a8'; for (const px of [x + 2, x + W / 2 - 1.5, x + W - 5]) ctx.fillRect(px, -fh, 3, fh);
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 0.3; for (const px of [x + 3, x + W - 4]) { ctx.beginPath(); ctx.moveTo(px, -fh); ctx.lineTo(px, -fh - 5); ctx.stroke(); }
+      if (stage === 2 || s.working) { ctx.strokeStyle = '#8a6a44'; ctx.lineWidth = 0.8; for (const px of [x + 6, x + W - 6]) { ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, -fh - 4); ctx.stroke(); } ctx.fillStyle = '#8a6a44'; ctx.fillRect(x + 5, -fh / 2, W - 10, 1.2); }
+      ctx.fillStyle = '#2c2520'; ctx.fillRect(-4, -14, 8, 14);
+      return;
+    }
+    // finished facade
+    ctx.fillStyle = pal[1]; ctx.fillRect(x + 2, -6, W - 4, 6);
+    if (st === 'ladrillo') { ctx.fillStyle = 'rgba(80,30,20,0.35)'; for (let yy = -fh + 1.6; yy < -6; yy += 1.6) ctx.fillRect(x + 2, yy, W - 4, 0.3); }
+    if (st === 'adobe') { ctx.fillStyle = '#6b4a30'; for (let px = x + 4; px <= x + W - 4; px += (W - 8) / 3) ctx.fillRect(px - 0.7, -fh - 2, 1.4, fh + 2); ctx.fillStyle = pal[3]; ctx.fillRect(x - 2, -fh - 4, W + 4, 3); }
+    else { ctx.fillStyle = '#a9523a'; ctx.fillRect(x + 1, -fh - 2.6, W - 2, 2.8); ctx.fillStyle = '#c56a4c'; for (let i = x + 1; i < x + W - 1; i += 2) ctx.fillRect(i, -fh - 2.6, 1.1, 2.4); }
+    const local = ext.includes('local');
+    if (local) { ctx.fillStyle = '#3a3129'; ctx.fillRect(x + 6, -14, 16, 14); ctx.fillStyle = '#9ea3a8'; ctx.fillRect(x + 6, -14, 16, 4); ctx.fillStyle = '#f6f1e6'; ctx.fillRect(x + 5, -20, 18, 5); text(ctx, s.shopSign || 'MI NEGOCIO', x + 14, -17.4, 2.6, '#7a1f1a'); }
+    // door with frame
+    ctx.fillStyle = pal[2]; ctx.fillRect(-4.8, -15, 9.6, 15); ctx.fillStyle = st === 'ladrillo' ? '#3b3b3b' : '#5a3620'; ctx.fillRect(-3.8, -14, 7.6, 14);
+    for (const wx of local ? [x + W - 16] : [x + 7, x + W - 16]) {
+      ctx.fillStyle = pal[2]; ctx.fillRect(wx - 1, -21, 11, 12); ctx.fillStyle = '#2f3a40'; ctx.fillRect(wx, -20, 9, 10);
+      ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 0.35; for (let i = wx + 1; i < wx + 9; i += 1.3) { ctx.beginPath(); ctx.moveTo(i, -20); ctx.lineTo(i, -10); ctx.stroke(); }
+      if (st === 'colores') { ctx.fillStyle = '#b5533a'; ctx.fillRect(wx - 0.5, -10, 10, 1.4); for (let i = 0; i < 5; i++) { ctx.fillStyle = ['#e84a6a', '#f2a93b', '#fff', '#c83dab', '#4f9a3a'][i]; ctx.beginPath(); ctx.arc(wx + 1 + i * 2, -10.4, 0.9, 0, 7); ctx.fill(); } }
+    }
+    if (fh > 30) for (let wx = x + 8; wx < x + W - 10; wx += 14) { ctx.fillStyle = pal[2]; ctx.fillRect(wx - 1, -fh + 5, 9, 11); ctx.fillStyle = '#2f3a40'; ctx.fillRect(wx, -fh + 6, 7, 9); ctx.fillStyle = '#1d1d1f'; ctx.fillRect(wx - 1.5, -fh + 15, 10, 0.6); for (let i = wx - 1.5; i <= wx + 8.5; i += 1.2) ctx.fillRect(i, -fh + 15, 0.3, 3); }
+    if (ext.includes('barandal')) { ctx.fillStyle = '#1d1d1f'; for (const [a, b] of [[x + 3, -6], [7, x + W - 3]]) { ctx.fillRect(a, 2, b - a, 0.6); for (let i = a; i <= b; i += 1.2) ctx.fillRect(i, 2, 0.3, 5); } ctx.fillStyle = '#2f6a2a'; for (let i = x + 5; i < x + W - 4; i += 6) { if (Math.abs(i) < 7) continue; ctx.beginPath(); ctx.arc(i, 1.5, 1.6, 0, 7); ctx.fill(); } }
+    if (ext.includes('jardin')) { trunk(ctx, x + W - 4, 3, 3, 14, '#6b4a30'); treeCanopy(ctx, x + W - 4, -16, 12, ['#6d4f9e', '#8e6cc4', '#b89be0'], rng(7), 8); }
+    plaque(ctx, -9, -fh + 1.5, 18, 3.2, 'MI CASA', '#3f3a33', '#f1e2b8');
+  },
+};
+SPRITES.mesaLoteria = {
+  draw(ctx) {
+    shadowBlob(ctx, 2, 0, 18, 4);
+    ctx.fillStyle = '#8a6a45'; ctx.fillRect(-16, -9, 32, 2.4); for (const x of [-14, 13]) ctx.fillRect(x, -7, 1.4, 7);
+    ctx.fillStyle = '#e8e2d2'; ctx.fillRect(-15, -10.5, 30, 1.6);
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = ['#e84a6a', '#2fb3a0', '#f2a93b', '#6a5acd', '#e53935'][i]; ctx.fillRect(-13 + i * 5.5, -12.2, 4.2, 3); }
+    ctx.fillStyle = '#b8322a'; ctx.fillRect(-9, -30, 18, 8); text(ctx, '¡LOTERÍA!', 0, -26, 3.2, '#fff');
+    ctx.fillStyle = '#6b4a30'; ctx.fillRect(-0.6, -22, 1.2, 12);
+  },
+};
