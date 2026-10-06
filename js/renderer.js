@@ -169,7 +169,9 @@ export class Renderer {
     if (map.outdoor) this.drawSky(ctx, game, x0, y0);
     else if (map.dim) { ctx.fillStyle = `rgba(20,15,30,${map.dim})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     this.drawLights(ctx, game, map, x0, y0);
+    if (map.outdoor) this.drawNightWater(ctx, game, map, x0, y0);
     if (map.outdoor) this.drawWeather(ctx, game, x0, y0);
+    if (game.settings?.vignette !== false) this.drawVignette(ctx, map);
     if (game.frozen) { ctx.fillStyle = 'rgba(40,40,140,0.28)'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     if (game.status && game.status.buzz > 45) { ctx.fillStyle = `rgba(255,200,120,${(game.status.buzz - 45) / 500})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   }
@@ -272,7 +274,7 @@ export class Renderer {
   }
 
   drawLights(ctx, game, map, x0, y0) {
-    const env = game.env;
+    const env = game.env; this.lastLight = env.light;
     const dark = map.outdoor ? clamp(1 - env.light, 0, 0.82) : (map.dark || 0);
     if (dark < 0.03 && !game.ufoGlow) return;
     const l = this.light, lc = this.lctx, S = this.S / 2;
@@ -292,6 +294,8 @@ export class Renderer {
     }
     lc.globalAlpha = 1;
     ctx.drawImage(l, 0, 0, this.canvas.width, this.canvas.height);
+    // the town's light pollution: a faint warm glow under the night
+    if (map.id === 'town' && dark > 0.3) { ctx.fillStyle = `rgba(255,150,70,${0.035 * dark})`; ctx.globalCompositeOperation = 'lighter'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height); ctx.globalCompositeOperation = 'source-over'; }
     // warm additive glow
     if (dark > 0.25) {
       ctx.globalCompositeOperation = 'lighter';
@@ -304,6 +308,49 @@ export class Renderer {
       }
       ctx.globalCompositeOperation = 'source-over';
     }
+  }
+
+  // Night water: the sky's stars (fewer under the town's glow) and the farol lights trembling on
+  // the river, the lagoon and the fountains.
+  drawNightWater(ctx, game, map, x0, y0) {
+    const dark = clamp(1 - game.env.light, 0, 1);
+    if (dark < 0.35 || game.env.rainAmt > 0.3) return;
+    const S = this.S, t = game.clock.real;
+    const tx0 = Math.floor(x0 / TILE), ty0 = Math.floor(y0 / TILE), tx1 = tx0 + Math.ceil(this.viewW / TILE) + 1, ty1 = ty0 + Math.ceil(this.viewH / TILE) + 1;
+    const sparse = map.id === 'town' ? 0.35 : 0.8; // light pollution eats the faint ones
+    ctx.globalCompositeOperation = 'lighter';
+    for (let ty = ty0; ty < ty1; ty++) for (let tx = tx0; tx < tx1; tx++) {
+      if (!map.inb(tx, ty) || map.get(tx, ty) !== G.WATER) continue;
+      for (let k = 0; k < 2; k++) {
+        const h = hash2(tx, ty, 40 + k); if (h > sparse) continue;
+        const tw = 0.5 + 0.5 * Math.sin(t * (1.5 + h * 4) + tx * 1.7 + ty);
+        const wx = (tx + hash2(tx, ty, 50 + k)) * TILE + Math.sin(t * 1.3 + ty) * 0.6, wy = (ty + hash2(tx, ty, 60 + k)) * TILE;
+        ctx.fillStyle = `rgba(230,236,255,${0.55 * dark * tw})`;
+        ctx.fillRect((wx - x0) * S, (wy - y0) * S, Math.max(1, S * 0.5), Math.max(1, S * 0.35));
+      }
+    }
+    for (const li of map.lights) {
+      const tx = Math.floor(li.x / TILE), ty = Math.floor(li.y / TILE) + 2;
+      if (!map.inb(tx, ty) || map.get(tx, ty) !== G.WATER) continue;
+      const sx = (li.x - x0) * S, sy = (ty * TILE + 4 - y0) * S;
+      if (sx < -40 || sy < -40 || sx > this.canvas.width + 40 || sy > this.canvas.height + 40) continue;
+      ctx.fillStyle = `rgba(255,200,120,${0.25 * dark})`;
+      for (let k = 0; k < 4; k++) ctx.fillRect(sx - S * (2 + Math.sin(t * 3 + k) * 1.2), sy + k * S * 2.2, S * (4 + Math.sin(t * 2 + k) * 2), S * 0.6);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // A soft lens vignette (deeper at night), and over the town at night a faint warm wash of sodium light.
+  drawVignette(ctx, map) {
+    const { canvas } = this, W = canvas.width, H = canvas.height;
+    if (!this.vig || this.vig.width !== W || this.vig.height !== H) {
+      this.vig = makeCanvas(W, H); const v = this.vig.getContext('2d');
+      const g = v.createRadialGradient(W / 2, H * 0.52, Math.min(W, H) * 0.35, W / 2, H * 0.52, Math.hypot(W, H) * 0.62);
+      g.addColorStop(0, 'rgba(10,8,20,0)'); g.addColorStop(1, 'rgba(10,8,20,0.42)');
+      v.fillStyle = g; v.fillRect(0, 0, W, H);
+    }
+    ctx.globalAlpha = map.outdoor ? 0.55 + 0.45 * clamp(1 - (this.lastLight ?? 1), 0, 1) : 0.7;
+    ctx.drawImage(this.vig, 0, 0); ctx.globalAlpha = 1;
   }
 
   drawWeather(ctx, game, x0, y0) {

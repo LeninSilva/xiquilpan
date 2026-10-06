@@ -22,6 +22,7 @@ import { applyProperties, buildMyHouse, newDay, lotInteract, obraInteract, bizSi
 import { playLoteria, playTortillas } from './minigames.js';
 import { Accidents, placeCar, saveCar, enterCar, exitCar, carMenu } from './driving.js';
 import { dogInteract, mezquiteScene } from './dogquest.js';
+import { paintSky, skyView } from './render/sky.js';
 
 const SAVE_KEY = 'xiq_save', SETTINGS_KEY = 'xiq_settings';
 
@@ -131,6 +132,7 @@ export class Game {
     this.camera.x = this.player.x; this.camera.y = this.player.y;
     this.clock.minutes = 7 * 60 + 30;
     const title = document.getElementById('title');
+    this.titleSky();
     const cont = document.getElementById('btnContinue');
     if (this.hasSave()) cont.classList.remove('hidden');
     cont.addEventListener('click', () => { this.audio.unlock(); title.classList.add('hidden'); this.loadGame(); });
@@ -154,6 +156,30 @@ export class Game {
     // automated-test hook: ?autostart=Name
     const q = new URLSearchParams(location.search);
     if (q.get('autostart') != null) { title.classList.add('hidden'); if (q.get('continue') && this.hasSave()) this.loadGame(); else this.newGame(q.get('autostart') || 'Emiliano', q.has('skipintro')); }
+  }
+  // “Mirar el cielo” from a mirador: the real sky over the valley, live with the game clock
+  async lookAtSky() {
+    const h = this.clock.hour, id = this.map.id;
+    const view = id === 'town' ? 'town' : 'cerro';
+    const caption = h >= 20 || h < 5 ? (id === 'lagunita' ? 'Aquí casi no llega la luz del pueblo. Las estrellas se ven hasta el agua.' : 'El resplandor del pueblo borra las estrellas de abajo. Arriba, todavía está la Vía Láctea.')
+      : h < 8 ? 'Amanece sobre la Ciénega. El cerro se pinta de naranja.' : h >= 18 ? 'La tarde se va por el lado de Sahuayo.' : 'Nubes sobre el valle. Por allá queda Sahuayo; por allá, Cotija.';
+    this.input.enabled = false; this.ui.prompt(null);
+    await skyView(this, view, { caption, ufo: (this.state.act || 1) >= 2 && (h >= 22 || h < 4) && Math.random() < 0.35 });
+    this.input.enabled = true;
+    if (h >= 21 || h < 5) { this.state.corazon = Math.min(100, (this.state.corazon || 0) + 1); }
+  }
+  // the title screen: the town's skyline under tonight's sky
+  titleSky() {
+    const cv = document.getElementById('titleSky'); if (!cv) return;
+    const ctx = cv.getContext('2d'); const t0 = performance.now();
+    const loop = (now) => {
+      if (this.playing || document.getElementById('title').classList.contains('hidden')) return;
+      const dpr = Math.min(2, devicePixelRatio || 1);
+      if (cv.width !== Math.round(innerWidth * dpr) || cv.height !== Math.round(innerHeight * dpr)) { cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr); }
+      paintSky(ctx, cv.width, cv.height, { hour: 21.4, cloud: 0.15, view: 'town', t: (now - t0) / 1000, ufo: true });
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
   }
   playerLook() {
     return makeLook(77, { female: false, age: 'adult', hair: 'short', hairColor: '#2b1f18', top: 'hoodie', topColor: '#3d3a8c', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#f5f5f5', hat: false, beard: null, mustache: false, glasses: false, backpack: true, skin: '#d19f78', extra: { eyeColor: '#2a1c12' } });
@@ -628,7 +654,7 @@ export class Game {
     if (it.type === 'door') return `Entrar: ${it.door.label}`;
     if (it.type === 'sprite') {
       const s = it.s;
-      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', parada: 'Esperar la combi', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
+      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', parada: 'Esperar la combi', cielo: 'Mirar el cielo', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
     }
   }
   async interact(it) {
@@ -656,6 +682,7 @@ export class Game {
       case 'sitio': return this.taxi(s.sitio);
       case 'parada': return this.combiRide(s);
       case 'mezquite': return mezquiteScene(this);
+      case 'cielo': return this.lookAtSky();
       case 'vendor': return this.openShop(s.vendor === 'micheladas_bosque' ? 'micheladas' : s.vendor);
       case 'tianguis': return this.openShop('tianguis');
       case 'shopcounter': return this.openShop(s.shop || 'tiendita');

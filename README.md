@@ -1,4 +1,4 @@
-# Xiquilpan: Las Luces del Cerro
+# Añil — Las luces del Cerro de San Francisco
 
 Un RPG de acción y aventura ambientado en **Jiquilpan de Juárez, Michoacán**. Es una web app instalable (PWA) que funciona en el celular (Android y iPhone) y en la computadora.
 
@@ -89,6 +89,23 @@ El norte está arriba. La **Av. Presidente Lázaro Cárdenas** cruza el pueblo d
 - **Pajaretes:** Don Refugio vende en sus corrales, al noreste. Un litro de leche cuesta $5, o te lo **fía**. Si no pagas, el pueblo se entera.
 - **Tianguis:** los viernes en el Jardín de la Paz. Los sábados cierran la Fajardo junto al mercado y la calle del bosque, con birria de Guatemala.
 
+## Novedades: el pueblo vivo
+
+- **Manejar:** la troca roja del abuelo (una Tacoma vieja) está estacionada frente a la casa. Te subes, manejas por el sistema de calles (con sentidos), tocas el claxon con B. Si atropellas a alguien no hay silueta de gis: se junta la gente, llega la ambulancia de la Cruz Roja y luego la patrulla. Puedes aceptar la multa, intentar la mordida o mentir (y pasar la noche en los separos). Si huyes, te buscan. La gente herida tarda días en volver; la troca se abolla, se le estrella el vidrio, echa humo y Don Chema la arregla o la remolca.
+- **Tráfico real:** Tsurus, Versas, Marchs, Aveos, Corollas, vochos, Tacomas y Cheyennes viejas, algún BYD o Leaf eléctrico y, muy rara vez, un Porsche. Combis verde, roja y amarilla con su ruta y sus paradas (te puedes subir). Los coches salen del pueblo hacia Sahuayo, Abadiano, Totolán, Cotija/Colima y La Lagunita.
+- **Ciclistas:** los Rinos de Jiquilpan (jersey morado, casco, presidente Sergio), las Mamazonas de Zamora y los Apenitas de La Palma, en su rodada de Zamora a San Pedro Caro.
+- **Perros:** jaurías y solitarios alrededor de la plaza y el mercado; toman agua de la fuente y de los trastes que dejan afuera de los negocios, y en el mercado les dan de comer. Acaricia uno, dale de comer y adóptalo: te sigue y olfatea cosas.
+- **Justicia para la Canela:** Claudia Azul (dueña del Portal Azul y presidenta del Comité Pueblo Mágico) te pide averiguar quién colgó a una perrita en Abadiano. Pistas, testigos, una pelea si hace falta y la policía.
+- **Gente:** manos con dedos, zapatos, caras distintas (nariz, mandíbula, cejas, lunares) y expresiones que cambian al hablar. La gente se esquiva en vez de amontonarse.
+- **Vendedores por hora:** el café de Rosita en la mañana, fruta de día, churros en la tarde, taqueros en la noche, gelatinas de rompope en el mercado y en carrito.
+- **Tío Luis y Francisco** reviven la ferretería frente al Monumento a Lázaro Cárdenas (con su llama eterna): mueven tinacos, acomodan mercancía. “¡Ánimo, patrón!”
+- **Danza de los Negritos y la Cuerita:** domingos y en diciembre, con máscara negra, corona de nochebuenas, cuera con flecos y el torito en la mano.
+- **Lugares:** Jardín de la Paz (antes panteón) con caminos en X y círculo, la estatua de Lucía de la Paz y gente dando vueltas; Tacos Pizarro en la esquina; Modelorama de Las Palmas y su repartidora en moto; las escaleras tricolores a La Trasquila y La Botellita; la Escalinata de Juárez detrás del estadio; hospital del ISSSTE; CBTIS; la Universidad de la Ciénega en su loma rumbo a Sahuayo; Farmacias Guadalajara en el mercado; tinacos Citijal en las azoteas; tienditas y carnicerías por dentro.
+- **El cerro:** un solo camino empedrado sin coches, la estación de radio cerca de la capilla, milpas, magueyes, nopales, vacas y caballos sueltos. Los coches solo en el pueblito de arriba, por el camino de Paredones y Abadiano.
+- **La Lagunita:** se abre más adelante en la historia. Ahí vive Don Ezequiel, de la familia del abuelo, y ahí está una de las últimas pistas.
+- **El cielo:** en los miradores (La Botellita, el Monumento a Juárez, la cima del cerro, la laguna) puedes **mirar el cielo**: estrellas y Vía Láctea donde la luz del pueblo lo permite, nubes encendidas desde abajo, el perfil de la torre y la cúpula de San Francisco. De noche, el agua refleja las estrellas.
+- **Los visitantes:** grises como los que vieron los niños de la escuela Ariel en Zimbabue (1994), con un mensaje telepático: cuidar la tierra y tenernos más compasión.
+
 ## Vivir en Jiquilpan (al estilo Fable)
 
 - **Conversaciones cerradas:** no se escribe texto libre. En cada plática escoges una respuesta: **amable**, **chistosa**, **honesta** o **grosera**. Eso cambia tus valores, tu título en el pueblo (“El Muchacho Amable”, “El Chistoso de los Portales”…) y lo que cada quien piensa de ti.
@@ -131,7 +148,13 @@ js/renderer.js      chunks del terreno, sprites ordenados por Y, luz, clima
 js/render/*.js      arte vectorial: terreno, casas, monumentos, personajes
 js/render/jiquilpan.js  edificios y monumentos propios de Jiquilpan (a partir de fotos)
 js/life.js          relaciones, ropa, terrenos, construcción y negocios
-js/minigames.js     lotería y tortillería
+js/minigames.js     lotería, tortillería y peleas
+js/driving.js       manejar, choques, ambulancia y patrulla
+js/dogs.js          perros callejeros y tu perro
+js/dogquest.js      Justicia para la Canela
+js/render/cars.js   modelos de coches, combis, bicis
+js/render/sky.js    cielo, estrellas, contaminación lumínica, perfil del pueblo
+js/render/props.js  anaqueles, refris, carnicería, tinacos
 js/data/town.js     trazo del pueblo (calles, manzanas, monumentos, tianguis)
 js/data/regions.js  Cerro de San Francisco y los pueblos cercanos
 js/data/interiors.js interiores (mercado, templos, biblioteca, UNAM…)

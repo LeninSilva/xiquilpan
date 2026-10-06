@@ -91,7 +91,7 @@ button { font: inherit; cursor: pointer; }
 @keyframes bob { 50% { transform: translateY(3px); } }
 
 /* Toasts & banner ----------------------------------------------------- */
-#toasts { position: fixed; top: calc(56px + var(--safe-t)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; align-items: center; z-index: 30; pointer-events: none; }
+#toasts { position: fixed; top: auto; bottom: calc(198px + var(--safe-b)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; align-items: center; z-index: 30; pointer-events: none; }
 .toast { background: var(--glass-2); color: var(--txt-on-glass); padding: 8px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
   animation: toast 3.2s ease forwards; max-width: 86vw; text-align: center; }
 .toast.good { border-left: 3px solid #7be07b; } .toast.bad { border-left: 3px solid #ff6b5e; } .toast.quest { border-left: 3px solid var(--gold); } .toast.soul { border-left: 3px solid #8f7cff; }
@@ -162,19 +162,12 @@ button { font: inherit; cursor: pointer; }
 
 /* Title --------------------------------------------------------------- */
 .title { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; overflow: hidden; color: #fff; }
-.title-sky { position: absolute; inset: 0; background:
-  radial-gradient(1200px 500px at 50% 110%, rgba(255,140,80,0.55), transparent 60%),
-  radial-gradient(3px 3px at 20% 30%, #fff, transparent), radial-gradient(2px 2px at 70% 20%, #fff, transparent), radial-gradient(2px 2px at 40% 15%, #fff, transparent),
-  radial-gradient(2px 2px at 85% 40%, #fff, transparent), radial-gradient(1.5px 1.5px at 10% 60%, #fff, transparent), radial-gradient(1.5px 1.5px at 55% 45%, #fff, transparent),
-  linear-gradient(180deg, #0e1030 0%, #2a2350 45%, #6b3a5a 75%, #c96a4a 100%); }
-.title-sky::after { content: ''; position: absolute; left: -10%; right: -10%; bottom: 0; height: 38%;
-  background: radial-gradient(60% 100% at 40% 100%, #1a1522 60%, transparent 61%), radial-gradient(50% 80% at 85% 100%, #221a2c 60%, transparent 61%); }
-.title-sky::before { content: ''; position: absolute; left: 52%; top: 26%; width: 10px; height: 10px; border-radius: 50%; background: #bfe9ff; box-shadow: 0 0 30px 10px rgba(150,220,255,0.7);
-  animation: ufo 6s ease-in-out infinite; }
-@keyframes ufo { 0%, 100% { transform: translate(0,0); opacity: .9; } 40% { transform: translate(60px,-20px); opacity: .5; } 60% { transform: translate(-30px,10px); opacity: 1; } }
+.title-sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: #0d1030; }
+.title-inner::before { content: ''; position: absolute; inset: -40px -60px; z-index: -1; background: radial-gradient(closest-side, rgba(8,10,30,0.55), transparent); }
 .title-inner { position: relative; text-align: center; padding: 24px; max-width: 520px; }
 .t-kicker { letter-spacing: 0.3em; text-transform: uppercase; font-size: 11px; opacity: 0.8; }
-.title h1 { font-family: Fraunces, Georgia, serif; font-size: clamp(52px, 14vw, 96px); margin: 6px 0 0; line-height: 1; letter-spacing: -0.01em; text-shadow: 0 4px 30px rgba(120,100,255,0.35); }
+.title h1 { font-family: Fraunces, Georgia, serif; font-weight: 300; font-size: clamp(64px, 18vw, 128px); margin: 10px 0 2px; line-height: 1; letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #ffffff 30%, #b9c6ff 70%, #6f7fe0); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 24px rgba(90,110,255,0.45)); }
 .t-sub { font-family: Fraunces, Georgia, serif; font-size: 20px; opacity: 0.9; font-style: italic; }
 .t-actions, .t-name { margin-top: 28px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .t-name label { font-size: 14px; opacity: 0.85; }
@@ -279,3 +272,12 @@ body.talking .tracker, body.talking .compass, body.cine .tracker { opacity: 0; p
 .vision.out { opacity: 0; }
 .vision canvas { width: 100%; height: 100%; object-fit: cover; }
 .vision-cap { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); width: min(560px, 88vw); text-align: center; color: #e9e4ff; font-family: Fraunces, Georgia, serif; font-size: clamp(16px, 2.4vw, 22px); line-height: 1.45; text-shadow: 0 2px 12px rgba(0,0,0,0.9); }
+
+/* Mirar el cielo ------------------------------------------------------ */
+.skyview { position: fixed; inset: 0; z-index: 58; background: #000; animation: skyIn 0.9s ease both; cursor: pointer; }
+.skyview canvas { width: 100%; height: 100%; display: block; }
+.skyview-cap { position: absolute; left: 50%; bottom: calc(28px + var(--safe-b, 0px)); transform: translateX(-50%); max-width: 86vw; text-align: center;
+  font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 15px; color: rgba(255,255,255,0.88); text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+.skyview.out { animation: skyOut 0.6s ease both; }
+@keyframes skyIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes skyOut { from { opacity: 1; } to { opacity: 0; } }

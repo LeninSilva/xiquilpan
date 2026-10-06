@@ -127,6 +127,7 @@ export function buildTown() {
     else tree(m, x + 0.5, y + 0.8, k);
   }
   area(m, 'Cerrito de La Trasquila', 6, 44, 52, 62, 'park');
+  sprite(m, 'label', 50.5, STY + STH + 6.6, { w: 4, up: 4, interact: 'cielo' });
   area(m, 'Mirador de La Trasquila — “La Botellita”', 46, STY + STH, 12, 8, 'monument');
   area(m, 'Escalones de La Trasquila (los tricolores)', STX, STY, 3, STH, 'stairs');
 
@@ -488,6 +489,7 @@ export function buildTown() {
   for (let x = 156; x < 186; x++) for (const y of [224, 225, 226, 227]) if (m.get(x, y) === G.DIRTROAD) m.set(x, y, G.COBBLE);
   m.fill(165, 233, 14, 8, G.PLAZA);
   m.fill(171, 228, 3, 5, G.STAIRS);
+  sprite(m, 'label', 168.5, 239.6, { w: 4, up: 4, interact: 'cielo' });
   sprite(m, 'monJuarez', 172, 237.6, { scale: 1.4, w: 44, up: 60, collide: [-17, -8, 34, 8], interact: 'juarez' });
   for (let x = 165.4; x < 178.8; x += 1.1) if (x < 170.6 || x > 174.4) sprite(m, 'balustre', x, 233.7, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
   for (const [x, y] of [[166, 236], [178, 236], [167, 240.6], [177, 240.6], [161.5, 231], [186.5, 231]]) tree(m, x, y, y > 238 ? 'cipres' : 'jacaranda', { size: 1.05, collide: [-2, -2, 4, 3] });

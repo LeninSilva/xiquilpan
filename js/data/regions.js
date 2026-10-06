@@ -95,6 +95,7 @@ export function buildCerro() {
   }
   sprite(m, 'antenna', 50, 131, { scale: 1.3, w: 30, up: 90, collide: [-6, -3, 12, 3] }); m.lights.push({ x: 50 * TILE, y: 120 * TILE, r: 30, color: '#ff4a3a' });
   sprite(m, 'summitCross', CERRO.cross[0], CERRO.cross[1], { scale: 1.3, w: 30, up: 60, collide: [-3, -3, 6, 3], interact: 'cruz' });
+  sprite(m, 'label', CERRO.cross[0] + 3, CERRO.cross[1] + 2.5, { w: 4, up: 4, interact: 'cielo' });
   area(m, 'La Cruz (cima del cerro)', 26, 106, 32, 30, 'summit');
   sprite(m, 'campfire', CERRO.camp[0], CERRO.camp[1], { w: 20, up: 20, collide: [-5, -3, 10, 4], interact: 'fogata', acts: [2] });
   sprite(m, 'tent', 36, 118, { color: '#d8792e', w: 34, up: 24, collide: [-12, -4, 24, 4], acts: [2] });
@@ -211,6 +212,7 @@ export function buildLagunita() {
   for (let i = 0; i < 160; i++) { const x = 2 + hash2(i, 1, 64) * (W - 4), y = 1 + hash2(i, 2, 64) * 22; const tx = Math.floor(x), ty = Math.floor(y); if (m.get(tx, ty) === G.DIRT || (m.get(tx, ty) === G.WATER && m.get(tx, ty + 2) !== G.WATER)) sprite(m, 'tule', x, y + 0.8, { seed: i, w: 16, up: 22 }); }
   for (const [x, y] of [[22, 15.6], [47, 16.2]]) sprite(m, 'canoa', x, y, { w: 40, up: 12 });
   area(m, 'La laguna', 4, 0, 62, 20, 'river');
+  sprite(m, 'label', 30.5, 22.4, { w: 4, up: 4, interact: 'cielo' });
   // the street: from the road to Jiquilpan (south) to the plaza, and on to Abadiano (east)
   vStreet(m, 'Camino a Jiquilpan', 33, 26, H, 4, { surface: G.DIRTROAD, sidewalk: false });
   hStreet(m, 'Calle de la Laguna', 4, W, 26, 3, { surface: G.DIRTROAD, sidewalk: false });
