@@ -1,9 +1,13 @@
 // Shared drawing primitives for architecture.
 import { shade, rgba, mix, roundRect } from '../util.js';
 
+// Soft contact shadow: dense at the centre, fading out (ambient occlusion rather than a flat disc).
 export function shadowBlob(ctx, x, y, rx, ry, a = 0.25) {
-  ctx.fillStyle = `rgba(20,20,35,${a})`;
-  ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill();
+  ctx.save(); ctx.translate(x, y); ctx.scale(1, ry / rx);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx * 1.15);
+  g.addColorStop(0, `rgba(20,20,35,${Math.min(0.6, a * 1.5)})`); g.addColorStop(0.6, `rgba(20,20,35,${a})`); g.addColorStop(1, 'rgba(20,20,35,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx * 1.15, 0, 7); ctx.fill();
+  ctx.restore();
 }
 
 export function vgrad(ctx, y0, y1, c0, c1) {
@@ -230,31 +234,48 @@ export function flagPole(ctx, x, baseY, h, t = 0) {
 }
 
 // Tree types -----------------------------------------------------------------
+// Foliage rendered in volumes: a dark occluded core, leaf masses shaded with soft radial light from
+// the upper left, a cool rim on the shadow side, and small sunlit leaf clusters on top.
 export function treeCanopy(ctx, cx, cy, r, palette, rnd, blobs = 9) {
+  const [dark, mid, light] = palette;
+  ctx.fillStyle = shade(dark, -0.25); ctx.beginPath(); ctx.ellipse(cx + r * 0.08, cy + r * 0.15, r * 0.9, r * 0.75, 0, 0, 7); ctx.fill();
+  const blob = (x, y, br, c0, c1) => {
+    const g = ctx.createRadialGradient(x - br * 0.35, y - br * 0.4, br * 0.1, x, y, br * 1.05);
+    g.addColorStop(0, c0); g.addColorStop(1, c1);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, br, 0, 7); ctx.fill();
+  };
   for (let i = 0; i < blobs; i++) {
-    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.55;
-    const br = r * (0.38 + rnd() * 0.3);
-    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * 0.8;
-    ctx.fillStyle = palette[0]; ctx.beginPath(); ctx.arc(x + br * 0.12, y + br * 0.18, br, 0, 7); ctx.fill();
+    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.55, br = r * (0.38 + rnd() * 0.3);
+    blob(cx + Math.cos(a) * d + br * 0.12, cy + Math.sin(a) * d * 0.8 + br * 0.18, br, dark, shade(dark, -0.3));
   }
   for (let i = 0; i < blobs; i++) {
-    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.5;
-    const br = r * (0.3 + rnd() * 0.25);
-    const x = cx + Math.cos(a) * d - r * 0.08, y = cy + Math.sin(a) * d * 0.8 - r * 0.1;
-    ctx.fillStyle = palette[1]; ctx.beginPath(); ctx.arc(x, y, br, 0, 7); ctx.fill();
+    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.5, br = r * (0.3 + rnd() * 0.25);
+    blob(cx + Math.cos(a) * d - r * 0.08, cy + Math.sin(a) * d * 0.8 - r * 0.1, br, mid, dark);
   }
   for (let i = 0; i < blobs / 2; i++) {
-    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.35;
-    const br = r * (0.16 + rnd() * 0.16);
-    ctx.fillStyle = palette[2]; ctx.beginPath(); ctx.arc(cx - r * 0.25 + Math.cos(a) * d, cy - r * 0.3 + Math.sin(a) * d, br, 0, 7); ctx.fill();
+    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.35, br = r * (0.16 + rnd() * 0.16);
+    blob(cx - r * 0.25 + Math.cos(a) * d, cy - r * 0.3 + Math.sin(a) * d, br, shade(light, 0.12), mid);
   }
+  // leaf texture: tiny clusters, brighter toward the light
+  for (let i = 0; i < blobs * 7; i++) {
+    const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * r * 0.85;
+    const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * 0.78;
+    const lit = (cx - x) + (cy - y) > 0;
+    ctx.fillStyle = lit ? rgba(light, 0.75) : rgba(shade(dark, -0.2), 0.5);
+    ctx.beginPath(); ctx.ellipse(x, y, 0.9 + rnd() * 0.9, 0.6 + rnd() * 0.6, rnd() * 3, 0, 7); ctx.fill();
+  }
+  // cool sky bounce on the lower right edge
+  ctx.strokeStyle = 'rgba(160,190,210,0.18)'; ctx.lineWidth = r * 0.08;
+  ctx.beginPath(); ctx.arc(cx + r * 0.05, cy + r * 0.05, r * 0.82, 0.1, 1.5); ctx.stroke();
 }
 
 export function trunk(ctx, x, y, w, h, color = '#6b4a30') {
-  ctx.fillStyle = shade(color, -0.2);
-  ctx.beginPath(); ctx.moveTo(x - w * 0.7, y); ctx.lineTo(x - w * 0.4, y - h); ctx.lineTo(x + w * 0.4, y - h); ctx.lineTo(x + w * 0.7, y); ctx.fill();
-  ctx.fillStyle = color; ctx.fillRect(x - w * 0.35, y - h, w * 0.4, h);
-  ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x - w * 0.3, y - h, w * 0.12, h);
+  const g = ctx.createLinearGradient(x - w * 0.7, 0, x + w * 0.7, 0);
+  g.addColorStop(0, shade(color, 0.12)); g.addColorStop(0.45, color); g.addColorStop(1, shade(color, -0.35));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(x - w * 0.75, y); ctx.quadraticCurveTo(x - w * 0.42, y - h * 0.4, x - w * 0.38, y - h); ctx.lineTo(x + w * 0.38, y - h); ctx.quadraticCurveTo(x + w * 0.42, y - h * 0.4, x + w * 0.75, y); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rgba(shade(color, -0.4), 0.45); ctx.lineWidth = Math.max(0.2, w * 0.06);
+  for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(x + i * w * 0.22, y - 0.5); ctx.quadraticCurveTo(x + i * w * 0.15 + w * 0.05, y - h * 0.5, x + i * w * 0.12, y - h); ctx.stroke(); }
 }
 
 export function text(ctx, str, x, y, size, color = '#222', font = '"Trebuchet MS", sans-serif', weight = 'bold', align = 'center') {
@@ -265,7 +286,10 @@ export function text(ctx, str, x, y, size, color = '#222', font = '"Trebuchet MS
 export function plaque(ctx, x, y, w, h, str, bg = '#2f4f3f', fg = '#e8d9a8') {
   ctx.fillStyle = shade(bg, -0.3); roundRect(ctx, x - 0.5, y - 0.5, w + 1, h + 1, 1); ctx.fill();
   ctx.fillStyle = bg; roundRect(ctx, x, y, w, h, 1); ctx.fill();
-  const size = Math.min(h * 0.62, w / (str.length * 0.6));
+  let size = h * 0.62;
+  ctx.font = `bold ${size}px "Trebuchet MS", sans-serif`;
+  const tw = ctx.measureText(str).width;
+  if (tw > w - 1.5) size *= (w - 1.5) / tw;
   text(ctx, str, x + w / 2, y + h / 2 + 0.2, size, fg);
 }
 

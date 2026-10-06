@@ -1,16 +1,24 @@
-<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#e9dcc0}canvas{display:block}</style></head><body><canvas id="c" width="1200" height="820"></canvas>
+<!doctype html><meta charset="utf-8"><title>People gallery</title>
+<body style="margin:0;background:#c9bfae"><canvas id="c" width="1400" height="1000"></canvas>
 <script type="module">
-import { drawPerson, makeLook, PEOPLE_SCALE } from '../js/render/people.js';
-import { NAMED } from '../js/data/npcs.js';
-const c = document.getElementById('c'), ctx = c.getContext('2d');
-const ids = ['abuela', 'miguel', 'tono', 'rosita', 'chuy', 'refugio', 'karla', 'padre', 'lupe', 'guero', 'olga', 'beto'];
-ids.forEach((id, i) => {
-  const def = NAMED.find(n => n.id === id);
-  const L = makeLook(100 + i, def.look); L.body = (def.look.age === 'kid' ? 0.78 : 1) / PEOPLE_SCALE;
-  ctx.save(); ctx.translate((i % 6) * 200 + 30, Math.floor(i / 6) * 400 + 20); ctx.scale(5, 5);
-  drawPerson(ctx, L, i % 3 === 2 ? 2 : 0, i % 4 === 1 ? 'talk' : i % 4 === 3 ? 1 : 'idle');
-  ctx.restore();
-  ctx.font = '14px sans-serif'; ctx.fillText(def.name, (i % 6) * 200 + 40, Math.floor(i / 6) * 400 + 390);
+import { makeLook, drawPerson, drawPortrait } from '../js/render/people.js';
+const ctx = document.getElementById('c').getContext('2d');
+const looks = [
+  makeLook(1, { age: 'adult', hair: 'curly', hairColor: '#2a211b', beard: 'full', beardColor: '#4a4540', nose: 'wide', top: 'tshirt', topColor: '#3d5a80', girth: 0.92 }),
+  makeLook(2, { age: 'elder', hat: 'panama', beard: 'full', hairColor: '#d9d5ce', girth: 1.25, top: 'guayabera', topColor: '#f4f0e6' }),
+  makeLook(3, { female: true, age: 'adult', hair: 'braids', rebozo: '#5b3f7a', top: 'bordado', bottom: 'longskirt', expr: 'happy' }),
+  makeLook(4, { uniform: 'rinos', age: 'adult' }),
+  makeLook(5, { uniform: 'negrito', holds: 'toro' }),
+  makeLook(6, { age: 'kid', expr: 'surprised' }),
+  makeLook(7, { female: true, age: 'teen', hair: 'long', phone: true, expr: 'sad' }),
+  makeLook(8, { age: 'adult', hat: 'texana', mustache: true, top: 'plaid', shoes: 'boots', expr: 'angry' }),
+];
+looks.forEach((L, i) => {
+  for (let d = 0; d < 4; d++) { ctx.save(); ctx.translate(20 + d * 70, 20 + i * 120); ctx.scale(2.4, 2.4); drawPerson(ctx, L, d, d === 2 ? 1 : d === 3 ? 'talk' : 'idle'); ctx.restore(); }
+  ctx.save(); ctx.translate(320, 10 + i * 120); drawPortrait(ctx, L, 110, 'idle'); ctx.restore();
+  ctx.save(); ctx.translate(440, 10 + i * 120); ctx.scale(2.4, 2.4); for (let f = 0; f < 4; f++) { drawPerson(ctx, L, 2, f); ctx.translate(26, 0); } ctx.restore();
 });
-window.done = true;
-</script></body></html>
+// one big for detail
+ctx.save(); ctx.translate(820, 30); ctx.scale(9, 9); drawPerson(ctx, looks[0], 0, 'idle'); ctx.restore();
+ctx.save(); ctx.translate(1100, 30); ctx.scale(9, 9); drawPerson(ctx, looks[1], 2, 1); ctx.restore();
+</script>

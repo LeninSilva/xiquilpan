@@ -165,5 +165,13 @@ function village(id, name, W, H, opts) {
 function pickKind(r) { return r < 0.15 ? 'huizache' : r < 0.3 ? 'fresno' : r < 0.4 ? 'jacaranda' : 'encino'; }
 
 export function buildTotolan() { return village('totolan', 'Totolán', 64, 46, { seed: 71, church: 'TOTOLÁN', churchColor: '#f2dcc6', paved: true, elev: 1555 }); }
-export function buildAbadiano() { return village('abadiano', 'Abadiano', 56, 40, { seed: 83, church: 'ABADIANO', elev: 1545 }); }
+export function buildAbadiano() {
+  const m = village('abadiano', 'San Antonio Abadiano', 56, 40, { seed: 83, church: 'ABADIANO', elev: 1545 });
+  // the old mesquite by the road east of the village (Claudia Azul's errand), and El Chueco's grey Italika
+  tree(m, 47.5, 27.2, 'mezquite', { size: 1.25, interact: 'mezquite', collide: [-3, -3, 6, 4] });
+  sprite(m, 'parkedMoto', 13.2, 27.9, { color: '#8a8f94', w: 20, up: 18, collide: [-5, -3, 10, 3] });
+  area(m, 'El mezquite del camino', 44, 24, 8, 6, 'place');
+  m.finalize();
+  return m;
+}
 export function buildSarabia() { return village('sarabia', 'Francisco Sarabia', 56, 42, { seed: 97, church: 'FCO. SARABIA', churchColor: '#e8e6f2', school: true, elev: 1550 }); }

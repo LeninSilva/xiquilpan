@@ -269,3 +269,9 @@ body.talking .tracker, body.talking .compass, body.cine .tracker { opacity: 0; p
 .lot-cell .emo { font-size: 22px; }
 .comal { max-width: 360px; margin: 0 auto; }
 .card .title-badge { font-family: Fraunces, Georgia, serif; font-size: 20px; margin: 4px 0; }
+.pelea-hp { display: flex; justify-content: space-between; font-weight: 600; color: #3a2418; margin: 10px 2px; }
+.pelea-hp b { color: #b8322a; letter-spacing: 2px; }
+.pelea-bar { position: relative; height: 26px; border-radius: 13px; background: linear-gradient(#e9dcc6, #d9c6a8); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); overflow: hidden; }
+.pelea-zone { position: absolute; top: 0; bottom: 0; background: linear-gradient(#f2c94c, #d9a52a); border-radius: 13px; }
+.pelea-mark { position: absolute; top: -2px; bottom: -2px; width: 6px; background: #3a2418; border-radius: 3px; }
+.pelea-msg { text-align: center; margin: 12px 0 2px; color: #5a3e2a; min-height: 2.6em; }

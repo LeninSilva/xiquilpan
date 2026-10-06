@@ -504,6 +504,61 @@ export const NAMED = [
     persona: 'El Profe Nacho, 50 años, maestro de la escuelita de Francisco Sarabia; idealista, lector, cree que la escuela rural es el corazón del país.',
     sched: [{ h: [8, 18], map: 'sarabia', at: [24, 20], act: 'stand', dir: 0 }],
   },
+  // --- vendors who come out at their hour -------------------------------------------------------
+  {
+    id: 'pizarro', name: 'Pizarro', role: 'Tacos Pizarro (esquina del Jardín de la Paz)', shop: 'pizarro', likes: ['refresco'],
+    look: { age: 'adult', apron: true, hat: 'cap', capColor: '#1b1b1b', mustache: true, girth: 1.18, top: 'tshirt', topColor: '#f5f5f5', bottom: 'jeans', nose: 'wide', jaw: 'round', brows: 1.1 },
+    persona: 'Pizarro, 45 años, taquero de la esquina del Jardín de la Paz que da a la Av. Lázaro Cárdenas; abre cuando oscurece y cierra cuando se acaba el trompo. Rápido, de pocas palabras, con memoria para la orden de cada cliente.',
+    lines: ['¿Cuántos van a ser? ¿Con todo?', 'El pastor ya está. El suadero sale en cinco.', 'Aquí cenan los que salen del jardín de dar la vuelta. Se lo ganan, ¿no?', 'La piña se corta en el aire, joven. Es lo único que presumo.'],
+    sched: [{ h: [19, 24], map: 'town', at: [158.4, 58.2], act: 'vend', dir: 0, prop: { sprite: 'tacoStand', sign: 'TACOS PIZARRO', tarp: '#c0392b', dx: 0, dy: 1.1 } }, { h: [0, 1], map: 'town', at: [158.4, 58.2], act: 'vend', dir: 0, prop: { sprite: 'tacoStand', sign: 'TACOS PIZARRO', tarp: '#c0392b', dx: 0, dy: 1.1 } }],
+  },
+  {
+    id: 'gela', name: 'Doña Gela', role: 'gelatinas con rompope (entrada del mercado)', shop: 'gelatinas_mercado', likes: ['ramo', 'pan'],
+    look: { female: true, age: 'elder', hair: 'bun', hairColor: '#cfcac2', apron: true, top: 'blouse', topColor: '#f7c6d9', bottom: 'longskirt', bottomColor: '#5b3f7a', glasses: true, girth: 1.12, nose: 'button', cheeks: true },
+    persona: 'Doña Gela, 70 años, vende gelatinas de rompope, de mosaico y flanes en la ventanita de la entrada del Mercado desde que el mercado se llamaba “la plaza de abastos”. Competencia amistosa de Doña Lety, la de la plaza.',
+    lines: ['La de rompope es la que más sale. La receta es de mi suegra, que en paz descanse.', 'Doña Lety vende en la plaza, yo aquí. Nos repartimos el pueblo como buenas comadres.', 'Llévese una para su abuela, que a Doña Chayo le encantan.'],
+    sched: [{ h: [8, 16], map: 'town', at: [204.4, 110.6], act: 'vend', dir: 0, prop: { kind: 'cart', cartKind: 'gelatinas', color: '#e0457b', sign: 'GELATINAS', dx: 1.3, dy: 0 } }],
+  },
+  {
+    id: 'chava_fruta', name: 'Don Chava', role: 'fruta picada de la mañana (afuera del mercado)', shop: 'frutas_mercado',
+    look: { age: 'elder', hat: 'cap', capColor: '#2f9e44', apron: true, mustache: true, top: 'tshirt', topColor: '#f39c12', bottom: 'pants', girth: 1.05, nose: 'aquiline' },
+    persona: 'Don Chava, 64 años, fruta picada y jugos afuera del mercado desde las siete de la mañana hasta mediodía; madrugador, chiflador.',
+    lines: ['¡Llévele, llévele! ¡Mango, papaya, melón!', 'La fruta en la mañana es oro, en la tarde plata y en la noche plomo, decía mi papá.'],
+    sched: [{ h: [7, 13], map: 'town', at: [195.6, 110.6], act: 'vend', dir: 0, prop: { kind: 'cart', cartKind: 'fruta', color: '#2e86de', sign: 'FRUTA', umbrella: '#2f9e44', dx: -1.3, dy: 0 } }],
+  },
+  // --- the ferretería by the Monumento a Lázaro Cárdenas -----------------------------------------
+  {
+    id: 'tio_luis', name: 'Tío Luis', short: 'Tío Luis', role: 'le ayuda a Francisco en la ferretería', likes: ['refresco', 'pan', 'mezcal'],
+    look: { age: 'elder', hair: 'short', hairColor: '#e3dfd8', beard: 'full', beardColor: '#f2f0ea', mustache: true, hat: 'panama', hatColor: '#f6f3ea', top: 'guayabera', topColor: '#f4f0e6', bottom: 'pants', bottomColor: '#6b5a45', shoes: 'shoes', shoeColor: '#5a3a22', girth: 1.28, nose: 'straight', jaw: 'round', cheeks: true, eyes: 'droopy' },
+    quirks: ['¡Ánimo, patrón!', '¡Ánimo! ¿Qué se le ofrece, patrón?', '¡Eso, patrón! ¡Ánimo!'],
+    persona: 'Tío Luis, 72 años, canoso, de barba blanca y panzoncito, siempre con su sombrero Panamá blanco. Le dice "patrón" a todo el mundo y remata cada frase con un "¡Ánimo!". Le está ayudando a Francisco a levantar la ferretería después de un año malo: mueven tinacos, acomodan mercancía, limpian. Optimista incurable.',
+    lines: ['¡Ánimo, patrón! Que la ferretería ya va de subida.', 'Un año entero sin vender ni un tornillo, patrón. Pero aquí seguimos. ¡Ánimo!', 'Estos tinacos Citijal no se cargan solos, patrón. ¿Me echa la mano? ¡Ánimo!', 'Francisco es buen muchacho. Terco, pero bueno. ¡Ánimo!', 'Yo ya estoy viejo pa’ cargar, patrón, pero no pa’ animar. ¡Ánimo!'],
+    sched: [{ d: [1, 2, 3, 4, 5, 6], h: [9, 18], map: 'town', at: [243.5, 198.3], act: 'haul', to: [249.5, 198.5], carry: 'tinaco', dir: 0 },
+      { h: [18, 20], map: 'town', at: [228.5, 201.2], act: 'sit', dir: 0 }],
+    stories: ['Mi compadre tenía una tlapalería aquí mismo cuando el General Cárdenas todavía venía al pueblo. Dicen que una vez le compró un martillo y no aceptó que se lo regalaran. “El que regala lo que vende, no vende”, le dijo. ¡Ánimo, patrón!'],
+  },
+  {
+    id: 'francisco', name: 'Francisco', short: 'Francisco', role: 'el ferretero', shop: 'ferreteria', likes: ['refresco', 'cemento', 'codo'],
+    look: { age: 'adult', hair: 'curly', hairColor: '#2a211b', beard: 'full', beardColor: '#56504a', mustache: true, top: 'polo', topColor: '#3d5a80', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'boots', shoeColor: '#5a3a22', girth: 0.86, nose: 'wide', jaw: 'long', brows: 1.05, eyes: 'almond', apron: true },
+    persona: 'Francisco, 49 años, el ferretero; flaco, de barba oscura ya entrecana, pelo chino cortito y nariz ancha. Serio, trabajador, un poco desconfiado al principio. Después de un año muy malo está levantando la ferretería con la ayuda de Tío Luis: limpian, acomodan, mueven tinacos y buscan clientes uno por uno.',
+    lines: ['Llevamos un año batallando. Pero la gente vuelve si uno cumple.', 'Tornillos, cemento, mangueras, tinacos… lo que no tengo, se lo consigo para mañana.', 'Tío Luis no me deja desanimarme. A veces me desespera. Pero tiene razón.', 'Aquí enfrente está el General. Dicen que él no se rendía. Pues uno tampoco.'],
+    sched: [{ d: [1, 2, 3, 4, 5, 6], h: [9, 19], map: 'town', at: [246.6, 197.6], act: 'haul', to: [251.5, 197.8], carry: 'broom', dir: 0 }],
+  },
+  // --- Los Rinos, and the Portal Azul ---------------------------------------------------------------
+  {
+    id: 'sergio', name: 'Sergio', short: 'Sergio', role: 'presidente de Los Rinos de Jiquilpan (ciclismo)', likes: ['refresco', 'fruta'],
+    look: { uniform: 'rinos', age: 'adult', beard: 'goatee', hairColor: '#3b2a1c', girth: 0.98, nose: 'straight', jaw: 'square' },
+    persona: 'Sergio, 51 años, presidente del club de ciclismo Los Rinos de Jiquilpan (jersey morado con un rinoceronte). Organiza rodadas de Jiquilpan a Zamora y hasta San Pedro Caro. Rivalidad amistosa con Las Mamazonas de Zamora y con Los Apenitas. Entusiasta, competitivo, invita a todos a rodar.',
+    lines: ['¡Los Rinos no se detienen! Sábados y domingos, siete de la mañana, salida del Portal Azul.', 'Este domingo vamos a San Pedro Caro. Ida y vuelta. ¿Te animas?', 'Las Mamazonas de Zamora nos ganaron la última. Pero en la subida a Totolán nadie le gana a un rino.', 'Los Apenitas… pues ahí van, apenitas. Pero nunca se rajan, eso sí.'],
+    sched: [{ d: [0, 6], h: [6.5, 7.5], map: 'town', at: [143.5, 112.4], act: 'stand', dir: 0 }, { d: [0, 6], h: [11, 14], map: 'town', at: [146.5, 114.9], act: 'stand', dir: 0 }, { d: [2, 4], h: [19, 21], map: 'town', at: [134.5, 108.8], act: 'stand', dir: 0 }],
+  },
+  {
+    id: 'claudia', name: 'Claudia Azul', short: 'Claudia', role: 'dueña del Portal Azul · presidenta del Comité Pueblo Mágico', likes: ['ramo', 'pan', 'rebozo_seda'],
+    look: { female: true, age: 'adult', hair: 'wavy', hairColor: '#3b2a1c', top: 'blouse', topColor: '#2e6fb3', bottom: 'skirt', bottomColor: '#1f2d4a', earrings: true, glasses: false, nose: 'straight', jaw: 'heart', lips: 'full', brows: 0.6, shoes: 'shoes', shoeColor: '#1b1b1b' },
+    persona: 'Claudia Azul, 47 años, dueña del Portal Azul (cenaduría) y presidenta del Comité de Pueblo Mágico de Jiquilpan. Elegante, enérgica, organizada; defiende el patrimonio y a los animales del pueblo. Le indigna el maltrato a los perros callejeros.',
+    lines: ['El Comité de Pueblo Mágico no es para tomarse fotos: es para cuidar lo que somos.', 'Los perritos de la plaza son de todos. Por eso les ponemos agua en la tarde.', 'El Portal Azul lleva cuarenta años dando de cenar. Pozole los jueves, enchiladas siempre.'],
+    sched: [{ h: [10, 23], map: 'town', at: [146.8, 114.9], act: 'stand', dir: 0 }],
+  },
 ];
 
 // Market stalls (interior) — each vendor is an NPC in the mercado map.

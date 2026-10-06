@@ -1,10 +1,11 @@
 // Population manager: named NPCs on schedules, the crowd, traffic and animals.
 import { TILE, dist, rng, pick, hash2 } from './util.js';
 import { G, ROADS } from './world.js';
-import { Person, Vehicle, Animal, Entity, findPath, RoadTruck } from './entities.js';
+import { Person, Vehicle, Animal, Entity, findPath, RoadTruck, lanePath, nearestLane, COMBI_ROUTES } from './entities.js';
 import { makeLook } from './render/people.js';
 import { NAMED, MERCADO_VENDORS } from './data/npcs.js';
 import { SPRITES } from './render/landmarks.js';
+import { Dog, spawnTownDogs, dogKindness } from './dogs.js';
 
 const R = Math.random;
 
@@ -44,9 +45,33 @@ export class NPC extends Person {
     this.path = null; this.recoveries = 0;
     if (this.onArrive) this.onArrive(game);
   }
+  // Repulsion from nearby walkers plus a sidestep to the right when someone is coming head-on.
+  separation(game, vx, vy, range = 13) {
+    let ax = 0, ay = 0;
+    const list = game.people || game.entities;
+    const sp = Math.hypot(vx, vy);
+    for (const o of list) {
+      if (o === this || o.map !== this.map || o.hidden || !(o instanceof Person) || o.down) continue;
+      const dx = this.x - o.x, dy = (this.y - o.y) * 1.4, d2 = dx * dx + dy * dy;
+      if (d2 > range * range || d2 < 0.01) { if (d2 < 0.01) { ax += (this.id % 2 ? 6 : -6); } continue; }
+      const d = Math.sqrt(d2), f = (range - d) / range;
+      ax += dx / d * f * 26; ay += dy / d * f * 18;
+      if (sp > 1) { // head-on: both step to their right
+        const ux = vx / sp, uy = vy / sp, ahead = -(dx * ux + dy * uy);
+        if (ahead > 0 && ahead < range) { ax += -uy * f * 22; ay += ux * f * 22; }
+      }
+    }
+    return [ax, ay];
+  }
+  // Hit by a car: lies on the ground until the ambulance takes them (see game.accidents).
+  updateDown(dt, game) {
+    this.pose = 'down'; this.moving = false;
+    this.downT = (this.downT || 0) + dt;
+  }
   update(dt, game) {
     this.updateAnim(dt);
     this.moving = false;
+    if (this.down) { this.updateDown(dt, game); return; }
     if (this.talking) return;
     if (this.behaviour === 'sit') { this.pose = 'sit'; return; }
     if (this.behaviour === 'phone') { this.look.phone = true; }
@@ -56,8 +81,14 @@ export class NPC extends Person {
       const tx = p[0] * TILE + 8, ty = p[1] * TILE + 10;
       const dx = tx - this.x, dy = ty - this.y, d = Math.hypot(dx, dy);
       if (d < 2) { this.pathI++; return; }
-      const vx = dx / d * this.speed, vy = dy / d * this.speed;
-      const others = game.entities;
+      let vx = dx / d * this.speed, vy = dy / d * this.speed;
+      // Steering: people keep a little personal space and pass each other on the right instead of
+      // pushing into a knot. Only the player, vehicles and props are hard obstacles for a walker.
+      const [sx, sy] = this.separation(game, vx, vy);
+      vx += sx; vy += sy;
+      const sp = Math.hypot(vx, vy) || 1, cap = this.speed * 1.15;
+      if (sp > cap) { vx *= cap / sp; vy *= cap / sp; }
+      const others = game.hardBlockers || game.entities;
       const bx = this.x, by = this.y;
       this.tryMove(vx, vy, dt, others);
       if (Math.hypot(this.x - bx, this.y - by) < this.speed * dt * 0.3) { // barely moved: we are caught on something
@@ -68,6 +99,25 @@ export class NPC extends Person {
       return;
     }
     if ((this.behaviour === 'wander' || this.behaviour === 'walk') && this.map.blocked(this.x, this.y, 4, 2.5)) this.unstick(); // never stand inside a bush
+    // standing too close to someone else: drift apart a little (no more balls of people)
+    if (!this.def?.fixed && this.behaviour !== 'vend' && this.behaviour !== 'sit') {
+      const [sx, sy] = this.separation(game, 0, 0, 10);
+      if (Math.abs(sx) + Math.abs(sy) > 4) { this.tryMove(sx * 0.5, sy * 0.5, dt, game.hardBlockers); this.home = { x: this.x, y: this.y }; }
+    }
+    if (this.behaviour === 'haul') { // carry things back and forth between two spots (moving tinacos, sweeping)
+      this.wait -= dt;
+      if (this.wait > 0) return;
+      const sc = this.sched || {};
+      const a = this.home, b = sc.to ? { x: sc.to[0] * TILE + 8, y: sc.to[1] * TILE + 10 } : this.home;
+      this.leg = !this.leg;
+      const tgt = this.leg ? b : a;
+      this.look.holds = this.leg ? (sc.carry || null) : (sc.carry === 'broom' ? 'broom' : null);
+      const path = findPath(this.map, this.x / TILE, this.y / TILE, tgt.x / TILE, tgt.y / TILE, 600);
+      if (path && path.length > 1) { this.path = path; this.pathI = 1; this.onArrive = () => { this.wait = 2.5 + R() * 4; this.dir = sc.dir ?? 0; if (this.look.holds === 'tinaco') this.look.holds = null; }; }
+      else this.wait = 3;
+      return;
+    }
+    if (this.behaviour === 'dance') { this.pose = 'dance'; return; }
     if (this.behaviour === 'wander') {
       this.wait -= dt;
       if (this.wait <= 0) {
@@ -138,6 +188,7 @@ export class NPCManager {
     if (def.eras && !def.eras.includes(era)) return null;
     if (g.quests.hideNPC(def.id)) return null;
     if (def.when && !def.when(g)) return null;
+    if (g.state.injured && g.state.injured[def.id] > g.clock.dayIndex) return null; // in the hospital
     const h = g.clock.hour, d = g.clock.weekday;
     for (const s of def.sched || []) {
       if (s.acts && !s.acts.includes(act)) continue;
@@ -159,8 +210,18 @@ export class NPCManager {
     if (this.trafficTimer <= 0) { this.trafficTimer = 1.2; this.syncTraffic(); }
     for (const n of this.named.values()) if (n.map === g.map) n.update(dt, g);
     for (const c of this.crowd) if (c.map === g.map) c.update(dt, g);
-    for (const v of this.vehicles) v.update(dt, g);
+    for (const v of this.vehicles) {
+      v.update(dt, g);
+      if (v.route && v.parked && !v.dead) { // a combi at its stop: shout the route, then go on
+        v.waitStop = (v.waitStop ?? 5) - dt;
+        if (!v.bubble && v.waitStop > 3.5) v.bubble = { text: '¡' + COMBI_ROUTES[v.route].text.replace(' · ', ', ') + '!', t: 2.5 };
+        if (v.waitStop <= 0) { v.waitStop = null; v.stopI = (v.stopI + 1) % g.map.combiRoutes[v.route].length; this.planCombi(v); }
+      }
+      if (v.bubble) { v.bubble.t -= dt; if (v.bubble.t <= 0) v.bubble = null; }
+    }
     for (const a of this.animals) if (a.map === g.map) a.update(dt, g);
+    this.kindT = (this.kindT || 0) - dt;
+    if (this.kindT <= 0) { this.kindT = 2; dogKindness(g, this.dogs || []); this.syncCompanion(); }
     this.vehicles = this.vehicles.filter(v => !v.dead || this.remove(v));
   }
   remove(e) { const i = this.game.entities.indexOf(e); if (i >= 0) this.game.entities.splice(i, 1); return false; }
@@ -202,9 +263,9 @@ export class NPCManager {
       }
       npc.marker = g.quests.markerFor(def.id);
       if (s.prop && !this.props.has(def.id)) {
-        const kind = s.prop.kind === 'carnitasTruck' ? 'carnitasTruck' : 'cart';
+        const kind = s.prop.sprite || (s.prop.kind === 'carnitasTruck' ? 'carnitasTruck' : 'cart');
         const p = new Prop(map, tx + (s.prop.dx || 0) * TILE, ty + (s.prop.dy || 0) * TILE,
-          { kind, w: kind === 'carnitasTruck' ? 60 : 40, up: 56, color: s.prop.color, sign: s.prop.sign, umbrella: s.prop.umbrella, cart: s.prop.cartKind });
+          { kind, w: kind === 'carnitasTruck' ? 60 : kind === 'tacoStand' ? 48 : 40, up: 56, color: s.prop.color, sign: s.prop.sign, umbrella: s.prop.umbrella, cart: s.prop.cartKind, tarp: s.prop.tarp });
         p.owner = npc; npc.prop = p;
         this.props.set(def.id, p); this.add(p);
       }
@@ -241,11 +302,12 @@ export class NPCManager {
     // despawn far or wrong-map walkers
     this.crowd = this.crowd.filter(c => {
       const far = c.map !== map || dist(c.x, c.y, g.player.x, g.player.y) > 40 * TILE || c.expire < g.clock.minutes;
-      if (far && !c.talking) { this.remove(c); return false; }
+      if (far && !c.talking && !c.down) { this.remove(c); return false; }
       return true;
     });
     if (map.residents) { this.syncResidents(map); return; }
     if (map.id !== 'town') return;
+    this.syncDancers();
     const plan = this.crowdPlan();
     for (const p of plan) {
       const have = this.crowd.filter(c => c.ctype === p.type).length;
@@ -272,16 +334,53 @@ export class NPCManager {
       const npc = new NPC(map, tx * TILE + 8, ty * TILE + 10, look, { id: 'crowd' + seed, name: this.crowdName(look), role: this.crowdRole(type), persona: this.crowdPersona(type, look), crowd: true });
       npc.ctype = type; npc.behaviour = 'walk';
       npc.expire = g.clock.minutes + 60 + R() * 120;
-      const [px, py] = pick(R, pois);
-      const path = findPath(map, tx, ty, px + (R() - 0.5) * 3, py + (R() - 0.5) * 2);
+      const [px, py] = this.freeSpot(map, pick(R, pois));
+      const path = findPath(map, tx, ty, px, py);
       if (!path) continue;
       npc.path = path; npc.pathI = 1;
       if (type === 'drinker') { npc.onArrive = () => { npc.behaviour = 'stand'; npc.dir = 0; npc.home = { x: npc.x, y: npc.y }; }; this.crowd.push(npc); this.add(npc); return npc; }
-      npc.onArrive = () => { npc.behaviour = R() < 0.5 ? 'stand' : 'wander'; npc.home = { x: npc.x, y: npc.y }; npc.wanderR = 3; npc.wait = 2; setTimeout(() => { if (!npc.talking && R() < 0.6) { const [qx, qy] = pick(R, pois); const p2 = findPath(npc.map, npc.x / TILE, npc.y / TILE, qx, qy); if (p2) { npc.path = p2; npc.pathI = 1; npc.behaviour = 'walk'; } } }, 15000 + R() * 30000); };
+      npc.onArrive = () => { npc.behaviour = R() < 0.5 ? 'stand' : 'wander'; npc.home = { x: npc.x, y: npc.y }; npc.wanderR = 3; npc.wait = 2; setTimeout(() => { if (!npc.talking && R() < 0.6) { const [qx, qy] = this.freeSpot(npc.map, pick(R, pois)); const p2 = findPath(npc.map, npc.x / TILE, npc.y / TILE, qx, qy); if (p2) { npc.path = p2; npc.pathI = 1; npc.behaviour = 'walk'; } } }, 15000 + R() * 30000); };
       this.crowd.push(npc); this.add(npc);
       return npc;
     }
     return null;
+  }
+  pathFor(npc, tx, ty) { return findPath(npc.map, npc.x / TILE, npc.y / TILE, tx, ty, 3000); }
+  // La Danza de los Negritos: Sunday noon in the plaza, and every day of the December–January fiestas.
+  syncDancers() {
+    const g = this.game, h = g.clock.hour, d = g.clock.weekday, mo = g.clock.month, day = g.clock.date.getUTCDate();
+    const fiesta = (mo === 11 && day >= 12) || (mo === 0 && day <= 12);
+    const on = (d === 0 && h >= 11 && h < 14) || (fiesta && h >= 10 && h < 20);
+    const have = this.crowd.filter(c => c.ctype === 'negrito');
+    if (!on) { for (const c of have) { if (!c.talking) { this.remove(c); c.expire = -1; } } this.crowd = this.crowd.filter(c => c.ctype !== 'negrito' || c.talking); return; }
+    if (have.length || dist(g.player.x, g.player.y, 126 * TILE, 106 * TILE) > 30 * TILE) return;
+    const spots = [[123, 105.4], [124.8, 105.4], [126.6, 105.4], [128.4, 105.4], [123, 107.2], [124.8, 107.2], [126.6, 107.2], [128.4, 107.2]];
+    spots.forEach(([x, y], i) => {
+      const cuerita = i === 4;
+      const look = makeLook(7000 + i * 17, { uniform: cuerita ? 'cuerita' : 'negrito', female: cuerita, age: i === 7 ? 'teen' : 'adult', holds: i % 3 === 0 ? 'toro' : null });
+      const npc = new NPC(g.map, x * TILE, y * TILE, look, { id: 'negrito' + i, name: cuerita ? 'La Cuerita' : 'Negrito', role: 'Danza de los Negritos', crowd: true, fixed: true,
+        persona: 'Uno de los danzantes de la Danza de los Negritos de Jiquilpan: máscara negra con rasgos blancos, corona de flores de nochebuena, mascada blanca pintada con flores y cuera de gamuza con flecos. Bailan para el Niño Dios en las fiestas de diciembre y enero; algunos alzan un torito de madera. Habla poco mientras baila, con orgullo de la tradición que heredó de su abuelo.' });
+      npc.ctype = 'negrito'; npc.behaviour = 'dance'; npc.phase = i % 2; npc.expire = g.clock.minutes + 600; npc.dir = 0;
+      this.crowd.push(npc); this.add(npc);
+    });
+    if (!this.dancersTold || this.dancersTold !== g.clock.dayIndex) { this.dancersTold = g.clock.dayIndex; g.ui?.toast('En la plaza bailan los Negritos: máscaras negras, coronas de nochebuena y cueras con flecos.', 'good'); }
+  }
+  // A walkable spot near a point of interest that nobody else is standing on or heading to.
+  freeSpot(map, [px, py]) {
+    const g = this.game;
+    for (let k = 0; k < 14; k++) {
+      const x = px + (R() - 0.5) * (4 + k * 0.6), y = py + (R() - 0.5) * (3 + k * 0.4);
+      if (map.isSolidTile(Math.floor(x), Math.floor(y)) || map.blocked(x * TILE, y * TILE, 5, 4)) continue;
+      if (ROADS.has(map.get(Math.floor(x), Math.floor(y)))) continue;
+      let taken = false;
+      for (const c of this.crowd.concat([...this.named.values()])) {
+        const gx = c.path ? c.path[c.path.length - 1] : null;
+        const cx = gx ? gx[0] + 0.5 : c.x / TILE, cy = gx ? gx[1] + 0.5 : c.y / TILE;
+        if (Math.abs(cx - x) < 1.6 && Math.abs(cy - y) < 1.2) { taken = true; break; }
+      }
+      if (!taken) return [x, y];
+    }
+    return [px + (R() - 0.5) * 3, py + (R() - 0.5) * 2];
   }
   // The family at home (or the shopkeeper) in the generic houses and shops of town.
   syncResidents(map) {
@@ -334,7 +433,7 @@ export class NPCManager {
   syncTraffic() {
     const g = this.game, map = g.map;
     for (const v of this.vehicles) {
-      if (v.map !== map || dist(v.x, v.y, g.player.x, g.player.y) > 34 * TILE) { v.dead = true; }
+      if (v.map !== map || (!v.emergency && dist(v.x, v.y, g.player.x, g.player.y) > 34 * TILE)) { v.dead = true; }
     }
     if (map.id === 'cerro' && map.road) { // one or two cars a day go up the rocky road
       if (!this.vehicles.some(v => !v.dead) && Math.random() < 0.004) {
@@ -345,17 +444,44 @@ export class NPCManager {
     }
     if (map.id !== 'town' || !map.laneDir) return;
     const h = g.clock.hour;
+    if (h >= 6 && h < 22) this.syncCombis();
     let target = h < 6 ? 2 : h < 8 ? 6 : h < 21 ? 9 : h < 23 ? 6 : 3;
     // cruising cars in the bosque at night
     const nearBosque = g.player.y > 190 * TILE;
     if (nearBosque && (h >= 19 || h < 1)) target += 5;
-    const alive = this.vehicles.filter(v => !v.dead).length;
+    const alive = this.vehicles.filter(v => !v.dead && !v.emergency).length;
     if (alive >= target) return;
     // Los Rinos: weekend mornings, a convoy of cyclists
     const d = g.clock.weekday;
-    if ((d === 0 || d === 6) && h >= 7 && h < 10 && !this.rinosOut) { this.spawnRinos(); return; }
-    const kind = pick(R, ['car', 'car', 'car', 'taxi', 'taxi', 'pickup', 'moto', 'moto', 'moto', 'bici']);
+    if (!this.rinosOut && (((d === 0 || d === 6) && h >= 7 && h < 11 && R() < 0.5) || (h >= 6 && h < 8 && R() < 0.08))) { this.spawnRinos(); return; }
+    const kind = pick(R, ['car', 'car', 'car', 'car', 'taxi', 'taxi', 'pickup', 'moto', 'moto', 'moto', 'bici', 'bici']);
     this.spawnVehicle(kind, nearBosque && (h >= 19 || h < 1));
+  }
+  // One combi per route around you, driving from stop to stop.
+  syncCombis() {
+    const g = this.game, map = g.map;
+    for (const [route, stops] of Object.entries(map.combiRoutes || {})) {
+      if (this.vehicles.some(v => !v.dead && v.route === route)) continue;
+      if (R() > 0.3) continue;
+      const near = stops.map((st, i) => [st, i]).filter(([st]) => dist(st[0] * TILE, st[1] * TILE, g.player.x, g.player.y) < 28 * TILE);
+      if (!near.length) continue;
+      const at = this.findLaneTile(false);
+      if (!at) continue;
+      const v = new Vehicle(map, at[0], at[1], 'combi', this.seed++);
+      v.setRoute(route); v.stopI = pick(R, near)[1];
+      v.fleet = this.vehicles; this.vehicles.push(v); this.add(v);
+      this.planCombi(v);
+    }
+  }
+  planCombi(v) {
+    const map = v.map, stops = map.combiRoutes[v.route];
+    for (let k = 0; k < stops.length; k++) {
+      const st = stops[v.stopI], goal = nearestLane(map, st[0], st[1], 4);
+      const plan = goal && lanePath(map, v.tx, v.ty, goal[0], goal[1], 1);
+      if (plan && plan.length > 1) { v.plan = plan; v.planI = 0; v.parked = false; v.dir = null; v.onArrive = () => { v.waitStop = 5; }; v.pickDir(); return; }
+      v.stopI = (v.stopI + 1) % stops.length;
+    }
+    v.plan = null; v.parked = false; v.pickDir();
   }
   findLaneTile(preferBosque) {
     const g = this.game, map = g.map;
@@ -380,29 +506,35 @@ export class NPCManager {
     if (kind === 'moto') v.color = pick(R, ['#c0392b', '#1f4fa0', '#1b1b1b', '#f39c12', '#e0e0e0']); // Italika colours
     v.fleet = this.vehicles; this.vehicles.push(v); this.add(v);
   }
-  spawnRinos() {
+  // Cycling clubs of the Ciénega: Los Rinos de Jiquilpan (purple, a rhino on the chest), Las
+  // Mamazonas de Zamora and Los Apenitas — they ride from Zamora to San Pedro Caro and back.
+  spawnRinos(team = pick(R, ['rinos', 'rinos', 'mamazonas', 'apenitas'])) {
     const at = this.findLaneTile(false);
     if (!at) return;
     this.rinosOut = true;
     const map = this.game.map;
+    const kit = { rinos: '#b9b4c9', mamazonas: '#1b1b1b', apenitas: '#f08c00' }[team];
     const lead = new Vehicle(map, at[0], at[1], 'rino', this.seed++);
-    lead.riderLook = makeLook(this.seed++, { uniform: 'rino' });
+    lead.riderLook = makeLook(this.seed++, { uniform: team, age: 'adult', female: team === 'mamazonas' });
+    lead.teamBike = kit; lead.team = team;
     lead.pickDir();
     if (lead.dir === null) return;
     lead.fleet = this.vehicles; this.vehicles.push(lead); this.add(lead);
-    // followers spawn behind the leader
     let k = 1;
+    const n = 3 + Math.floor(R() * 4);
     const spawnNext = () => {
-      if (k > 5) return;
+      if (k > n || lead.dead) return;
       const v = new Vehicle(map, at[0], at[1], 'rino', this.seed++);
-      v.riderLook = makeLook(this.seed++, { uniform: 'rino', female: R() < 0.35 });
+      v.riderLook = makeLook(this.seed++, { uniform: team, age: pick(R, ['adult', 'adult', 'teen', 'elder']), female: team === 'mamazonas' ? R() < 0.9 : R() < 0.3 });
+      v.teamBike = kit; v.team = team;
       v.dir = lead.dir; v.speed = lead.speed; v.fleet = this.vehicles;
       this.vehicles.push(v); this.add(v); k++;
-      setTimeout(spawnNext, 700);
+      setTimeout(spawnNext, 650);
     };
-    setTimeout(spawnNext, 700);
-    setTimeout(() => { this.rinosOut = false; }, 1000 * 60 * 6);
-    this.game.ui?.toast('¡Pasan Los Rinos pedaleando!', 'good');
+    setTimeout(spawnNext, 650);
+    setTimeout(() => { this.rinosOut = false; }, 1000 * 60 * 4);
+    const names = { rinos: '¡Pasan Los Rinos de Jiquilpan pedaleando!', mamazonas: 'Pasan Las Mamazonas, el club de Zamora, de regreso de San Pedro Caro.', apenitas: 'Pasan Los Apenitas… apenitas, pero pasan.' };
+    this.game.ui?.toast(names[team], 'good');
   }
 
   // ---- animals ------------------------------------------------------------
@@ -412,6 +544,7 @@ export class NPCManager {
     for (const a of this.animals) this.remove(a);
     this.animals = [];
     this.animalsFor = g.map.id + g.state.era;
+    this.dogs = [];
     const map = g.map;
     const add = (a) => { this.animals.push(a); this.add(a); };
     if (map.id === 'town') {
@@ -419,8 +552,8 @@ export class NPCManager {
       cows.forEach((v, i) => add(new Animal(map, (270 + (i % 4) * 5.5) * TILE, (33 + Math.floor(i / 4) * 4.5) * TILE, 'cow', { variant: v, r: 36 })));
       for (let i = 0; i < 5; i++) add(new Animal(map, (268 + i * 1.5) * TILE, (47.5 + (i % 2)) * TILE, 'chicken', { r: 30 }));
       for (let i = 0; i < 12; i++) add(new Animal(map, (122 + (i * 7) % 12) * TILE, (100.5 + (i * 5) % 4) * TILE, 'pigeon', { r: 30 }));
-      const dogs = [[172, 111.6, '#b5854f'], [60, 111.6, '#2b2b2b'], [100, 157.6, '#d9c9a8'], [200, 62.6, '#8a5a34'], [130, 41.6, '#c9a06a'], [224, 158.4, '#e8e2d4']];
-      for (const [x, y, c] of dogs) add(new Animal(map, x * TILE, y * TILE, 'dog', { color: c, r: 90 }));
+      this.dogs = spawnTownDogs(map, add);
+      this.dogs.forEach((d, i) => { d.idx = i; d.affinity = (g.state.dogAff || {})[i] || 0; });
     } else if (map.id === 'cerro') {
       add(new Animal(map, 43 * TILE, 95 * TILE, 'dog', { color: '#c8743a', r: 50 })); // Canelo
       for (let i = 0; i < 6; i++) add(new Animal(map, (33 + i * 2) * TILE, (98.5 + (i % 2)) * TILE, 'chicken', { r: 40 }));
@@ -435,6 +568,9 @@ export class NPCManager {
       const free = (x, y) => !map.isSolidTile(Math.floor(x), Math.floor(y));
       const herd = [[20, 34, 'cow'], [26, 36, 'cow'], [58, 60, 'cow'], [16, 58, 'cow'], [60, 96, 'cow'], [22, 100, 'cow'], [48, 16, 'horse'], [52, 18, 'horse'], [18, 88, 'horse'], [60, 70, 'horse']];
       herd.forEach(([x, y, k], i) => { if (!free(x, y)) return; add(new Animal(map, x * TILE, y * TILE, k, k === 'cow' ? { variant: ['negra', 'cafe', 'pinta'][i % 3], r: 70 } : { color: ['#6b4428', '#2b2420', '#8a6a4a', '#d8d0c0'][i % 4], r: 90 })); });
+    } else if (map.id === 'abadiano') {
+      for (let i = 0; i < 6; i++) add(new Animal(map, (20 + i * 3) * TILE, (30 + (i % 3)) * TILE, 'chicken', { r: 50 }));
+      this.dogs = [new Dog(map, 33 * TILE, 25 * TILE), new Dog(map, 20 * TILE, 27 * TILE, { coat: ['#2b2b2b', '#e8e2d4', true] })]; this.dogs.forEach(add);
     } else if (['totolan', 'abadiano', 'sarabia'].includes(map.id)) {
       for (let i = 0; i < 6; i++) add(new Animal(map, (20 + i * 3) * TILE, (30 + (i % 3)) * TILE, 'chicken', { r: 50 }));
       add(new Animal(map, 30 * TILE, 34 * TILE, 'dog', { color: '#8a5a34', r: 80 }));
@@ -442,6 +578,15 @@ export class NPCManager {
     }
   }
 
+  // your own dog walks with you anywhere outdoors
+  syncCompanion() {
+    const g = this.game, st = g.state.dog;
+    if (!st || !g.map.outdoor) return;
+    if (this.animals.some(a => a.companion)) return;
+    const d = new Dog(g.map, g.player.x - 16, g.player.y + 6, { companion: true, name: st.name, coat: st.coat });
+    d.def = { id: 'mi_perro', name: st.name, crowd: true, dog: true };
+    this.animals.push(d); this.add(d);
+  }
   // clear everything (map change)
   clearTransient() {
     for (const c of this.crowd) this.remove(c);

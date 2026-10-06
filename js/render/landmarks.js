@@ -5,6 +5,7 @@ import {
   shadowBlob, vgrad, wallFace, roofTop, arcade, cornice, archWindow, rectWindow, balcony, woodDoor,
   dome, cross, bellTower, flagPole, treeCanopy, trunk, text, plaque, naveRoof, cloister,
 } from './art.js';
+import { paintCar } from './cars.js';
 
 export const SPRITES = {};
 const T = TILE;
@@ -964,6 +965,8 @@ const TREE_PALETTES = {
   encino: ['#4a6a36', '#62843f', '#86a456'],
   eucalipto: ['#5f7f63', '#7d9c7c', '#a1bca0'],
   huizache: ['#5c7a34', '#789a41', '#a7c35b'],
+  flamboyan: ['#9c2c1c', '#d8452a', '#f6823f'],
+  mezquite: ['#5a6e36', '#71884a', '#93a964'],
 };
 SPRITES.tree = {
   draw(ctx, s) {
@@ -1155,7 +1158,7 @@ SPRITES.carnitasTruck = {
 
 // Parked car (static prop)
 SPRITES.parkedCar = {
-  draw(ctx, s) { drawCarSide(ctx, s.color || '#c9ccd1', s.model || 'tsuru', !!s.flip, s.taxi); },
+  draw(ctx, s) { paintCar(ctx, { model: s.model === 'pickup' ? 'tacoma' : (s.model || 'tsuru'), color: s.color || '#c9ccd1', taxi: !!s.taxi, num: s.num }, s.flip ? 'W' : 'E'); },
 };
 export function drawCarSide(ctx, color, model, flip, taxi) {
   ctx.save(); if (flip) ctx.scale(-1, 1);

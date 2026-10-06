@@ -168,5 +168,5 @@ export function river(map, name, pts, width) {
     if (d <= width / 2 && !ROADS.has(map.get(x, y))) { map.set(x, y, G.WATER); map.street[y * map.w + x] = map.addStreetName(name); }
     else if (d <= width / 2 + 1.2 && map.get(x, y) === G.GRASS) map.set(x, y, G.FOREST);
   }
-  map.structures.push({ kind: 'river', pts, width, x: Math.floor(x0 - width), y: Math.floor(y0 - width), w: Math.ceil(x1 - x0 + width * 2) + 1, h: Math.ceil(y1 - y0 + width * 2) + 1, margin: 0, layer: 1 });
+  map.structures.push({ kind: 'river', pts, width, x: Math.floor(x0 - width - 3), y: Math.floor(y0 - width - 3), w: Math.ceil(x1 - x0 + width * 2) + 7, h: Math.ceil(y1 - y0 + width * 2) + 7, margin: 0, layer: 1 });
 }

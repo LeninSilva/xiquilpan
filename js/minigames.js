@@ -131,3 +131,44 @@ export function playTortillas(game, { seconds = 40 } = {}) {
     close.addEventListener('click', () => { if (done) return; done = true; el.remove(); resolve({ good, burnt, pay: good * 3, quit: true }); });
   });
 }
+
+// A scuffle: a marker sweeps across the bar; press when it is over the gold zone to land a shove,
+// miss and you take one. Three to win, three to lose. Your dog (if you have one) widens the zone.
+export function playPelea(game, opts = {}) {
+  return new Promise(resolve => {
+    const o = overlay(opts.title || 'Pleito', opts.sub || 'Toca cuando la marca pase por lo dorado. Tres y se rinde.');
+    o.body.innerHTML = `<div class="pelea"><div class="pelea-hp"><span>Tú <b id="pv1">●●●</b></span><span>${opts.foe || 'Él'} <b id="pv2">●●●</b></span></div>
+      <div class="pelea-bar"><i class="pelea-zone"></i><i class="pelea-mark"></i></div>
+      <div class="pelea-msg" id="pmsg">${opts.dog ? `${opts.dog} gruñe a tu lado. Eso te da valor.` : 'Respira. Espera tu momento.'}</div>
+      <div class="mg-actions"><button class="btn primary" id="phit">¡Ahora!</button></div></div>`;
+    const bar = o.body.querySelector('.pelea-bar'), zone = o.body.querySelector('.pelea-zone'), mark = o.body.querySelector('.pelea-mark'), msg = o.body.querySelector('#pmsg');
+    let me = 3, foe = 3, t = 0, speed = 1.25, done = false, last = performance.now();
+    const zw = opts.dog ? 0.26 : 0.17;
+    let z0 = 0.35;
+    const place = () => { z0 = 0.08 + Math.random() * (0.84 - zw); zone.style.left = (z0 * 100) + '%'; zone.style.width = (zw * 100) + '%'; };
+    place();
+    const hp = () => { o.body.querySelector('#pv1').textContent = '●'.repeat(me) + '○'.repeat(3 - me); o.body.querySelector('#pv2').textContent = '●'.repeat(foe) + '○'.repeat(3 - foe); };
+    const finish = (win) => { if (done) return; done = true; setTimeout(() => { o.el.remove(); resolve({ win }); }, 900); msg.textContent = win ? '¡Se rinde! Levanta las manos.' : 'Te tumba al suelo. Se te va el aire.'; };
+    const loop = (now) => {
+      if (done) return;
+      t += (now - last) / 1000 * speed; last = now;
+      const x = (Math.sin(t * 2.4) + 1) / 2; mark.style.left = `calc(${x * 100}% - 3px)`; mark.dataset.x = x;
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+    const hit = () => {
+      if (done) return;
+      const x = +mark.dataset.x;
+      if (x >= z0 && x <= z0 + zw) { foe--; game.sfx?.('door'); msg.textContent = ['Lo empujas contra la pared.', 'Le tiras el mecate de la mano.', 'Se tropieza con su propia moto.'][2 - foe] || '¡Bien!'; }
+      else { me--; game.sfx?.('bark'); msg.textContent = ['Te avienta un manotazo.', 'Te da un empujón que te saca el aire.', 'Te jala la sudadera.'][2 - me] || 'Fallaste.'; if (opts.dog && me === 1) { foe--; msg.textContent += ` ¡${opts.dog} le muerde el pantalón!`; } }
+      hp(); speed += 0.18; place();
+      if (foe <= 0) finish(true); else if (me <= 0) finish(false);
+    };
+    o.body.querySelector('#phit').addEventListener('click', hit);
+    const key = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); hit(); } };
+    window.addEventListener('keydown', key);
+    o.close.addEventListener('click', () => { done = true; window.removeEventListener('keydown', key); o.el.remove(); resolve({ win: false, fled: true }); });
+    const obs = new MutationObserver(() => { if (!document.body.contains(o.el)) { window.removeEventListener('keydown', key); obs.disconnect(); } });
+    obs.observe(document.body, { childList: true });
+  });
+}

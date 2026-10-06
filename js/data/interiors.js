@@ -220,11 +220,29 @@ function church(id, name, color, mural, w = 20) {
     rugs: [{ x: Math.floor(w / 2) - 1, y: 4, w: 2, h: 9, color: '#8e2f35' }], items, lights: [[w / 2, 4, 140, '#ffd98a'], [w / 2, 10, 120, '#ffd98a']], dim: 0.2 });
 }
 function shop(id, name, shopId, wall, band, goods, eatery, bright) {
-  return room(id, name, { w: 14, h: 10, floor: bright ? G.FLOOR_TILE : G.FLOOR_TILE, wall, band,
+  const fridge = (x, y, props = {}) => ({ kind: 'sodaFridge', x, y, w: 22, up: 46, collide: [-8, -5, 16, 5], ...props });
+  let items;
+  if (shopId === 'tiendita' || shopId === 'frijoles' || shopId === 'oxxo' || shopId === 'modelorama') {
+    // abarrotes: chips by the door, the Coca-Cola fridge, the beer fridge, shelves of groceries
+    items = [counter(7, 5.4, 70, { color: '#8a6a48', goods: goods || ['#e53935', '#1e88e5', '#fdd835', '#43a047'], shop: shopId, interact: 'shopcounter' }),
+      { kind: 'groceryShelf', x: 3.2, y: 3.2, fw: 36, w: 40, up: 40, seed: id.length * 7, eggs: true }, { kind: 'groceryShelf', x: 10.8, y: 3.2, fw: 36, w: 40, up: 40, seed: id.length * 13 },
+      fridge(12.4, 7.6, { brand: 'Coca-Cola', color: '#c8102e' }), fridge(1.8, 7.6, { brand: shopId === 'modelorama' ? 'MODELORAMA' : 'CERVEZA', color: shopId === 'modelorama' ? '#f2c230' : '#1f3f8f', beer: true }),
+      { kind: 'snackRack', x: 4.2, y: 8.4, w: 22, up: 44, collide: [-9, -3, 18, 3], seed: id.length },
+      ...(shopId === 'modelorama' ? [{ kind: 'beerCrates', x: 9.6, y: 8.6, n: 6, w: 30, up: 20, collide: [-11, -4, 22, 4] }] : [])];
+  } else if (shopId === 'carniceria' || shopId === 'mercado_carne') {
+    // the butcher: display case with today's cuts, hanging meat, the chopping block and the scale
+    items = [{ kind: 'meatCase', x: 7, y: 5.6, fw: 70, w: 76, up: 30, collide: [-35, -6, 70, 6], shop: shopId, interact: 'shopcounter' },
+      { kind: 'meatHooks', x: 7, y: 3.1, fw: 60, w: 64, up: 44 }, { kind: 'chopBlock', x: 2.4, y: 4.6, w: 16, up: 16, collide: [-6, -3, 12, 3] },
+      { kind: 'scale', x: 11, y: 5.1, w: 10, up: 10 }, fridge(12.4, 7.6, { brand: 'Coca-Cola', color: '#c8102e' }), fridge(1.8, 7.6, { brand: 'CERVEZA', color: '#1f3f8f', beer: true })];
+  } else {
+    items = [counter(7, 5.4, 70, { color: '#8a6a48', goods: goods || ['#e53935', '#1e88e5', '#fdd835', '#43a047'], shop: shopId, interact: 'shopcounter' }),
+      shelf(3, 3.2, 34, {}), shelf(11, 3.2, 34, {}), { kind: 'fridge', x: 12.5, y: 7.4, w: 20, up: 36, collide: [-7, -5, 14, 5] }];
+  }
+  if (eatery) items.push(table(3.5, 8, { cloth: '#e8e2d2', items: true }));
+  const butcher = shopId === 'carniceria' || shopId === 'mercado_carne';
+  return room(id, name, { w: 14, h: 10, floor: G.FLOOR_TILE, wall: butcher ? '#f4f4f2' : wall, wall2: butcher ? '#e4e8ea' : undefined, band, tiles: butcher,
     deco: [{ kind: 'sign', x: 2, w: 80, text: name.toUpperCase(), bg: band }, { kind: 'papel', x: 1, n: 7 }],
-    items: [counter(7, 5.4, 70, { color: '#8a6a48', goods: goods || ['#e53935', '#1e88e5', '#fdd835', '#43a047'], shop: shopId, interact: 'shopcounter' }),
-      shelf(3, 3.2, 34, {}), shelf(11, 3.2, 34, {}), { kind: 'fridge', x: 12.5, y: 7.4, w: 20, up: 36, collide: [-7, -5, 14, 5] },
-      ...(eatery ? [table(3.5, 8, { cloth: '#e8e2d2', items: true })] : [])], lights: [[7, 5, 110]] });
+    items, lights: [[7, 5, 110]] });
 }
 function bar(id, name, color) {
   return room(id, name, { w: 16, h: 10, floor: G.FLOOR_TILE, wall: '#f4efe4', band: color,
@@ -341,7 +359,7 @@ function genericHouse(id) {
   m.generic = true;
   return m;
 }
-const SHOP_FOR = { ABARROTES: 'tiendita', TIENDITA: 'tiendita', 'MISCELÁNEA': 'tiendita', 'CREMERÍA': 'tiendita', CARNES: 'carniceria', 'RECAUDERÍA': 'tiendita', 'FRUTERÍA': 'tiendita',
+const SHOP_FOR = { MODELORAMA: 'modelorama', ABARROTES: 'tiendita', TIENDITA: 'tiendita', 'MISCELÁNEA': 'tiendita', 'CREMERÍA': 'tiendita', CARNES: 'carniceria', 'RECAUDERÍA': 'tiendita', 'FRUTERÍA': 'tiendita',
   FARMACIA: 'farmacia', 'PAPELERÍA': 'papeleria', CIBER: 'papeleria', CELULARES: 'papeleria', NOVEDADES: 'ropa', REGALOS: 'flores', 'MERCERÍA': 'ropa', 'ÓPTICA': 'papeleria',
   'FERRETERÍA': 'ferreteria', 'TLAPALERÍA': 'ferreteria', REFACCIONES: 'ferreteria', 'DULCERÍA': 'dulceria', 'PALETERÍA': 'dulceria', PURIFICADORA: 'purificadora',
   'ESTÉTICA': 'estetica', 'LAVANDERÍA': 'servicios', 'ZAPATERÍA': 'ropa' };

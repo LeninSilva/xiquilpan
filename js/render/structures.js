@@ -114,9 +114,7 @@ export function drawFacade(ctx, x, baseY, w, fh, opts, r) {
       ctx.fillStyle = opts.signBg || pick(r, ['#f6f1e6', '#f3d36b', '#e8efe9', '#fbe3d6']);
       ctx.fillRect(x + 1.5, sy, w - 3, sh);
       ctx.fillStyle = opts.signFg || pick(r, ['#7a1f1a', '#1f4b7a', '#205a2e', '#222']);
-      ctx.font = `bold ${Math.min(sh * 0.7, (w - 4) / (sign.length * 0.62))}px "Trebuchet MS", sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(sign, x + w / 2, sy + sh / 2 + 0.3);
+      fitText(ctx, sign, x + w / 2, sy + sh / 2 + 0.3, w - 5, sh * 0.72);
     }
   } else {
     // wooden door (sometimes arched) with frame of cantera
@@ -194,6 +192,17 @@ function window1(ctx, x, y, w, h, r, flower, upper, centro) {
 // Deterministic list of the street-facing lots of a block (shared by the renderer and
 // by the map builder, which puts a door on every lot).
 export const SURNAMES = ['Farías', 'Betancourt', 'Valencia', 'Moreno', 'Cárdenas', 'Silva', 'Martínez', 'Flores', 'Núñez', 'Grimaldo', 'Méndez', 'Mendoza', 'Ochoa', 'Coit', 'Ceja', 'Villaseñor', 'Zepeda', 'Manzo', 'Arteaga', 'Sánchez', 'Barragán', 'Amezcua', 'Ortiz', 'Pulido', 'Chávez'];
+const pickNot = (r, list, not) => { let v = pick(r, list); if (v === not) v = list[(list.indexOf(v) + 1) % list.length]; return v; };
+// Sign lettering that always stays inside its board (it used to spill onto the neighbour's facade).
+export function fitText(ctx, str, cx, cy, maxW, maxH, color) {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let size = maxH;
+  ctx.font = `bold ${size}px "Trebuchet MS", sans-serif`;
+  const w = ctx.measureText(str).width;
+  if (w > maxW) { size = size * maxW / w; ctx.font = `bold ${size}px "Trebuchet MS", sans-serif`; }
+  if (color) ctx.fillStyle = color;
+  ctx.fillText(str, cx, cy);
+}
 export function blockLots(s) {
   if (s._lots) return s._lots;
   const X = s.x * TILE, W = s.w * TILE;
@@ -210,7 +219,7 @@ export function blockLots(s) {
     const doorX = kind === 'shop' ? x + (lw - doorW) / 2 : x + 2 + lr() * Math.max(0, lw - doorW - 4);
     const tall = !s.outskirts && lr() < (s.centro ? 0.5 : 0.2);
     out.push({ x, w: lw, kind, doorW, doorX, fh: fh + (tall ? 8 : 0), barandal: kind === 'house' && lr() < 0.35, ocote: kind === 'house' && lr() < 0.12,
-      sign: pick(lr, SIGNS), surname: pick(lr, SURNAMES), seed: Math.floor(x * 13 + (s.seed || 1)) });
+      sign: pickNot(lr, SIGNS, out.length ? out[out.length - 1].sign : null), surname: pick(lr, SURNAMES), seed: Math.floor(x * 13 + (s.seed || 1)) });
     x += lw;
   }
   s._lots = out;
@@ -436,23 +445,79 @@ STRUCTURE_DRAW.diagRoad = (ctx, s) => {
 };
 
 STRUCTURE_DRAW.river = (ctx, s) => {
-  const pts = s.pts.map(([x, y]) => [x * TILE, y * TILE]);
-  const path = () => { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); };
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  path(); ctx.strokeStyle = '#6d8f45'; ctx.lineWidth = s.width * TILE + 10; ctx.stroke();
-  path(); ctx.strokeStyle = '#9a8a6a'; ctx.lineWidth = s.width * TILE + 3; ctx.stroke();
-  path(); ctx.strokeStyle = '#4a7f93'; ctx.lineWidth = s.width * TILE; ctx.stroke();
-  path(); ctx.strokeStyle = 'rgba(200,230,240,0.25)'; ctx.lineWidth = 1; ctx.setLineDash([4, 7]); ctx.stroke(); ctx.setLineDash([]);
+  // A natural stream: the control points are densified and nudged so the course meanders, the width
+  // breathes, and the banks are earth, stones and reeds — no straight edges, nothing road-like.
+  const r = rng(Math.floor(s.pts[0][0] * 31 + s.pts[0][1] * 7));
+  const raw = s.pts.map(([x, y]) => [x * TILE, y * TILE]);
+  const pts = [];
+  for (let i = 0; i < raw.length - 1; i++) {
+    const [ax, ay] = raw[i], [bx, by] = raw[i + 1], L = Math.hypot(bx - ax, by - ay), n = Math.max(2, Math.round(L / 10));
+    const nx = -(by - ay) / L, ny = (bx - ax) / L;
+    for (let k = 0; k < n; k++) { const t = k / n, wob = Math.sin((i * n + k) * 0.55) * 5 + (r() - 0.5) * 3; pts.push([ax + (bx - ax) * t + nx * wob, ay + (by - ay) * t + ny * wob]); }
+  }
+  pts.push(raw[raw.length - 1]);
+  const W = s.width * TILE;
+  const along = (fn) => { for (let i = 0; i < pts.length; i++) fn(pts[i][0], pts[i][1], i); };
+  // banks: damp earth and grass edge built from overlapping blobs of varying radius
+  along((x, y, i) => { const w = W * (0.62 + 0.18 * Math.sin(i * 0.37)); ctx.fillStyle = '#6f8f4a'; ctx.beginPath(); ctx.ellipse(x, y, w + 7, (w + 7) * 0.92, 0, 0, 7); ctx.fill(); });
+  along((x, y, i) => { const w = W * (0.62 + 0.18 * Math.sin(i * 0.37)); ctx.fillStyle = '#8c7b58'; ctx.beginPath(); ctx.ellipse(x, y, w + 2.6, (w + 2.6) * 0.92, 0, 0, 7); ctx.fill(); });
+  // water: deep centre, lighter shallows
+  for (const [k, c] of [[1, '#3f6f7c'], [0.78, '#3a6674'], [0.5, '#335d6c']]) along((x, y, i) => { const w = W * (0.62 + 0.18 * Math.sin(i * 0.37)) * k; ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.92, 0, 0, 7); ctx.fill(); });
+  // stones and reeds on the banks, sun glints on the water
+  along((x, y, i) => {
+    const w = W * (0.62 + 0.18 * Math.sin(i * 0.37));
+    if (r() < 0.55) { const a = r() * 6.283, d = w + 1 + r() * 3; ctx.fillStyle = r() < 0.5 ? '#a49a88' : '#8b8274'; ctx.beginPath(); ctx.ellipse(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.9, 1.2 + r() * 1.6, 0.9 + r(), r(), 0, 7); ctx.fill(); }
+    if (r() < 0.45) { const a = r() * 6.283, d = w + 3 + r() * 3, rx = x + Math.cos(a) * d, ry = y + Math.sin(a) * d; ctx.strokeStyle = r() < 0.5 ? '#4f7a36' : '#6d8f3c'; ctx.lineWidth = 0.5; ctx.beginPath(); for (let j = -2; j <= 2; j++) { ctx.moveTo(rx + j * 0.6, ry); ctx.quadraticCurveTo(rx + j * 0.9, ry - 3, rx + j * 1.3, ry - 4.5 - r() * 2); } ctx.stroke(); }
+    if (r() < 0.5) { ctx.fillStyle = 'rgba(210,235,240,0.35)'; ctx.fillRect(x + (r() - 0.5) * w, y + (r() - 0.5) * w * 0.8, 2 + r() * 3, 0.5); }
+  });
 };
 
 // Low stone kerb/iron fence around the plaza gardens (per garden rectangle)
 STRUCTURE_DRAW.ironFence = (ctx, s) => {
+  // low cantera kerb with a black wrought-iron fence: rails, round loops and spear finials (like the plaza's)
   const X = s.x * TILE, Y = s.y * TILE, W = s.w * TILE, H = s.h * TILE;
-  ctx.fillStyle = '#9e8f78'; ctx.fillRect(X - 1, Y - 1, W + 2, 1.6); ctx.fillRect(X - 1, Y + H - 0.6, W + 2, 1.6); ctx.fillRect(X - 1, Y - 1, 1.6, H + 2); ctx.fillRect(X + W - 0.6, Y - 1, 1.6, H + 2);
-  ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 0.35;
-  const post = (x, y) => { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 3.4); ctx.stroke(); };
-  for (let x = X; x <= X + W; x += 1.6) { post(x, Y + H); post(x, Y + 0.4); }
-  for (let y = Y; y <= Y + H; y += 1.6) { post(X, y); post(X + W, y); }
-  ctx.beginPath(); ctx.moveTo(X, Y + H - 3.4); ctx.lineTo(X + W, Y + H - 3.4); ctx.moveTo(X, Y - 3); ctx.lineTo(X + W, Y - 3); ctx.stroke();
-  for (let x = X + 0.8; x < X + W; x += 3.2) { ctx.beginPath(); ctx.arc(x, Y + H - 2.4, 0.7, Math.PI, 0); ctx.stroke(); }
+  ctx.fillStyle = '#a99a83'; ctx.fillRect(X - 1.2, Y - 1.2, W + 2.4, 2); ctx.fillRect(X - 1.2, Y + H - 0.8, W + 2.4, 2); ctx.fillRect(X - 1.2, Y - 1.2, 2, H + 2.4); ctx.fillRect(X + W - 0.8, Y - 1.2, 2, H + 2.4);
+  ctx.fillStyle = '#cdbfa6'; ctx.fillRect(X - 1.2, Y + H - 0.8, W + 2.4, 0.6);
+  const I = '#141516';
+  ctx.strokeStyle = I; ctx.fillStyle = I; ctx.lineWidth = 0.32;
+  const run = (x0, y0, x1, y1, hgt) => {
+    const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.round(L / 1.5));
+    ctx.lineWidth = 0.45; ctx.beginPath(); ctx.moveTo(x0, y0 - hgt); ctx.lineTo(x1, y1 - hgt); ctx.moveTo(x0, y0 - 0.8); ctx.lineTo(x1, y1 - 0.8); ctx.stroke();
+    ctx.lineWidth = 0.28;
+    for (let k = 0; k <= n; k++) {
+      const x = x0 + (x1 - x0) * k / n, y = y0 + (y1 - y0) * k / n;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - hgt - 1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - 0.4, y - hgt - 0.8); ctx.lineTo(x, y - hgt - 1.8); ctx.lineTo(x + 0.4, y - hgt - 0.8); ctx.fill();
+      if (k < n) { ctx.beginPath(); ctx.arc(x + (x1 - x0) / n / 2, y + (y1 - y0) / n / 2 - hgt * 0.55, 0.55, 0, 6.28); ctx.stroke(); }
+    }
+  };
+  run(X, Y + 0.4, X + W, Y + 0.4, 2.6);
+  run(X, Y, X, Y + H, 2.8); run(X + W, Y, X + W, Y + H, 2.8);
+  run(X, Y + H, X + W, Y + H, 3.2);
+};
+
+// Walks of the Jardín de la Paz: the perimeter where people do laps, an X of diagonal walks and the
+// ring around Lucía de la Paz, all in cantera slabs with a darker kerb, merging smoothly into the lawn.
+STRUCTURE_DRAW.pazPaths = (ctx, s) => {
+  const X = s.x * TILE, Y = s.y * TILE, W = s.w * TILE, H = s.h * TILE, cx = s.cx * TILE + 8, cy = s.cy * TILE + 8;
+  ctx.save(); ctx.beginPath(); ctx.rect(X, Y, W, H); ctx.clip();
+  const shapes = (lw) => {
+    ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(X + 16, Y + 16); ctx.lineTo(X + W - 16, Y + H - 16); ctx.moveTo(X + W - 16, Y + 16); ctx.lineTo(X + 16, Y + H - 16); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, cy, 5.6 * TILE, 5.6 * TILE / 1.25, 0, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.rect(X + lw / 2 - 2, Y + lw / 2 - 2, W - lw + 4, H - lw + 4); ctx.stroke();
+  };
+  // soft worn grass edge, kerb, slabs
+  ctx.strokeStyle = 'rgba(120,110,80,0.35)'; shapes(30);
+  ctx.strokeStyle = '#a8977d'; shapes(25);
+  ctx.strokeStyle = '#d9c9ae'; shapes(22);
+  ctx.fillStyle = '#a8977d'; ctx.beginPath(); ctx.ellipse(cx, cy, 3 * TILE + 2, (3 * TILE + 2) / 1.2, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ddcdb2'; ctx.beginPath(); ctx.ellipse(cx, cy, 3 * TILE, 3 * TILE / 1.2, 0, 0, 7); ctx.fill();
+  // radial slab joints around the centre, a compass rose in darker stone
+  ctx.strokeStyle = 'rgba(120,100,70,0.35)'; ctx.lineWidth = 0.4;
+  for (let a = 0; a < 16; a++) { const an = a / 16 * Math.PI * 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * 12, cy + Math.sin(an) * 10); ctx.lineTo(cx + Math.cos(an) * 46, cy + Math.sin(an) * 38); ctx.stroke(); }
+  for (const rr of [20, 34]) { ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr / 1.2, 0, 0, 7); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(150,110,80,0.35)';
+  for (let a = 0; a < 4; a++) { const an = a * Math.PI / 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * 30, cy + Math.sin(an) * 25); ctx.lineTo(cx + Math.cos(an + 0.25) * 18, cy + Math.sin(an + 0.25) * 15); ctx.lineTo(cx + Math.cos(an - 0.25) * 18, cy + Math.sin(an - 0.25) * 15); ctx.fill(); }
+  ctx.restore();
 };

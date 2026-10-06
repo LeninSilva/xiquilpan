@@ -3,12 +3,13 @@
 // the stone Portada del Bosque Juárez, the Aguadora under its tiled cupola, the white-and-maroon
 // kiosco, the Palacio Municipal's column front, the Parque Zaragoza with Durenne's greyhounds, etc.
 // Each sprite is drawn relative to its anchor (bottom-centre of the footprint), in 3/4 view.
-import { rng, pick, shade, rgba, roundRect } from '../util.js';
+import { rng, pick, shade, rgba, roundRect, mix, TILE } from '../util.js';
 import {
   shadowBlob, vgrad, wallFace, roofTop, cornice, archWindow, rectWindow, balcony, woodDoor,
   dome, cross, bellTower, flagPole, treeCanopy, trunk, text, plaque, naveRoof, cloister,
 } from './art.js';
-import { SPRITES, building, drawCarSide } from './landmarks.js';
+import { SPRITES, building } from './landmarks.js';
+import { paintCar } from './cars.js';
 
 // --- shared helpers --------------------------------------------------------------------------------
 // Red zig-zag quoins ("sillares") on a corner, as on San Francisco and its curato.
@@ -299,68 +300,146 @@ function statueAguadora(ctx, x, y) {
   ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.ellipse(x - 1.1, y - 31, 0.8, 1.6, 0, 0, 7); ctx.fill();
 }
 
-// Kiosco: white octagonal base with maroon trim and oval panels, stairs, slender black iron
-// columns and an ornate black railing, dark dome with a golden eave frieze.
+// Kiosco (from the photos): octagonal base of white walls with orange-red pilasters pierced by tall
+// ovals and a red plinth, a small barred window and plaque; stairs with a scrolled iron railing;
+// slender black iron columns with gilded collars and white globe lamps; black iron lace arches
+// under a warm wooden ceiling; a grey hipped metal roof with a scalloped valance lined in orange,
+// topped by a little lantern.
 SPRITES.kiosco = {
   draw(ctx, s) {
-    const R = 30;
-    shadowBlob(ctx, 5, -2, R + 6, 12, 0.28);
-    const oct = (cx, cy, rx, ry) => { ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; const x = cx + Math.cos(a) * rx, y = cy + Math.sin(a) * ry; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); };
-    // base: white walls with maroon trim, oval panels on the three visible faces
-    ctx.fillStyle = '#e9e4da'; oct(0, -2, R + 2, (R + 2) * 0.5); ctx.fill();
-    ctx.fillRect(-(R + 2) * 0.92, -12, (R + 2) * 1.84, 10);
-    ctx.fillStyle = '#7a2626'; ctx.fillRect(-(R + 2) * 0.92, -3, (R + 2) * 1.84, 2);
-    ctx.fillRect(-(R + 2) * 0.92, -12.5, (R + 2) * 1.84, 1.2);
-    for (const px of [-22, -12, 12, 22]) { ctx.strokeStyle = '#7a2626'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.ellipse(px, -7, 3, 2.2, 0, 0, 7); ctx.stroke(); }
-    ctx.fillStyle = '#f4f0e8'; oct(0, -12, R + 2, (R + 2) * 0.5); ctx.fill();
-    ctx.strokeStyle = '#7a2626'; ctx.lineWidth = 0.8; oct(0, -12, R + 2, (R + 2) * 0.5); ctx.stroke();
-    // stairs in front
-    for (let i = 0; i < 5; i++) { ctx.fillStyle = i % 2 ? '#d8d2c6' : '#efeae1'; ctx.fillRect(-8 + i * 0.6, 1 - i * 2.6, 16 - i * 1.2, 2.6); }
-    ctx.fillStyle = '#7a2626'; ctx.fillRect(-9, -12, 1.2, 13); ctx.fillRect(7.8, -12, 1.2, 13);
-    // columns
-    const colH = 30, base = -12, top = base - colH;
-    const cols = [];
-    for (let a = 0; a < 8; a++) { const ang = (a / 8) * Math.PI * 2 + Math.PI / 8; cols.push([Math.cos(ang) * (R - 3), base + Math.sin(ang) * (R - 3) * 0.5, Math.sin(ang)]); }
-    const drawCol = ([px, py]) => {
-      ctx.fillStyle = '#1d1f22'; ctx.fillRect(px - 0.8, py - colH, 1.6, colH);
-      ctx.fillStyle = '#4c5156'; ctx.fillRect(px - 0.8, py - colH, 0.5, colH);
-      ctx.fillStyle = '#1d1f22'; ctx.fillRect(px - 1.8, py - colH, 3.6, 1.4); ctx.fillRect(px - 1.5, py - 1.6, 3, 1.6);
-      ctx.strokeStyle = '#1d1f22'; ctx.lineWidth = 0.4; ctx.beginPath(); ctx.moveTo(px, py - colH + 1); ctx.quadraticCurveTo(px + 3, py - colH + 1, px + 4, py - colH + 4); ctx.moveTo(px, py - colH + 1); ctx.quadraticCurveTo(px - 3, py - colH + 1, px - 4, py - colH + 4); ctx.stroke();
-    };
-    cols.filter(c => c[2] < 0).forEach(drawCol);
-    ctx.fillStyle = 'rgba(60,40,30,0.18)'; oct(0, base, R - 5, (R - 5) * 0.5); ctx.fill();
-    // back railing
-    const rail = (from, to) => {
-      ctx.strokeStyle = '#1d1f22'; ctx.lineWidth = 0.35;
-      for (let a = from; a <= to; a += Math.PI / 48) {
-        const px = Math.cos(a) * (R - 3), py = base + Math.sin(a) * (R - 3) * 0.5;
-        if (Math.sin(a) > 0 && Math.abs(px) < 8) continue;
-        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - 6); ctx.stroke();
+    const R = 30, ry = 0.5, BH = 13; // radius, vertical squash, base height
+    shadowBlob(ctx, 6, -1, R + 8, 13, 0.3);
+    const corner = (i, rad, cy) => { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; return [Math.cos(a) * rad, cy + Math.sin(a) * rad * ry, Math.sin(a)]; };
+    const octPath = (rad, cy) => { ctx.beginPath(); for (let i = 0; i < 8; i++) { const [x, y] = corner(i, rad, cy); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); };
+    const RED = '#cf4a2c', REDD = '#a8381f', WHITE = '#f3efe7', WHITED = '#dcd5c8', IRON = '#18191b';
+    // ---- base prism: visible (south-facing) faces
+    for (let i = 0; i < 8; i++) {
+      const [x0, y0, s0] = corner(i, R, 0), [x1, y1, s1] = corner(i + 1, R, 0);
+      if (s0 + s1 <= 0) continue;
+      const shadeK = 0.12 * (1 - (s0 + s1) / 2) + (x0 + x1 > 0 ? 0.06 : 0);
+      ctx.fillStyle = mix(WHITE, '#8a8070', shadeK); ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x1, y1 - BH); ctx.lineTo(x0, y0 - BH); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = RED; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x1, y1 - 2.2); ctx.lineTo(x0, y0 - 2.2); ctx.fill(); // plinth
+      ctx.fillStyle = REDD; ctx.beginPath(); ctx.moveTo(x0, y0 - BH); ctx.lineTo(x1, y1 - BH); ctx.lineTo(x1, y1 - BH + 1.4); ctx.lineTo(x0, y0 - BH + 1.4); ctx.fill(); // top moulding
+      if (i === 1) { // front face: plaque and a small barred window
+        const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+        ctx.fillStyle = '#26221e'; ctx.fillRect(mx - 9, my - 10, 6, 4); ctx.fillStyle = '#b9a77a'; ctx.fillRect(mx - 8.4, my - 9.4, 4.8, 0.4);
+        ctx.fillStyle = '#2a2622'; ctx.fillRect(mx + 2, my - 8.6, 5, 3.2); ctx.fillStyle = '#7d756a'; for (let k = 0; k < 5; k++) ctx.fillRect(mx + 2.2 + k, my - 8.6, 0.3, 3.2);
       }
-      ctx.lineWidth = 0.7; ctx.beginPath(); ctx.ellipse(0, base - 6, R - 3, (R - 3) * 0.5, 0, from, to); ctx.stroke();
-      ctx.lineWidth = 0.4; ctx.beginPath(); ctx.ellipse(0, base - 3, R - 3, (R - 3) * 0.5, 0, from, to); ctx.stroke();
+    }
+    // pilasters on the visible corners, each with a tall white oval
+    for (let i = 0; i < 9; i++) {
+      const [x, y, sn] = corner(i, R + 0.6, 0);
+      if (sn < -0.3) continue;
+      ctx.fillStyle = RED; ctx.fillRect(x - 2.6, y - BH - 0.6, 5.2, BH + 0.6);
+      ctx.fillStyle = REDD; ctx.fillRect(x + 1.4, y - BH - 0.6, 1.2, BH + 0.6);
+      ctx.fillStyle = WHITE; ctx.beginPath(); ctx.ellipse(x, y - BH / 2 - 0.4, 1.1, 3.6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = REDD; ctx.fillRect(x - 3, y - BH - 1.4, 6, 1);
+    }
+    // platform floor
+    ctx.fillStyle = '#d9cfbe'; octPath(R, -BH); ctx.fill();
+    ctx.fillStyle = 'rgba(80,50,30,0.12)'; octPath(R - 5, -BH); ctx.fill();
+    // ---- stairs on the south-east side with a scrolled iron railing, steps painted red
+    const sx = 13, sy = -1;
+    for (let k = 0; k < 6; k++) {
+      ctx.fillStyle = k % 2 ? '#b8442a' : '#d45a3a';
+      ctx.fillRect(sx + k * 0.2, sy - k * 2.2 + 6, 13 - k * 0.3, 2.2);
+      ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(sx + k * 0.2, sy - k * 2.2 + 6, 13 - k * 0.3, 0.4);
+    }
+    ctx.fillStyle = RED; ctx.fillRect(sx - 2.4, sy - 4, 3, 12); ctx.fillRect(sx + 12.6, sy - 4, 3, 12); // newel posts
+    ctx.fillStyle = WHITE; ctx.beginPath(); ctx.ellipse(sx - 0.9, sy + 2, 0.6, 2.4, 0, 0, 7); ctx.ellipse(sx + 14.1, sy + 2, 0.6, 2.4, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = IRON; ctx.lineWidth = 0.45;
+    for (const ox of [-0.9, 14.1]) {
+      ctx.beginPath(); ctx.moveTo(sx + ox, sy - 4); ctx.lineTo(sx + ox - 4, sy - 13 - BH * 0.2); ctx.stroke();
+      for (let k = 0; k < 4; k++) { const px = sx + ox - k, py = sy - 5 - k * 2.6; ctx.beginPath(); ctx.arc(px, py + 2, 0.9, 0, 6); ctx.stroke(); }
+    }
+    // ---- columns, railing and lace
+    const colH = 30, base = -BH, top = base - colH;
+    const cols = []; for (let i = 0; i < 8; i++) cols.push(corner(i, R - 3, base));
+    const drawCol = ([px, py]) => {
+      ctx.fillStyle = IRON; ctx.fillRect(px - 0.8, py - colH, 1.6, colH);
+      ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(px - 0.6, py - colH, 0.4, colH);
+      ctx.fillStyle = '#b8913a'; ctx.fillRect(px - 1.2, py - colH * 0.36, 2.4, 1.6); ctx.fillRect(px - 1.1, py - colH + 3, 2.2, 1.2); // gilded collars
+      ctx.fillStyle = IRON; ctx.fillRect(px - 1.6, py - 2, 3.2, 2); ctx.fillRect(px - 1.8, py - colH, 3.6, 1.4);
+      // globe lamps on curled arms
+      ctx.strokeStyle = IRON; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.moveTo(px, py - colH * 0.62); ctx.quadraticCurveTo(px - 3, py - colH * 0.62, px - 3, py - colH * 0.55); ctx.stroke();
+      ctx.fillStyle = '#fbfaf4'; ctx.beginPath(); ctx.arc(px - 3, py - colH * 0.55 + 1.1, 1.3, 0, 7); ctx.fill();
     };
-    rail(Math.PI, Math.PI * 2);
-    cols.filter(c => c[2] >= 0).forEach(drawCol);
-    rail(0.3, Math.PI - 0.3);
-    // ornate scrolls on the front railing
-    ctx.strokeStyle = '#1d1f22'; ctx.lineWidth = 0.35;
-    for (let a = 0.35; a < Math.PI - 0.3; a += Math.PI / 12) { const px = Math.cos(a) * (R - 3), py = base + Math.sin(a) * (R - 3) * 0.5; if (Math.abs(px) < 8) continue; ctx.beginPath(); ctx.arc(px, py - 4.5, 1.2, 0, 7); ctx.stroke(); }
-    // eaves: golden frieze under a dark dome
-    ctx.fillStyle = '#e9e4da'; oct(0, top, R + 1, (R + 1) * 0.5); ctx.fill();
-    ctx.fillStyle = '#26292c'; ctx.fillRect(-(R + 1) * 0.93, top, (R + 1) * 1.86, 3);
-    ctx.fillStyle = '#c9a23c';
-    for (let i = -R * 0.92; i < R * 0.92; i += 2.2) { ctx.beginPath(); ctx.moveTo(i, top + 3); ctx.lineTo(i + 1.1, top + 5.4); ctx.lineTo(i + 2.2, top + 3); ctx.fill(); }
-    ctx.fillRect(-(R + 1) * 0.93, top - 0.6, (R + 1) * 1.86, 0.9);
-    const g = ctx.createRadialGradient(-10, top - 18, 2, 0, top - 6, R * 1.1);
-    g.addColorStop(0, '#6e777d'); g.addColorStop(0.55, '#3a4146'); g.addColorStop(1, '#1f2427');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.moveTo(-R * 0.95, top); ctx.bezierCurveTo(-R * 0.9, top - 16, -8, top - 24, 0, top - 26); ctx.bezierCurveTo(8, top - 24, R * 0.9, top - 16, R * 0.95, top); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(201,162,60,0.55)'; ctx.lineWidth = 0.5;
-    for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(i * R * 0.3, top); ctx.quadraticCurveTo(i * R * 0.12, top - 18, 0, top - 26); ctx.stroke(); }
-    ctx.fillStyle = '#26292c'; ctx.fillRect(-2.6, top - 32, 5.2, 6);
-    ctx.fillStyle = '#c9a23c'; ctx.fillRect(-2.6, top - 32, 5.2, 0.8); ctx.fillRect(-0.4, top - 40, 0.8, 8);
-    ctx.beginPath(); ctx.arc(0, top - 40.5, 1.3, 0, 7); ctx.fill();
+    const lace = (a, b) => { // iron filigree arch between two column heads
+      const [ax, ay] = a, [bx, by] = b;
+      ctx.strokeStyle = IRON; ctx.lineWidth = 0.4;
+      ctx.beginPath(); ctx.moveTo(ax, ay - colH + 1); ctx.lineTo(bx, by - colH + 1); ctx.stroke();
+      const mx = (ax + bx) / 2, my = (ay + by) / 2 - colH + 1;
+      ctx.beginPath(); ctx.moveTo(ax, ay - colH + 7); ctx.quadraticCurveTo(mx, my + 1.5, bx, by - colH + 7); ctx.stroke();
+      for (let k = 1; k < 6; k++) { const t = k / 6, x = ax + (bx - ax) * t, y = ay + (by - ay) * t - colH + 2.6; ctx.beginPath(); ctx.arc(x, y, 1.1, 0, 6.28); ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(mx, my + 3.4, 1.6, Math.PI, 0); ctx.stroke();
+    };
+    const rail = (pts) => {
+      ctx.strokeStyle = IRON;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+        ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(ax, ay - 7); ctx.lineTo(bx, by - 7); ctx.stroke();
+        ctx.lineWidth = 0.45; ctx.beginPath(); ctx.moveTo(ax, ay - 0.6); ctx.lineTo(bx, by - 0.6); ctx.stroke();
+        ctx.lineWidth = 0.32;
+        const n = Math.max(3, Math.round(Math.hypot(bx - ax, by - ay) / 2.4));
+        for (let k = 0; k < n; k++) { // C-scrolls and little hearts
+          const t = (k + 0.5) / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t;
+          ctx.beginPath(); ctx.arc(x, y - 4.8, 1, 0.4, Math.PI * 1.6); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y - 2.2, 1, Math.PI * 1.4, Math.PI * 2.6); ctx.stroke();
+        }
+      }
+    };
+    // ceiling (seen through the lace): warm wood
+    const ceil = ctx.createLinearGradient(0, top - 6, 0, top + 10);
+    ceil.addColorStop(0, '#7a4a28'); ceil.addColorStop(1, '#c08452');
+    ctx.fillStyle = ceil; octPath(R - 2, top + 2); ctx.fill();
+    const back = cols.filter(c => c[2] < 0), front = cols.filter(c => c[2] >= 0);
+    // back half: rail, columns, lace
+    const ringBack = []; for (let i = 4; i <= 8; i++) ringBack.push(corner(i, R - 3, base));
+    rail(ringBack);
+    back.forEach(drawCol);
+    for (let i = 4; i < 8; i++) lace(corner(i, R - 3, base), corner(i + 1, R - 3, base));
+    // front half (leave a gap at the stairs)
+    const ringFront = []; for (let i = 0; i <= 4; i++) ringFront.push(corner(i, R - 3, base));
+    rail(ringFront.slice(1));
+    front.forEach(drawCol);
+    for (let i = 0; i < 4; i++) lace(corner(i, R - 3, base), corner(i + 1, R - 3, base));
+    // ---- roof: valance with grey scallops lined in orange, hipped grey metal roof, lantern
+    const eave = top - 1;
+    ctx.fillStyle = '#c9772f'; octPath(R + 3, eave + 1.6); ctx.fill();
+    for (let i = 0; i < 8; i++) {
+      const [x0, y0, s0] = corner(i, R + 3, eave), [x1, y1, s1] = corner(i + 1, R + 3, eave);
+      if (s0 + s1 < -0.6) continue;
+      const n = 5;
+      for (let k = 0; k < n; k++) {
+        const ax = x0 + (x1 - x0) * k / n, ay = y0 + (y1 - y0) * k / n, bx = x0 + (x1 - x0) * (k + 1) / n, by = y0 + (y1 - y0) * (k + 1) / n;
+        ctx.fillStyle = '#6f777d'; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + 4.4, bx, by); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#d98a3a'; ctx.beginPath(); ctx.moveTo(ax + 0.6, ay + 0.4); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + 2.6, bx - 0.6, by + 0.4); ctx.closePath(); ctx.fill();
+      }
+    }
+    const peak = eave - 20;
+    for (let i = 0; i < 8; i++) { // roof facets, lit from the north-west
+      const [x0, y0] = corner(i, R + 3, eave), [x1, y1] = corner(i + 1, R + 3, eave);
+      const nx = (x0 + x1) / 2, lit = nx < 0 ? 0.12 : -0.06;
+      ctx.fillStyle = shade('#7d868c', lit + (i % 2 ? 0.03 : 0));
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(0, peak); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(30,35,40,0.35)'; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(0, peak); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 0.3;
+    for (let k = 1; k < 4; k++) { ctx.beginPath(); octPath((R + 3) * (1 - k / 4), eave + (peak - eave) * k / 4); ctx.stroke(); }
+    // lantern and finial
+    ctx.fillStyle = '#6a7378'; ctx.fillRect(-3.4, peak - 6, 6.8, 6); ctx.fillStyle = '#4f575c'; ctx.fillRect(1.4, peak - 6, 2, 6);
+    ctx.fillStyle = '#7d868c'; ctx.beginPath(); ctx.moveTo(-4.6, peak - 6); ctx.lineTo(0, peak - 11); ctx.lineTo(4.6, peak - 6); ctx.fill();
+    ctx.fillStyle = '#9aa2a7'; ctx.beginPath(); ctx.arc(0, peak - 12, 1.1, 0, 7); ctx.fill();
+  },
+  anim(ctx, s, t, night) {
+    if (!night) return;
+    // the globe lamps glow at night
+    const R = 27, top = -13 - 30;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + Math.PI / 8, px = Math.cos(a) * R - 3, py = top + 30 * 0.45 + Math.sin(a) * R * 0.5 + 1.1;
+      const g = ctx.createRadialGradient(px, py, 0, px, py, 7); g.addColorStop(0, 'rgba(255,246,214,0.9)'); g.addColorStop(1, 'rgba(255,230,170,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 7, 0, 7); ctx.fill();
+    }
   },
 };
 
@@ -931,7 +1010,7 @@ SPRITES.rollingCar = {
   draw() {},
   anim(ctx, s, t) {
     const k = (t * 0.08) % 1, a = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1;
-    ctx.save(); ctx.globalAlpha = a; ctx.translate(0, k * 110); drawCarSide(ctx, '#8a1f1f', 'tsuru', false); ctx.restore();
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(0, k * 110); paintCar(ctx, { model: 'tsuru', color: '#8a1f1f' }, 'W'); ctx.restore();
   },
 };
 
@@ -1185,18 +1264,7 @@ SPRITES.casitaPiedra = {
 
 // Parked car seen from above (on a north–south street) and parked Italikas
 SPRITES.parkedCarV = {
-  draw(ctx, s) {
-    const color = s.color || '#c9ccd1';
-    ctx.save(); ctx.translate(0, -10);
-    ctx.fillStyle = 'rgba(20,20,35,0.28)'; ctx.beginPath(); ctx.ellipse(1, 2, 8, 14, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = '#1a1a1a'; for (const [wx, wy] of [[-7.6, -10], [5.6, -10], [-7.6, 5], [5.6, 5]]) ctx.fillRect(wx, wy, 2, 5);
-    ctx.fillStyle = color; roundRect(ctx, -6.6, -14, 13.2, 26, 3); ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(3.5, -13, 3, 24);
-    ctx.fillStyle = '#30414d'; ctx.fillRect(-5, -8, 10, 5); ctx.fillRect(-5, 5, 10, 3);
-    ctx.fillStyle = color; ctx.fillRect(-5, -2, 10, 6);
-    if (s.taxi) { ctx.fillStyle = '#1b7a3e'; ctx.fillRect(-6.6, -2, 1.2, 6); ctx.fillRect(5.4, -2, 1.2, 6); ctx.fillStyle = '#fff'; ctx.fillRect(-2.5, 0, 5, 2.4); ctx.fillStyle = '#1b7a3e'; ctx.font = 'bold 1.6px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('TAXI', 0, 1.8); }
-    ctx.restore();
-  },
+  draw(ctx, s) { ctx.save(); ctx.translate(0, -13); paintCar(ctx, { model: s.model || 'tsuru', color: s.color || '#c9ccd1', taxi: !!s.taxi, num: s.num }, s.flip ? 'N' : 'S'); ctx.restore(); },
 };
 SPRITES.parkedMoto = {
   draw(ctx, s) {
@@ -1368,4 +1436,170 @@ SPRITES.mesaLoteria = {
     ctx.fillStyle = '#b8322a'; ctx.fillRect(-9, -30, 18, 8); text(ctx, '¡LOTERÍA!', 0, -26, 3.2, '#fff');
     ctx.fillStyle = '#6b4a30'; ctx.fillRect(-0.6, -22, 1.2, 12);
   },
+};
+
+// Portales seen from above: a long clay-tile roof over the walkway, the cantera cornice at its north
+// edge with the column heads showing below it, painted shop names along the fascia. The Portal Azul
+// section is white with blue trim. Drawn as an overlay so it fades while you walk underneath.
+SPRITES.portalRoof = {
+  draw(ctx, s) {
+    const W = s.fw, D = 32, x0 = -W / 2, blueX = x0 + (s.blueFrom ?? W);
+    // tile courses running along the portal, each course slightly shaded
+    for (let y = -D + 4; y < 0; y += 3) {
+      const k = (y + D) / D;
+      ctx.fillStyle = mix('#b85d40', '#8f4330', k * 0.6); ctx.fillRect(x0, y, W, 3);
+      ctx.fillStyle = 'rgba(255,214,170,0.18)'; for (let x = x0 + ((y / 3) % 2 ? 1 : 0); x < x0 + W; x += 2.2) ctx.fillRect(x, y, 1, 2.4);
+      ctx.fillStyle = 'rgba(60,20,10,0.25)'; ctx.fillRect(x0, y + 2.6, W, 0.4);
+    }
+    // ridge cap against the building behind, with tinacos and a skylight here and there
+    ctx.fillStyle = '#7a3a28'; ctx.fillRect(x0, -2, W, 2);
+    // the fascia/cornice on the plaza side
+    ctx.fillStyle = '#ead9bd'; ctx.fillRect(x0, -D, W, 4.2);
+    ctx.fillStyle = '#cdb592'; ctx.fillRect(x0, -D + 3.4, W, 0.8);
+    ctx.fillStyle = '#2e6fb3'; ctx.fillRect(blueX, -D, x0 + W - blueX, 4.2);
+    ctx.fillStyle = '#f4f7fb'; ctx.fillRect(blueX, -D + 1.6, x0 + W - blueX, 1);
+    // column heads (capitals) every 2 tiles along the edge, with little lamps between them
+    for (let x = x0 + 8; x < x0 + W; x += 32) {
+      const blue = x > blueX;
+      ctx.fillStyle = 'rgba(20,20,40,0.25)'; ctx.fillRect(x - 3, -D + 4.2, 6, 1.2);
+      ctx.fillStyle = blue ? '#f4f7fb' : '#e2cfaf'; ctx.fillRect(x - 3, -D - 0.6, 6, 2);
+      ctx.fillStyle = blue ? '#2e6fb3' : '#b89a72'; ctx.fillRect(x - 2.2, -D + 1.4, 4.4, 0.8);
+      if (x + 16 < x0 + W) { ctx.fillStyle = '#1f2326'; ctx.fillRect(x + 15.6, -D + 4.2, 0.8, 1.6); ctx.fillStyle = '#ffe8a8'; ctx.fillRect(x + 15, -D + 5.6, 2, 2); }
+    }
+    // painted names on the fascia
+    for (const [tx, str, bg, fg] of s.signs || []) {
+      const cx = x0 + tx * TILE, w = Math.min(70, str.length * 3.4 + 8);
+      ctx.fillStyle = bg; roundRect(ctx, cx - w / 2, -D - 2.4, w, 6, 1); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.4; ctx.stroke();
+      ctx.font = 'bold 4px "Trebuchet MS", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = fg;
+      let size = 4; const tw = ctx.measureText(str).width; if (tw > w - 3) { size = 4 * (w - 3) / tw; ctx.font = `bold ${size}px "Trebuchet MS", sans-serif`; }
+      ctx.fillText(str, cx, -D + 0.6);
+    }
+  },
+};
+
+// Black cast-iron bench of the plaza, with a scrolled back and lyre-shaped legs.
+SPRITES.ironBench = {
+  draw(ctx, s) {
+    shadowBlob(ctx, 1, 0.5, 11, 2.6, 0.3);
+    const I = '#17181a', H = 'rgba(255,255,255,0.16)';
+    ctx.strokeStyle = I; ctx.lineWidth = 0.7; ctx.lineCap = 'round';
+    for (const x of [-8.5, 8.5]) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x - Math.sign(x) * 1.5, -2.4, x, -4.6); ctx.stroke(); }
+    ctx.fillStyle = I; ctx.fillRect(-10, -5.2, 20, 1.6); // seat
+    ctx.fillStyle = H; ctx.fillRect(-10, -5.2, 20, 0.4);
+    ctx.lineWidth = 0.45;
+    ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(-10, -12); ctx.moveTo(10, -5); ctx.lineTo(10, -12); ctx.moveTo(-10, -12); ctx.quadraticCurveTo(0, -14.6, 10, -12); ctx.moveTo(-10, -7); ctx.lineTo(10, -7); ctx.stroke();
+    for (let x = -8; x <= 8; x += 2.7) { ctx.beginPath(); ctx.arc(x, -9.6, 1.1, 0, 6.28); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, -8.5); ctx.lineTo(x, -7); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(0, -13.6, 1.4, Math.PI, 0); ctx.stroke(); // crest
+    ctx.lineCap = 'butt';
+  },
+};
+
+// The plaza's tall black lamp post with two curled arms and white globes.
+SPRITES.farolDoble = {
+  draw(ctx) {
+    shadowBlob(ctx, 1, 0, 4, 1.4, 0.3);
+    const I = '#1a1b1d';
+    ctx.fillStyle = I; ctx.fillRect(-2, -3, 4, 3); ctx.fillRect(-1.3, -6, 2.6, 3);
+    ctx.fillRect(-0.7, -46, 1.4, 41);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(-0.5, -46, 0.4, 40);
+    ctx.strokeStyle = I; ctx.lineWidth = 0.8;
+    for (const sg of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(0, -44); ctx.bezierCurveTo(sg * 3, -49, sg * 7, -48, sg * 7.5, -45.5); ctx.stroke();
+      ctx.lineWidth = 0.4; ctx.beginPath(); ctx.arc(sg * 2.6, -45.2, 1.2, 0, 6.28); ctx.stroke(); ctx.lineWidth = 0.8;
+      const g = ctx.createRadialGradient(sg * 7.5 - 0.8, -43.6, 0.3, sg * 7.5, -43, 2.6);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#d9d6cc');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sg * 7.5, -43, 2.4, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = I; ctx.beginPath(); ctx.arc(0, -47, 1.2, 0, 7); ctx.fill();
+  },
+  anim(ctx, s, t, night) {
+    if (!night) return;
+    for (const sg of [-1, 1]) {
+      const g = ctx.createRadialGradient(sg * 7.5, -43, 0, sg * 7.5, -43, 9);
+      g.addColorStop(0, 'rgba(255,250,225,0.95)'); g.addColorStop(0.35, 'rgba(255,236,190,0.35)'); g.addColorStop(1, 'rgba(255,230,170,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sg * 7.5, -43, 9, 0, 7); ctx.fill();
+    }
+  },
+};
+
+// Lucía de la Paz: bronze figure on a cantera pedestal at the centre of the Jardín de la Paz.
+SPRITES.luciaPaz = {
+  draw(ctx) {
+    shadowBlob(ctx, 2, 0, 14, 5, 0.3);
+    // round basin of the pedestal and the cantera block
+    ctx.fillStyle = '#b9a891'; ctx.beginPath(); ctx.ellipse(0, -2, 12, 5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#cdbca3'; ctx.beginPath(); ctx.ellipse(0, -4, 11, 4.4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = vgrad(ctx, -24, -4, '#e3d4bb', '#b9a587'); ctx.fillRect(-5, -24, 10, 20);
+    ctx.fillStyle = '#d8c8ad'; ctx.fillRect(-6, -26, 12, 2.4); ctx.fillRect(-6, -6, 12, 2);
+    ctx.fillStyle = '#5a4a2e'; ctx.fillRect(-3.6, -18, 7.2, 4.4);
+    text(ctx, 'LUCÍA', 0, -16.9, 1.6, '#e6d39a'); text(ctx, 'DE LA PAZ', 0, -15, 1.3, '#e6d39a');
+    // the bronze figure: a woman in a long dress, rebozo over the shoulders, one hand raised
+    const B = '#5b4a33', BL = '#8a7350', BD = '#3a2f22';
+    ctx.fillStyle = vgrad(ctx, -48, -26, BL, BD);
+    ctx.beginPath(); ctx.moveTo(-4.6, -26); ctx.quadraticCurveTo(-3.6, -38, -2.6, -42); ctx.lineTo(2.6, -42); ctx.quadraticCurveTo(3.6, -38, 4.6, -26); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = BD; ctx.lineWidth = 0.3; for (const x of [-2, 0, 2]) { ctx.beginPath(); ctx.moveTo(x * 0.6, -41); ctx.lineTo(x, -26.5); ctx.stroke(); }
+    ctx.fillStyle = B; ctx.beginPath(); ctx.moveTo(-3.4, -42); ctx.lineTo(3.4, -42); ctx.lineTo(4.2, -36); ctx.lineTo(-4.2, -36); ctx.fill(); // rebozo
+    ctx.strokeStyle = BL; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(2.6, -41); ctx.quadraticCurveTo(5.5, -45, 5, -50); ctx.stroke(); // raised arm
+    ctx.beginPath(); ctx.moveTo(-2.6, -41); ctx.quadraticCurveTo(-4, -37, -3.4, -34); ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = BL; ctx.beginPath(); ctx.arc(5, -50.6, 0.9, 0, 7); ctx.fill();
+    ctx.fillStyle = vgrad(ctx, -47, -42, BL, B); ctx.beginPath(); ctx.ellipse(0, -44.6, 2, 2.4, 0, 0, 7); ctx.fill(); // head
+    ctx.fillStyle = BD; ctx.beginPath(); ctx.ellipse(0.4, -45.6, 2.1, 1.6, 0, Math.PI, 0); ctx.fill(); // hair
+    ctx.fillStyle = 'rgba(255,240,200,0.25)'; ctx.fillRect(-3.4, -40, 0.6, 12);
+  },
+};
+
+// Tacos Pizarro: the night taco stand on the corner of the Jardín de la Paz (Lázaro Cárdenas side).
+SPRITES.tacoStand = {
+  draw(ctx, s) {
+    shadowBlob(ctx, 2, 0, 18, 4, 0.3);
+    const c = s.color || '#c0392b';
+    ctx.fillStyle = '#9aa0a5'; ctx.fillRect(-15, -15, 30, 15);
+    ctx.fillStyle = '#c8cdd1'; ctx.fillRect(-15, -15, 30, 2);
+    ctx.fillStyle = c; ctx.fillRect(-15, -11, 30, 4);
+    text(ctx, s.sign || 'TACOS', 0, -9, 3, '#fff6d8');
+    ctx.fillStyle = '#2b2b2e'; ctx.fillRect(-12, -17, 12, 2); // plancha
+    ctx.fillStyle = '#7a3b1e'; ctx.fillRect(-11, -18, 3, 1); ctx.fillRect(-7, -18, 4, 1);
+    ctx.fillStyle = '#5a3a22'; ctx.fillRect(4, -22, 2, 7); ctx.fillStyle = '#a5481f'; ctx.beginPath(); ctx.ellipse(5, -22, 3, 4.5, 0, 0, 7); ctx.fill(); // trompo al pastor
+    ctx.fillStyle = '#f2c230'; ctx.beginPath(); ctx.arc(5, -26.8, 1.1, 0, 7); ctx.fill(); // la piña
+    for (const [x, col] of [[9, '#2e8b57'], [11.5, '#c0392b'], [14, '#f5f0e6']]) { ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(x, -15.8, 1.1, 0.6, 0, 0, 7); ctx.fill(); } // salsas
+    ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(-14, -15); ctx.lineTo(-14, -32); ctx.moveTo(14, -15); ctx.lineTo(14, -32); ctx.stroke();
+    ctx.fillStyle = s.tarp || '#d9482a'; ctx.beginPath(); ctx.moveTo(-17, -31); ctx.lineTo(17, -31); ctx.lineTo(15, -35); ctx.lineTo(-15, -35); ctx.fill();
+    for (let x = -17; x < 17; x += 4) { ctx.fillStyle = shade(s.tarp || '#d9482a', -0.15); ctx.fillRect(x, -31, 2, 1.4); }
+    for (const x of [-20, 20]) { ctx.fillStyle = '#c0392b'; ctx.fillRect(x - 2, -6, 4, 0.8); ctx.fillRect(x - 1.6, -6, 0.6, 6); ctx.fillRect(x + 1, -6, 0.6, 6); } // bancos
+  },
+  anim(ctx, s, t, night) {
+    for (let i = 0; i < 3; i++) { const p = (t * 0.6 + i / 3) % 1; ctx.fillStyle = `rgba(235,235,235,${0.3 * (1 - p)})`; ctx.beginPath(); ctx.arc(-6 + Math.sin(t + i) * 2, -19 - p * 14, 1.5 + p * 3, 0, 7); ctx.fill(); }
+    if (night) { ctx.fillStyle = 'rgba(255,240,200,0.9)'; ctx.fillRect(-1, -30.5, 2, 1.2); }
+  },
+};
+
+// Combi stop: a pole with a blue sign and a stripe in the colour of the route.
+SPRITES.parada = {
+  draw(ctx, s) {
+    shadowBlob(ctx, 1, 0, 3, 1.2, 0.25);
+    ctx.fillStyle = '#6b7075'; ctx.fillRect(-0.6, -30, 1.2, 30);
+    const col = { verde: '#2f9e44', roja: '#c92a2a', amarilla: '#f2c230' }[s.route] || '#888';
+    ctx.fillStyle = '#1f5fa8'; roundRect(ctx, -6, -38, 12, 9, 1); ctx.fill();
+    ctx.fillStyle = col; ctx.fillRect(-6, -31, 12, 2);
+    text(ctx, 'PARADA', 0, -35.6, 2.3, '#fff');
+    text(ctx, 'COMBI', 0, -32.8, 1.6, '#dfe8f5');
+  },
+};
+
+// The flame at the foot of the Monumento a Lázaro Cárdenas: a bronze brazier that is never put out.
+SPRITES.monCardenas.anim = function (ctx, s, t) {
+  ctx.save(); ctx.translate(0, -1.2);
+  ctx.fillStyle = '#5b4a32'; ctx.beginPath(); ctx.moveTo(-3.4, 0); ctx.lineTo(3.4, 0); ctx.lineTo(2.4, -2.4); ctx.lineTo(-2.4, -2.4); ctx.fill();
+  ctx.fillStyle = '#8a7350'; ctx.fillRect(-2.6, -2.8, 5.2, 0.6);
+  const g = ctx.createRadialGradient(0, -5, 0, 0, -5, 9); g.addColorStop(0, 'rgba(255,190,90,0.55)'); g.addColorStop(1, 'rgba(255,140,40,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -5, 9, 0, 7); ctx.fill();
+  for (let i = 0; i < 5; i++) {
+    const p = (t * 1.4 + i * 0.21) % 1, x = Math.sin(t * 6 + i * 2) * 0.9 * (1 - p);
+    ctx.fillStyle = `rgba(255,${170 + (1 - p) * 70},${60 + (1 - p) * 60},${0.95 - p * 0.85})`;
+    ctx.beginPath(); ctx.ellipse(x, -3 - p * 6.5, 1.6 * (1 - p) + 0.3, 2.4 * (1 - p) + 0.3, 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
 };

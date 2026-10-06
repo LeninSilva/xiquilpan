@@ -35,6 +35,10 @@ export const ITEMS = {
   fruta: { name: 'Fruta picada', ico: '🍉', desc: 'Pepino, jícama, mango y sandía con Tajín y limón.', type: 'food', effect: { panza: 2 } },
   churros: { name: 'Churros', ico: '🥖', desc: 'Churros con azúcar y canela.', type: 'food', effect: { panza: 3 } },
   gelatina: { name: 'Gelatina de rompope', ico: '🍮', desc: 'Gelatina de rompope, temblorosa y perfecta.', type: 'food', effect: { panza: 2 } },
+  hueso: { name: 'Hueso con carnita', ico: '🦴', desc: 'De la carnicería. Para algún perro del pueblo.', type: 'misc' },
+  croquetas: { name: 'Bolsita de croquetas', ico: '🥣', desc: 'Croquetas a granel en bolsa de plástico. A los perros de la plaza les encantan.', type: 'misc' },
+  mecate_amarillo: { name: 'Mecate amarillo', ico: '🪢', desc: 'Un pedazo de mecate de nylon amarillo, cortado con navaja. Lo encontraste en el mezquite de Abadiano.', type: 'quest' },
+  dibujo_moto: { name: 'Dibujo de Beto', ico: '🖍️', desc: 'Un niño de Abadiano dibujó lo que vio: un señor flaco en una moto gris, con un mecate amarillo.', type: 'quest' },
 };
 
 // Menu entries: [id, name, ico, price, effect, desc]
@@ -130,6 +134,7 @@ export const SHOPS = {
     ['refresco', 'Soda', '🥤', 18, { give: 'refresco' }, ''],
     ['dulces', 'Dulces', '🍬', 10, { give: 'dulces' }, ''],
     ['cacahuates', 'Cacahuates', '🥜', 15, { give: 'cacahuates' }, ''],
+    ['hueso', 'Hueso con carnita (para un perro)', '🦴', 10, { give: 'hueso' }, 'El carnicero te lo da casi regalado.'],
   ] },
   tiendita: { name: 'Tiendita de la esquina', sub: 'Abarrotes', items: [
     ['refresco', 'Refresco', '🥤', 20, { give: 'refresco' }, ''],
@@ -137,6 +142,32 @@ export const SHOPS = {
     ['dulces', 'Dulces', '🍬', 10, { give: 'dulces' }, ''],
     ['cacahuates', 'Cacahuates', '🥜', 15, { give: 'cacahuates' }, ''],
     ['sabritas', 'Papitas', '🥔', 18, { panza: 2 }, ''],
+    ['croquetas', 'Croquetas (a granel)', '🥣', 15, { give: 'croquetas' }, 'Para los perritos.'],
+  ] },
+  modelorama: { name: 'Modelorama Las Palmas', sub: 'Cerveza fría, hielo y botanas · servicio a domicilio', items: [
+    ['cerveza', 'Caguama Victoria', '🍺', 48, { buzz: 30 }, 'Retornable.'],
+    ['cerveza', 'Modelo Especial (lata)', '🍺', 28, { buzz: 15 }, ''],
+    ['cerveza', 'Negra Modelo', '🍺', 30, { buzz: 15 }, ''],
+    ['cerveza', 'Michelob Ultra', '🍺', 30, { buzz: 10 }, 'La que toman los del gimnasio.'],
+    ['refresco', 'Coca-Cola de litro', '🥤', 26, { give: 'refresco' }, ''],
+    ['sabritas', 'Papitas y cacahuates', '🥔', 22, { panza: 2 }, ''],
+    ['hielo', 'Bolsa de hielo', '🧊', 25, {}, ''],
+  ] },
+  gelatinas_mercado: { name: 'Gelatinas de Doña Gela', sub: 'En la entrada del mercado', items: [
+    ['gelatina', 'Gelatina de rompope', '🍮', 15, { give: 'gelatina' }, 'Con su pasa encima.'],
+    ['gelatina', 'Gelatina de mosaico', '🍮', 15, { give: 'gelatina' }, ''],
+    ['gelatina', 'Flan napolitano', '🍮', 20, { panza: 4 }, ''],
+  ] },
+  pizarro: { name: 'Tacos Pizarro', sub: 'Esquina del Jardín de la Paz · de noche', items: [
+    ['taco', 'Tacos al pastor (orden)', '🌮', 60, { panza: 14 }, 'Con su piña, cebolla y cilantro.'],
+    ['taco', 'Tacos de suadero (orden)', '🌮', 60, { panza: 14 }, ''],
+    ['taco', 'Gringa', '🌮', 55, { panza: 12 }, ''],
+    ['refresco', 'Refresco de vidrio', '🥤', 22, { give: 'refresco' }, ''],
+  ] },
+  frutas_mercado: { name: 'Fruta de Don Chava', sub: 'Afuera del mercado, de mañana', items: [
+    ['fruta', 'Vaso de fruta (mango, papaya, melón)', '🍉', 30, { panza: 4 }, 'Con limón, sal y chile.'],
+    ['fruta', 'Pepinos con chamoy', '🥒', 25, { panza: 3 }, ''],
+    ['jugo', 'Jugo de naranja', '🍊', 30, { panza: 2 }, ''],
   ] },
   panaderia: { name: 'Panadería Mendoza', sub: 'Desde hace tres generaciones', items: [
     ['pan', 'Concha', '🍞', 10, { give: 'pan' }, ''],

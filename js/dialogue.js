@@ -6,6 +6,16 @@ import { ITEMS } from './data/items.js';
 
 const r = Math.random;
 
+// A rough reading of the mood of a line, for the speaker's face.
+export function moodOf(text = '') {
+  const t = text.toLowerCase();
+  if (/jaja|jeje|qué gusto|me da gusto|bienvenid|gracias|qué bonit|¡ánimo|me encanta|felicidades|sí quiero|qué rico|a toda madre|chido/.test(t)) return 'happy';
+  if (/¿de veras|no puede ser|¡no!|¡¿|¡qué!|¡ay, dios|increíble|¡órale!|¿en serio/.test(t)) return 'surprised';
+  if (/lárgate|cállate|qué te pasa|grosero|no te metas|¡oiga!|me ofend|ni se te ocurra|váyase|sinvergüenza|maldit/.test(t)) return 'angry';
+  if (/triste|extraño|murió|se fue|perdón|lástima|desapareci|llor|ya no está|nadie sabe|solo|sola|miedo|ay, mijo/.test(t)) return 'sad';
+  return null;
+}
+
 export class Dialogue {
   constructor(game) {
     this.game = game;
@@ -16,6 +26,9 @@ export class Dialogue {
 
   // ---- primitives used by scripts -----------------------------------
   async say(who, text, opts = {}) {
+    // faces follow the mood of what is said (eyebrows, eyes, mouth)
+    const look = who && (who.look || who.def?._look);
+    if (look && !look.mask) look.expr = opts.expr || moodOf(text);
     this.ui.dialogSpeaker(who);
     await this.ui.dialogText(text, opts);
     if (!opts.noWait) await this.ui.waitAdvance();
@@ -55,6 +68,8 @@ export class Dialogue {
       }
     } catch (e) { console.error(e); }
     npc.talking = false; npc.pose = null;
+    if (npc.look) npc.look.expr = null;
+    g.player.look.expr = null;
     this.end();
   }
 
@@ -114,10 +129,10 @@ export class Dialogue {
     g.stats.style = g.stats.style || { kind: 0, funny: 0, honest: 0, mean: 0 };
     g.stats.style[c.value]++;
     const likesJokes = (def.persona || '').match(/bromista|chist|platicad|alegre|burl|coquet/i);
-    if (c.value === 'kind') { g.addStat('corazon', 1); addRel(g, npc, first ? 4 : 1); await this.say(npc, pick(r, REACT.kind)); }
-    else if (c.value === 'funny') { const ok = likesJokes || r() < 0.65; g.addStat('fama', ok ? 1 : 0); addRel(g, npc, ok ? (first ? 4 : 2) : -2); await this.say(npc, pick(r, ok ? REACT.funny : REACT.flat)); }
+    if (c.value === 'kind') { g.addStat('corazon', 1); addRel(g, npc, first ? 4 : 1); await this.say(npc, pick(r, REACT.kind), { expr: 'happy' }); }
+    else if (c.value === 'funny') { const ok = likesJokes || r() < 0.65; g.addStat('fama', ok ? 1 : 0); addRel(g, npc, ok ? (first ? 4 : 2) : -2); await this.say(npc, pick(r, ok ? REACT.funny : REACT.flat), { expr: ok ? 'happy' : 'neutral' }); }
     else if (c.value === 'honest') { g.addStat('palabra', 1); addRel(g, npc, first ? 3 : 1); await this.say(npc, pick(r, REACT.honest)); }
-    else { g.addStat('corazon', -2); addRel(g, npc, -5); await this.say(npc, pick(r, REACT.mean)); }
+    else { g.addStat('corazon', -2); addRel(g, npc, -5); await this.say(npc, pick(r, REACT.mean), { expr: r() < 0.5 ? 'angry' : 'sad' }); }
   }
 
   async social(npc) {
@@ -139,13 +154,13 @@ export class Dialogue {
       rel.comp = today; g.addStat('corazon', 1);
       const ok = r() < 0.85; addRel(g, npc, ok ? 5 : 1);
       await this.say({ name: g.state.name, look: g.player.look }, pick(r, COMPLIMENTS));
-      await this.say(npc, pick(r, ok ? REACT.compliment : REACT.flat));
+      await this.say(npc, pick(r, ok ? REACT.compliment : REACT.flat), { expr: ok ? 'happy' : 'neutral' });
     } else if (c.value === 'tease') {
       rel.joke = today; g.addStat('fama', 1); g.addStat('corazon', -1);
       const takes = (def.persona || '').match(/bromista|burl|chist/i) && r() < 0.6;
       addRel(g, npc, takes ? 2 : -6);
       await this.say({ name: g.state.name, look: g.player.look }, pick(r, TEASES));
-      await this.say(npc, pick(r, takes ? REACT.tease_ok : REACT.tease_bad));
+      await this.say(npc, pick(r, takes ? REACT.tease_ok : REACT.tease_bad), { expr: takes ? 'happy' : 'angry' });
     } else if (c.value === 'gift') {
       const gc = await this.choose(gifts.map(k => ({ text: `${ITEMS[k].ico} ${ITEMS[k].name}`, value: k })).concat([{ text: 'Mejor no', value: null }]), npc);
       if (!gc.value) return;
@@ -153,7 +168,7 @@ export class Dialogue {
       let v = giftValue(def, gc.value); if (rel.gift === today) v = Math.round(v / 3);
       rel.gift = today; addRel(g, npc, v); g.addStat('corazon', 2);
       if (v >= 12) noteRel(g, npc, `Le encantó tu regalo: ${ITEMS[gc.value].name.toLowerCase()}`);
-      await this.say(npc, pick(r, v >= 12 ? REACT.gift_love : v > 0 ? REACT.gift_ok : REACT.gift_bad));
+      await this.say(npc, pick(r, v >= 12 ? REACT.gift_love : v > 0 ? REACT.gift_ok : REACT.gift_bad), { expr: v >= 12 ? 'surprised' : v > 0 ? 'happy' : 'sad' });
     } else if (c.value === 'favor') {
       rel.favor = today;
       if (def.shop) { await this.say(npc, pick(r, ['Para ti, lo que quieras de aquí te lo dejo a precio de amigo. Y hoy, esto va por mi cuenta.', 'Ándale, llévate esto. No me lo pagues; nomás no le digas a nadie.'])); const e = (await import('./data/items.js')).SHOPS[def.shop]?.items?.[0]; if (e) { const eff = { ...e[4] }; if (eff.give) g.giveItem(eff.give); else g.applyEffect(eff); } }

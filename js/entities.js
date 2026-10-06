@@ -1,7 +1,7 @@
 // Moving things: people (player & NPCs), vehicles, animals.
 import { TILE, clamp, dist, rng, pick, hash2 } from './util.js';
 import { getFrame, drawCow, drawDog, drawBird, drawChicken, CHAR_W, CHAR_H } from './render/people.js';
-import { drawCarSide } from './render/landmarks.js';
+import { drawCar, drawBikeSide, drawBikeTop, PAINTS, MODELS } from './render/cars.js';
 import { drawHorse } from './render/jiquilpan.js';
 import { DIR } from './data/build.js';
 import { G, ROADS } from './world.js';
@@ -82,6 +82,7 @@ export class Person extends Entity {
   }
   frame() {
     if (this.pose === 'sit') return 'sit';
+    if (this.pose === 'dance') return 'dance' + (Math.floor(this.animT * 2.6 + (this.phase || 0)) % 2);
     if (this.moving) return Math.floor(this.animT * (this.running ? 11 : 7.5)) % 4;
     if (this.pose === 'talk') return Math.floor(this.animT * 5) % 2 ? 'talk' : 'idle';
     if (this.pose === 'wave') return 'wave';
@@ -96,6 +97,14 @@ export class Person extends Entity {
     if (this.bubble) { this.bubble.t -= dt; if (this.bubble.t <= 0) this.bubble = null; }
   }
   draw(ctx, game) {
+    if (this.down) { // lying on the ground, hurt
+      const img = getFrame(this.look, 2, 'hurt');
+      ctx.save(); ctx.translate(this.x, this.y - 2); ctx.rotate(-Math.PI / 2 * 0.94);
+      ctx.drawImage(img, -CHAR_W / 2 - 6, -44 + 14, CHAR_W, CHAR_H); ctx.restore();
+      if (this.bubble) drawBubble(ctx, this.x, this.y - 16, this.bubble.text);
+      else if (Math.floor(game.clock.real / 3 + this.id) % 3 === 0) drawBubble(ctx, this.x, this.y - 16, ['Ay…', 'Mi pierna…', 'Ayúdenme…'][this.id % 3]);
+      return;
+    }
     const img = getFrame(this.look, this.dir, this.frame());
     const lift = this.pose === 'sit' ? 3 : 0;
     ctx.drawImage(img, this.x - CHAR_W / 2, this.y - 44 + lift, CHAR_W, CHAR_H);
@@ -170,7 +179,8 @@ export function findPath(map, sx, sy, tx, ty, maxNodes = 9000) {
       if (nx < 0 || ny < 0 || nx >= W || ny >= map.h || map.isSolidTile(nx, ny)) continue;
       const ni = ny * W + nx;
       if (map.colBlock && map.colBlock[ni] && ni !== goal) continue;
-      const cost = gc + (ROADS.has(map.ground[ni]) ? 1.7 : 1);
+      const gn = map.ground[ni];
+      const cost = gc + (map.walkway && map.walkway[ni] ? 0.9 : ROADS.has(gn) ? 1.7 : (gn === G.GARDEN || gn === G.GRASS) ? 2.3 : 1);
       if (_stamp[ni] === _gen && _g[ni] <= cost) continue;
       _stamp[ni] = _gen; _g[ni] = cost; _came[ni] = cur;
       push(ni, cost + Math.abs(nx - tx) + Math.abs(ny - ty));
@@ -180,20 +190,43 @@ export function findPath(map, sx, sy, tx, ty, maxNodes = 9000) {
 }
 
 // ---------------------------------------------------------------------------
-const CAR_COLORS = ['#c9ccd1', '#f4f4f0', '#b3201f', '#1f3f6f', '#2b2b2e', '#8a8f94', '#d8c79a', '#3e6b48', '#7a1f2b', '#e8e2d2'];
+// What people drive around here: mostly Nissans, Chevrolets and Toyotas, the odd Vocho, a few pickups,
+// a rare Chinese or Japanese electric, and — very rarely — somebody's Porsche.
+const CAR_MIX = [['tsuru', 22], ['versa', 18], ['march', 12], ['aveo', 10], ['corolla', 8], ['vocho', 6], ['tacoma', 7], ['cheyenne', 5], ['leaf', 1.4], ['byd', 1.6], ['porsche', 0.35]];
+export function randomModel(r) {
+  let t = r() * CAR_MIX.reduce((a, [, w]) => a + w, 0);
+  for (const [m, w] of CAR_MIX) { if ((t -= w) <= 0) return m; }
+  return 'tsuru';
+}
+export const COMBI_ROUTES = {
+  verde: { color: '#2f9e44', text: 'CENTRO · ENTRADA', name: 'Ruta Verde' },
+  roja: { color: '#c92a2a', text: 'CENTRO · BOSQUE', name: 'Ruta Roja' },
+  amarilla: { color: '#f2c230', text: 'CENTRO · SAHUAYO', name: 'Ruta Amarilla' },
+};
 export class Vehicle extends Entity {
   constructor(map, tx, ty, kind, seed) {
     super(map, tx * TILE + 8, ty * TILE + 8);
     const r = rng(seed);
-    this.kind = kind; // car, taxi, pickup, moto, bici, rino
-    this.color = kind === 'taxi' ? '#f4f4f0' : pick(r, CAR_COLORS);
-    this.model = kind === 'pickup' ? 'pickup' : 'tsuru';
-    this.speed = kind === 'bici' || kind === 'rino' ? 34 : kind === 'moto' ? 60 : 48 + r() * 14;
+    this.kind = kind; // car, taxi, pickup, moto, bici, rino, combi, ambulancia, patrulla
+    this.color = kind === 'taxi' ? '#f4f4f0' : pick(r, PAINTS);
+    this.model = kind === 'taxi' ? pick(r, ['tsuru', 'tsuru', 'versa']) : kind === 'pickup' ? pick(r, ['tacoma', 'cheyenne']) : kind === 'car' ? randomModel(r)
+      : (kind === 'combi' || kind === 'ambulancia' || kind === 'patrulla') ? (kind === 'combi' ? 'combi' : kind) : null;
+    if (this.model === 'porsche') this.color = pick(r, ['#c9c9c4', '#b3201f', '#1b1b1d', '#e0c13a']);
+    if (this.model === 'byd') this.color = pick(r, ['#9cc9d8', '#e8e6e0', '#f2b6a0']);
+    if (kind === 'ambulancia') this.color = '#f6f6f2';
+    if (kind === 'patrulla') this.color = '#f2f2f0';
+    this.spec = { model: this.model, color: this.color, taxi: kind === 'taxi', num: String(10 + Math.floor(r() * 80)), damage: 0 };
+    this.speed = kind === 'bici' || kind === 'rino' ? 34 : kind === 'moto' ? 60 : kind === 'combi' ? 44 : 48 + r() * 14;
+    if (this.model === 'porsche') this.speed += 10;
     this.dir = null; this.tx = tx; this.ty = ty; this.progress = 0; this.wait = 0;
-    this.solid = true; this.radius = kind === 'car' || kind === 'taxi' || kind === 'pickup' ? 12 : 6;
+    this.solid = true; this.radius = this.model ? 12 : 6;
     this.riderLook = null;
     this.honk = 0;
     this.stuck = 0;
+  }
+  setRoute(name) {
+    const R = COMBI_ROUTES[name]; this.route = name; this.color = R.color;
+    this.spec = { ...this.spec, model: 'combi', color: R.color, route: name, text: R.text };
   }
   occupied(tx, ty) {
     for (const v of this.fleet || []) if (v !== this && !v.dead && v.tx === tx && v.ty === ty) return true;
@@ -208,6 +241,9 @@ export class Vehicle extends Entity {
   }
   update(dt, game) {
     const m = this.map;
+    if (this.parked) { this.animT = (this.animT || 0) + dt; return; }
+    if (this.x < -TILE || this.y < -TILE || this.x > m.w * TILE + TILE || this.y > m.h * TILE + TILE) { this.dead = true; return; }
+    if (this.fading) { this.alpha = (this.alpha ?? 1) - dt * 0.8; if (this.alpha <= 0) this.dead = true; return; }
     if (this.dir === null) { this.pickDir(); if (this.dir === null) { this.giveUp(game); return; } }
     const [dx, dy] = dvec(this.dir);
     this.nx = this.tx + dx; this.ny = this.ty + dy;
@@ -234,8 +270,10 @@ export class Vehicle extends Entity {
       }
     }
     this.honk -= dt;
+    if (blocked && this.emergency && this.stuck > 1.5) blocked = false; // everybody makes way for a siren
     if (blocked) {
       this.stuck += dt;
+      if (this.emergency) return;
       if (this.stuck > 6 && !game.onScreen?.(this.x, this.y, 40)) this.dead = true; // only ever vanish off-screen
       return;
     }
@@ -254,13 +292,48 @@ export class Vehicle extends Entity {
     }
     this.animT = (this.animT || 0) + dt;
   }
-  // No way forward: wait where we are (visible) or quietly leave (off-screen).
+  // No way forward: turn around into the opposite lane if there is one; otherwise pull over and
+  // fade away. A car never leaves the road (it used to keep driving straight onto the grass).
   giveUp(game) {
+    if (this.emergency) { // re-plan toward the goal, or just stop where we are
+      const goal = this.goal;
+      const p = goal && lanePath(this.map, this.tx, this.ty, goal[0], goal[1], 1);
+      if (p && p.length > 1) { this.plan = p; this.planI = 0; this.followPlan(); return; }
+      this.dir = null; this.parked = true; const cb = this.onArrive; this.onArrive = null; cb?.(this); return;
+    }
     if (!game.onScreen?.(this.x, this.y, 40)) { this.dead = true; return; }
-    this.dir = this.lastDir || DIR.E; this.stuck += 0.02;
-    if (this.stuck > 30) this.dead = true;
+    const back = opposite(this.lastDir || DIR.E);
+    for (const [ox, oy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const l = this.laneAt(this.tx + ox, this.ty + oy);
+      if (!(l & back) || this.occupied(this.tx + ox, this.ty + oy)) continue;
+      const [bx, by] = dvec(back);
+      if (!this.laneAt(this.tx + ox + bx, this.ty + oy + by)) continue;
+      this.tx += ox; this.ty += oy; this.x = this.tx * TILE + 8; this.y = this.ty * TILE + 8; this.progress = 0;
+      this.dir = back; return;
+    }
+    this.dir = null; this.fading = true;
+  }
+  // Follow a planned route (combis, ambulance, police): steer toward the next tile of the plan.
+  followPlan() {
+    const plan = this.plan;
+    let i = this.planI || 0;
+    while (i < plan.length && !(plan[i][0] === this.tx && plan[i][1] === this.ty)) i++;
+    if (i >= plan.length) { this.plan = null; return false; }
+    this.planI = i;
+    const nxt = plan[i + 1];
+    if (!nxt) { const cb = this.onArrive; this.plan = null; this.dir = null; this.parked = true; cb?.(this); return true; }
+    const dx = nxt[0] - this.tx, dy = nxt[1] - this.ty;
+    const d = dx > 0 ? DIR.E : dx < 0 ? DIR.W : dy > 0 ? DIR.S : DIR.N;
+    if (!(this.laneAt(this.tx, this.ty) & d)) {
+      // lateral lane change: slide over
+      this.tx = nxt[0]; this.ty = nxt[1]; this.x = this.tx * TILE + 8; this.y = this.ty * TILE + 8; this.planI = i + 1; return this.followPlan();
+    }
+    this.dir = d; return true;
   }
   pickDir() {
+    if (this.parked) { this.dir = null; return; }
+    if (this.plan && this.followPlan()) return;
+    if (this.dir) { const [dx, dy] = dvec(this.dir); if (!this.map.inb(this.tx + dx, this.ty + dy)) return; } // leaving town by the highway
     const cur = this.laneAt(this.tx, this.ty);
     const opts = [];
     for (const d of [DIR.N, DIR.E, DIR.S, DIR.W]) {
@@ -287,61 +360,82 @@ export class Vehicle extends Entity {
     this.dir = opts[Math.floor(Math.random() * opts.length)];
   }
   draw(ctx, game) {
-    const d = this.dir || DIR.E;
+    const d = this.dir || this.lastDir || DIR.E;
+    const L = d === DIR.N ? 'N' : d === DIR.S ? 'S' : d === DIR.W ? 'W' : 'E';
     ctx.save(); ctx.translate(this.x, this.y + 4);
-    const horiz = d === DIR.E || d === DIR.W;
-    if (this.kind === 'moto' || this.kind === 'bici' || this.kind === 'rino') drawTwoWheeler(ctx, this, d, game);
-    else if (horiz) drawCarSide(ctx, this.color, this.model, d === DIR.E, this.kind === 'taxi' ? '#1b7a3e' : null);
-    else drawCarTop(ctx, this.color, d === DIR.N, this.kind === 'taxi', this.model);
+    if (this.alpha != null) ctx.globalAlpha = Math.max(0, this.alpha);
+    if (!this.model) drawTwoWheeler(ctx, this, d, game);
+    else drawCar(ctx, this.spec, L);
+    if (this.siren) { // flashing light bar
+      const on = Math.floor(game.clock.real * 6) % 2;
+      const horiz = L === 'E' || L === 'W', y = horiz ? -(MODELS[this.model].roof + 2.2) : -2;
+      ctx.globalCompositeOperation = 'lighter';
+      for (const [c, k] of [['rgba(255,40,40,0.8)', on], ['rgba(60,110,255,0.8)', 1 - on]]) { if (!k) continue; const g = ctx.createRadialGradient(0, y, 0, 0, y, 14); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, y, 14, 0, 7); ctx.fill(); }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    if (this.smoke > 0) for (let i = 0; i < 4; i++) { const p = (game.clock.real * 0.8 + i / 4) % 1; ctx.fillStyle = `rgba(90,90,95,${0.4 * (1 - p)})`; ctx.beginPath(); ctx.arc(Math.sin(i * 2 + game.clock.real) * 3, -10 - p * 22, 3 + p * 6, 0, 7); ctx.fill(); }
     ctx.restore();
-    if (game.env.light < 0.5 && (this.kind !== 'bici' && this.kind !== 'rino')) {
+    if (this.bubble) drawBubble(ctx, this.x, this.y - 30, this.bubble.text);
+    if (game.env.light < 0.5 && this.model) {
       const [dx, dy] = dvec(d);
-      ctx.fillStyle = 'rgba(255,240,190,0.28)';
-      ctx.beginPath(); ctx.moveTo(this.x + dx * 12, this.y + dy * 10); ctx.lineTo(this.x + dx * 48 - dy * 12, this.y + dy * 44 - dx * 8); ctx.lineTo(this.x + dx * 48 + dy * 12, this.y + dy * 44 + dx * 8); ctx.fill();
+      ctx.fillStyle = 'rgba(255,240,190,0.22)';
+      ctx.beginPath(); ctx.moveTo(this.x + dx * 14, this.y + dy * 12); ctx.lineTo(this.x + dx * 56 - dy * 14, this.y + dy * 50 - dx * 9); ctx.lineTo(this.x + dx * 56 + dy * 14, this.y + dy * 50 + dx * 9); ctx.fill();
     }
   }
 }
+// Breadth-first search over the lane network (respecting one-way directions and lane changes).
+// Returns a list of tiles from (sx,sy) to the first tile within `r` of (gx,gy), or null.
+export function lanePath(map, sx, sy, gx, gy, r = 1, limit = 60000) {
+  const W = map.w, N = W * map.h;
+  if (!lanePath.prev || lanePath.prev.length < N) { lanePath.prev = new Int32Array(N); lanePath.seen = new Uint32Array(N); lanePath.gen = 0; }
+  const prev = lanePath.prev, seen = lanePath.seen, gen = ++lanePath.gen;
+  const lane = (x, y) => { if (!map.inb(x, y)) return 0; const i = y * W + x; if (!ROADS.has(map.ground[i]) || (map.closed && map.closed[i])) return 0; return map.laneDir[i]; };
+  const q = [sy * W + sx]; seen[q[0]] = gen; prev[q[0]] = -1;
+  for (let h = 0; h < q.length && h < limit; h++) {
+    const c = q[h], cx = c % W, cy = (c - cx) / W;
+    if (Math.abs(cx - gx) + Math.abs(cy - gy) <= r) {
+      const out = []; let k = c; while (k !== -1) { out.push([k % W, Math.floor(k / W)]); k = prev[k]; }
+      return out.reverse();
+    }
+    const l = lane(cx, cy);
+    for (const d of [DIR.N, DIR.E, DIR.S, DIR.W]) {
+      if (!(l & d)) continue;
+      const [dx, dy] = dvec(d);
+      const nl = lane(cx + dx, cy + dy);
+      if (nl && (nl & d || nl & turnsOf(d))) { const ni = (cy + dy) * W + cx + dx; if (seen[ni] !== gen) { seen[ni] = gen; prev[ni] = c; q.push(ni); } }
+      // lane change to a parallel lane going the same way
+      for (const sgn of [-1, 1]) {
+        const ox = dy ? sgn : 0, oy = dx ? sgn : 0;
+        if (lane(cx + ox, cy + oy) & d) { const ni = (cy + oy) * W + cx + ox; if (seen[ni] !== gen) { seen[ni] = gen; prev[ni] = c; q.push(ni); } }
+      }
+    }
+  }
+  return null;
+}
+export function nearestLane(map, x, y, maxR = 8) {
+  for (let r = 0; r <= maxR; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+    const tx = x + dx, ty = y + dy; if (!map.inb(tx, ty)) continue;
+    const i = ty * map.w + tx; if (map.laneDir[i] && ROADS.has(map.ground[i])) return [tx, ty];
+  }
+  return null;
+}
+export { dvec, DIR };
 function dvec(d) { return d === DIR.N ? [0, -1] : d === DIR.S ? [0, 1] : d === DIR.E ? [1, 0] : [-1, 0]; }
 function opposite(d) { return d === DIR.N ? DIR.S : d === DIR.S ? DIR.N : d === DIR.E ? DIR.W : DIR.E; }
 function turnsOf(d) { return (d === DIR.N || d === DIR.S) ? (DIR.E | DIR.W) : (DIR.N | DIR.S); }
 
-function drawCarTop(ctx, color, north, taxi, model) {
-  ctx.fillStyle = 'rgba(20,20,35,0.28)'; ctx.beginPath(); ctx.ellipse(1, 2, 8, 14, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-7.6, -10, 2, 5); ctx.fillRect(5.6, -10, 2, 5); ctx.fillRect(-7.6, 5, 2, 5); ctx.fillRect(5.6, 5, 2, 5);
-  ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-6.6, -14, 13.2, 26, 3) : ctx.rect(-6.6, -14, 13.2, 26); ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(3.5, -13, 3, 24);
-  ctx.fillStyle = '#30414d';
-  const f = north ? -1 : 1;
-  ctx.fillRect(-5, f * 3 - (north ? 5 : 0), 10, 5);
-  ctx.fillRect(-5, -f * 7 - (north ? 0 : 3), 10, 3);
-  if (model === 'pickup') { ctx.fillStyle = '#3a3a3a'; ctx.fillRect(-5, -f * 12 - (north ? 0 : 7), 10, 7); }
-  ctx.fillStyle = color; ctx.fillRect(-5, -2, 10, 4);
-  if (taxi) { ctx.fillStyle = '#fff'; ctx.fillRect(-2.5, -1.5, 5, 3); ctx.fillStyle = '#1b7a3e'; ctx.fillRect(-6.6, -2, 1, 4); ctx.fillRect(5.6, -2, 1, 4); }
-  ctx.fillStyle = '#ffe9a6'; ctx.fillRect(-5, f * 13 - 0.5, 2.4, 1.2); ctx.fillRect(2.6, f * 13 - 0.5, 2.4, 1.2);
-  ctx.fillStyle = '#c0392b'; ctx.fillRect(-5, -f * 13.6, 2.4, 1); ctx.fillRect(2.6, -f * 13.6, 2.4, 1);
-}
-
 function drawTwoWheeler(ctx, v, d, game) {
   const horiz = d === DIR.E || d === DIR.W;
   const t = v.animT || 0;
-  ctx.fillStyle = 'rgba(20,20,35,0.25)'; ctx.beginPath(); ctx.ellipse(0, 0, horiz ? 10 : 3.5, horiz ? 2.4 : 7, 0, 0, 7); ctx.fill();
-  if (horiz) {
-    ctx.save(); if (d === DIR.W) ctx.scale(-1, 1);
-    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = v.kind === 'moto' ? 1.6 : 0.8;
-    ctx.beginPath(); ctx.arc(-6, -3.5, 3.4, 0, 7); ctx.arc(6, -3.5, 3.4, 0, 7); ctx.stroke();
-    if (v.kind === 'moto') { ctx.fillStyle = v.color; ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(4, -7); ctx.lineTo(6, -4); ctx.lineTo(-4, -3); ctx.fill(); ctx.fillStyle = '#222'; ctx.fillRect(-4, -9, 6, 2); }
-    else { ctx.strokeStyle = v.kind === 'rino' ? '#e0e0e0' : v.color; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-6, -3.5); ctx.lineTo(-1, -9); ctx.lineTo(5, -9); ctx.lineTo(6, -3.5); ctx.moveTo(-1, -9); ctx.lineTo(0, -3.5); ctx.lineTo(-6, -3.5); ctx.stroke(); }
-    ctx.restore();
-  } else {
-    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-0.9, -12, 1.8, 6); ctx.fillRect(-0.9, 2, 1.8, 6);
-    ctx.fillStyle = v.kind === 'moto' ? v.color : '#888'; ctx.fillRect(-1.6, -7, 3.2, 10);
-  }
-  // rider
+  const color = v.kind === 'rino' ? (v.teamBike || '#e8e8e8') : v.color;
+  if (horiz) { ctx.save(); if (d === DIR.W) ctx.scale(-1, 1); drawBikeSide(ctx, v.kind === 'moto' ? 'moto' : 'bici', color, t); ctx.restore(); }
+  else drawBikeTop(ctx, v.kind === 'moto' ? 'moto' : 'bici', color);
   if (v.riderLook) {
     const dir = d === DIR.N ? 1 : d === DIR.S ? 0 : d === DIR.W ? 2 : 3;
-    const pedal = v.kind === 'moto' ? 'sit' : Math.floor(t * 8) % 4;
+    const pedal = v.kind === 'moto' ? 'sit' : 'ride' + (Math.floor(t * 8) % 2);
     const img = getFrame(v.riderLook, dir, pedal);
-    ctx.drawImage(img, -CHAR_W / 2, -44 - 6, CHAR_W, CHAR_H);
+    ctx.drawImage(img, -CHAR_W / 2, -44 - (horiz ? 5 : 3), CHAR_W, CHAR_H);
   }
 }
 
@@ -419,8 +513,7 @@ export class RoadTruck extends Entity {
   }
   draw(ctx) {
     ctx.save(); ctx.translate(this.x, this.y + 4);
-    if (this.dir === DIR.E || this.dir === DIR.W) drawCarSide(ctx, this.color, 'pickup', this.dir === DIR.E, null);
-    else drawCarTop(ctx, this.color, this.dir === DIR.N, false, 'pickup');
+    drawCar(ctx, { model: 'tacoma', color: this.color }, this.dir === DIR.E ? 'E' : this.dir === DIR.W ? 'W' : this.dir === DIR.N ? 'N' : 'S');
     ctx.restore();
   }
 }

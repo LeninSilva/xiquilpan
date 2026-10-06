@@ -4,6 +4,7 @@ import { G, ROADS } from './world.js';
 import { ChunkCache, CHUNK, isPothole, potholeGeom } from './render/ground.js';
 import { SPRITES } from './render/landmarks.js';
 import './render/jiquilpan.js';
+import './render/props.js';
 import { setPeopleScale } from './render/people.js';
 
 export class Renderer {
@@ -83,7 +84,8 @@ export class Renderer {
     const S = this.S;
     if (this.chunks.scale !== this.CS || this.chunks.map !== map || this.chunks.version !== map.version) this.chunks.reset(map, this.CS);
     const vw = this.viewW, vh = this.viewH;
-    const x0 = cam.x - vw / 2, y0 = cam.y - vh / 2;
+    const sh = game.shake || 0;
+    const x0 = cam.x - vw / 2 + (sh ? (Math.random() - 0.5) * sh : 0), y0 = cam.y - vh / 2 + (sh ? (Math.random() - 0.5) * sh : 0);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = map.interior ? '#14151a' : '#6f9a45';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -114,13 +116,14 @@ export class Renderer {
 
     // y-sorted drawables
     const list = map.spritesInView(x0, y0, x0 + vw, y0 + vh);
-    const items = [];
+    const items = [], overlays = [];
     const fires = this.firesOn(game);
     for (const s of list) {
       if (s.hidden) continue;
       if (s.nightOnly && !fires) continue;
       if (s.acts && !s.acts.includes(game.state.act)) continue;
       if (s.bloomOnly && !game.env.bloom) continue;
+      if (s.overlay) { overlays.push(s); continue; }
       items.push({ y: s.y + (s.sortOffset || 0), s });
     }
     for (const e of game.entities) {
@@ -147,6 +150,13 @@ export class Renderer {
       } else it.e.draw(ctx, game);
     }
 
+    // roofs over walkways (portales): drawn above everyone, see-through while you are underneath
+    for (const s of overlays) {
+      const img = this.spriteImage(s), p = game.player, [rx, ry, rw, rh] = s.overlay;
+      const under = p && p.map === map && p.x > rx * TILE - 6 && p.x < (rx + rw) * TILE + 6 && p.y > ry * TILE - 4 && p.y < (ry + rh) * TILE + 30;
+      s._a = lerp(s._a ?? 1, under ? 0.3 : 1, 0.15);
+      ctx.globalAlpha = s._a; ctx.drawImage(img, s.x - img.w / 2, s.y - img.up, img.w, img.up + img.down); ctx.globalAlpha = 1;
+    }
     // ghost of the player on top, so you never lose them behind the kiosco or a church tower
     if (game.player && game.player.map === map && !game.player.hidden) {
       ctx.save(); ctx.globalAlpha = 0.28; game.player.draw(ctx, game); ctx.restore();

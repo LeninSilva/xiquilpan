@@ -7,7 +7,7 @@ import { buildInterior } from './data/interiors.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
 import { Clock, Environment } from './time.js';
-import { Person } from './entities.js';
+import { Person, COMBI_ROUTES } from './entities.js';
 import { makeLook } from './render/people.js';
 import { NPCManager } from './npcs.js';
 import { Dialogue } from './dialogue.js';
@@ -20,6 +20,8 @@ import { ITEMS, SHOPS } from './data/items.js';
 import { SPRITES } from './render/landmarks.js';
 import { applyProperties, buildMyHouse, newDay, lotInteract, obraInteract, bizSignInteract, wardrobeInteract, wearOutfit, applyOutfit, relOf, CLOTHES, buyBusiness } from './life.js';
 import { playLoteria, playTortillas } from './minigames.js';
+import { Accidents, placeCar, saveCar, enterCar, exitCar, carMenu } from './driving.js';
+import { dogInteract, mezquiteScene } from './dogquest.js';
 
 const SAVE_KEY = 'xiq_save', SETTINGS_KEY = 'xiq_settings';
 
@@ -29,7 +31,7 @@ const INFO = {
   fuente: 'La fuente del Jardín Zaragoza. Los niños le avientan monedas y piden deseos; los novios se sientan en su orilla los viernes.',
   obelisco: 'El obelisco a Rioseco y Ornelas. Por su forma, aquí le dicen “el monumento de la botella”.',
   juarez: 'Monumento a Benito Juárez. La escultura, sobre su base piramidal, se instaló en 1939 en el Parque Juárez y en 1968 se trasladó al mirador. Desde aquí se ve todo Jiquilpan y, al fondo, el Cerro de San Francisco.',
-  cardenas: 'Monumento al General Lázaro Cárdenas del Río (1895–1970), nacido en Jiquilpan. Presidente de México de 1934 a 1940; el 18 de marzo de 1938 decretó la expropiación petrolera. Por eso el estadio se llama así.',
+  cardenas: 'Monumento al General Lázaro Cárdenas del Río (1895–1970), nacido en Jiquilpan. Presidente de México de 1934 a 1940; el 18 de marzo de 1938 decretó la expropiación petrolera. Por eso el estadio se llama así. A sus pies arde una llama que nunca se apaga: la gente dice que mientras arda, el pueblo no olvida.',
   pescados: 'La Fuente de los Pescados, en el camellón de Av. Las Palmas. De noche, junto a ella, se ponen unos tacos que valen la pena.',
   estadio: 'La portada del Estadio 18 de Marzo, con su águila de bronce en lo alto. El nombre recuerda el 18 de marzo de 1938, el día de la expropiación petrolera. A los lados, dos tablas con las palabras del General Cárdenas: “Los recursos naturales del país deben servir para su propia prosperidad. Entregarlos a intereses extraños es traicionar la patria.”',
   murales: 'Los murales de José Clemente Orozco en la Biblioteca Pública Gabino Ortiz, fundada en 1940 en un antiguo templo. Figuras enormes, fuego, pueblo. No caben en una pantalla: hay que torcer el cuello para verlos.',
@@ -54,6 +56,8 @@ const INFO = {
   subida: 'La “subida mágica”. Dicen que si dejas el carro en neutral aquí, se va solito para arriba. Los que saben dicen que es ilusión óptica. Los que han visto las luces dicen que no.',
   trash: 'Bolsas de basura, latas y una silla rota. Por eso le dicen “El Santo Mugrero”.',
   palenque: 'El palenque del estadio. En temporada (de noviembre a Reyes) hay peleas de gallos y bailes hasta las cuatro de la mañana.',
+  lucia_paz: 'La escultura de Lucía de la Paz, en el centro del jardín que lleva su nombre. A su alrededor, los andadores en cruz y en círculo; en la orilla, la vuelta que la gente da para hacer ejercicio. Los más viejos cuentan, en voz baja, que este jardín fue el panteón del pueblo, y que por eso los árboles crecen tan grandes.',
+  kiosco_info: 'El kiosco de la plaza: base blanca con pilastras rojas y óvalos, columnas de hierro con su encaje y techo gris con su faldón de ondas. Aquí tocan la banda los domingos.',
   altar_iglesia: 'El altar mayor. Huele a cera y a flores. Un señor reza en voz baja en la última banca.',
 };
 
@@ -80,6 +84,8 @@ export class Game {
     this.lastWeekday = -1;
     this.frozen = false;
     this.itemEntities = [];
+    this.accidents = new Accidents(this);
+    this.shake = 0;
     this.newState();
   }
 
@@ -101,6 +107,7 @@ export class Game {
     if (!this.playing) return;
     try {
       const p = this.player;
+      saveCar(this);
       const data = { v: 1, state: this.state, flags: this.flags, stats: this.stats, status: this.status, clock: this.clock.toJSON(),
         player: { map: this.map.id, x: p.x, y: p.y, dir: p.dir, hat: p.look.hat, capColor: p.look.capColor }, returnStack: this.returnStack, lastOutdoor: this.lastOutdoor };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -159,6 +166,7 @@ export class Game {
     this.ui.showHUD(true);
     this.returnStack = [{ map: 'town', x: 225.5 * TILE, y: 157.2 * TILE, dir: 0 }];
     this.lastOutdoor = 'town';
+    this.driving = null; this.player.hidden = false; placeCar(this);
     this.changeMap('casa_abuela', 8.5, 9.6, 1, { instant: true });
     this.npcs.timer = 0; this.npcs.update(0.016);
     if (!skipIntro) setTimeout(() => this.cutscene('intro').then(() => this.controlsHint()), 600);
@@ -177,6 +185,7 @@ export class Game {
       if (this.flags.mancha) this.player.look.stain = true;
       applyOutfit(this);
       if (this.maps.town) applyProperties(this, this.maps.town);
+      this.driving = null; this.player.hidden = false; placeCar(this);
       this.changeMap(d.player.map || 'town', d.player.x / TILE, d.player.y / TILE, d.player.dir || 0, { instant: true });
       this.ui.toast('Bienvenido de vuelta a Jiquilpan', 'good');
     } catch (e) {
@@ -193,7 +202,7 @@ export class Game {
   getMap(id, lazy) {
     if (this.maps[id]) return this.maps[id];
     let m = null;
-    if (id === 'town') { m = buildTown(); applyWeekday(m, this.clock.weekday); this.lastWeekday = this.clock.weekday; this.maps.town = m; applyProperties(this, m); }
+    if (id === 'town') { m = buildTown(); applyWeekday(m, this.clock.weekday); this.lastWeekday = this.clock.weekday; this.maps.town = m; applyProperties(this, m); placeCar(this); }
     else if (id.startsWith('mi_casa_')) m = buildMyHouse(this, id);
     else if (id === 'cerro') m = buildCerro();
     else if (id === 'totolan') m = buildTotolan();
@@ -528,6 +537,31 @@ export class Game {
     });
   }
 
+  // ---- combis: $10 to any stop of the route ------------------------------------------
+  async combiRide(s) {
+    const h = this.clock.hour;
+    const routes = this.map.combiRoutes || {}, stops = routes[s.route] || [];
+    const R = COMBI_ROUTES[s.route];
+    await this.dialog.scene(async d => {
+      if (h < 6 || h >= 22) { await d.narrate(`Parada de la ${R.name}. Las combis pasan de seis de la mañana a diez de la noche.`); return; }
+      await d.narrate(`Parada de la ${R.name} (${R.text}). Al rato llega la combi; el chofer trae la cumbia a todo volumen. Pasaje: $10.`);
+      const opts = stops.filter(st => st[2] !== s.stop).map(st => ({ text: `Bajarme en: ${st[2]}`, value: st }));
+      opts.push({ text: 'Mejor me voy caminando', value: null });
+      const c = await d.choose(opts);
+      if (!c.value) return;
+      if (this.state.money < 10) { await d.narrate('No traes ni para el pasaje.'); return; }
+      this.state.money -= 10; this.sfx('coin'); d.end();
+      const [x, y] = c.value;
+      this.transition(() => {
+        this.clock.minutes += 8;
+        let tx = x + 0.5, ty = y + 0.5;
+        for (let r = 0; r < 4; r++) { let ok = false; for (let dy = -r; dy <= r && !ok; dy++) for (let dx = -r; dx <= r; dx++) { const g = this.map.get(x + dx, y + dy); if ((g === G.SIDEWALK || g === G.CANTERA || g === G.PLAZA) && !this.map.isSolidTile(x + dx, y + dy)) { tx = x + dx + 0.5; ty = y + dy + 0.6; ok = true; break; } } if (ok) break; }
+        this.changeMap('town', tx, ty, 0);
+        this.ui.toast(`Te bajas en ${c.value[2]}. “¡Gracias, joven!”`, '');
+      });
+    });
+  }
+
   // ---- world items -----------------------------------------------------------------
   syncItems() {
     for (const e of this.itemEntities) { const i = this.entities.indexOf(e); if (i >= 0) this.entities.splice(i, 1); }
@@ -556,6 +590,7 @@ export class Game {
     const [fx, fy] = [[0, 1], [0, -1], [-1, 0], [1, 0]][p.dir];
     const px = p.x + fx * 10, py = p.y + fy * 8;
     let best = null, bd = 26;
+    if (this.car && this.car.map === m && dist(px, py, this.car.x, this.car.y - 4) < 30) return { type: 'car', e: this.car };
     for (const e of this.entities) {
       if (e === p || e.map !== m || e.hidden) continue;
       if (!(e.def || e.item || e.owner)) continue;
@@ -583,12 +618,14 @@ export class Game {
   }
   promptFor(it) {
     if (!it) return null;
+    if (it.type === 'car') return it.e.broken ? 'Ver la troca (descompuesta)' : 'Manejar la troca del abuelo';
+    if (it.type === 'npc' && it.e.dog) return it.e.companion ? `Acariciar a ${it.e.name}` : 'Acercarte al perro';
     if (it.type === 'npc') return it.e.horse ? 'Acariciar a Lucero' : `Hablar con ${it.e.def?.short || it.e.def?.name || it.e.name}`;
     if (it.type === 'item') return `Recoger: ${ITEMS[it.e.item]?.name || it.e.item}`;
     if (it.type === 'door') return `Entrar: ${it.door.label}`;
     if (it.type === 'sprite') {
       const s = it.s;
-      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
+      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', parada: 'Esperar la combi', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
     }
   }
   async interact(it) {
@@ -598,7 +635,9 @@ export class Game {
       else this.ui.toast('🐎 Lucero resopla y te empuja con la cabeza: quiere ir a casa.', '');
       return;
     }
-    if (it.type === 'npc') { this.player.pose = null; await this.dialog.converse(it.e); return; }
+    if (it.type === 'car') { if (it.e.damage > 5 || it.e.broken) return carMenu(this); return enterCar(this); }
+    if (it.type === 'npc' && it.e.dog) return dogInteract(this, it.e);
+    if (it.type === 'npc') { if (it.e.down) { this.ui.toast(`${it.e.def?.short || it.e.def?.name || 'La persona'} está tirado en el suelo. Ya llamaron a la Cruz Roja.`, 'bad'); return; } this.player.pose = null; await this.dialog.converse(it.e); return; }
     if (it.type === 'item') {
       const e = it.e;
       const i = this.entities.indexOf(e); if (i >= 0) this.entities.splice(i, 1);
@@ -612,6 +651,8 @@ export class Game {
     const s = it.s;
     switch (s.interact) {
       case 'sitio': return this.taxi(s.sitio);
+      case 'parada': return this.combiRide(s);
+      case 'mezquite': return mezquiteScene(this);
       case 'vendor': return this.openShop(s.vendor === 'micheladas_bosque' ? 'micheladas' : s.vendor);
       case 'tianguis': return this.openShop('tianguis');
       case 'shopcounter': return this.openShop(s.shop || 'tiendita');
@@ -672,6 +713,13 @@ export class Game {
   update(dt) {
     const p = this.player, inp = this.input;
     if (!this.frozen) {
+      // shared lists for steering: everyone on foot, and the things walkers must not walk through
+      this.people = []; this.hardBlockers = [];
+      for (const e of this.entities) {
+        if (e.map !== this.map || e.hidden) continue;
+        if (e instanceof Person) { this.people.push(e); if (e === this.player) this.hardBlockers.push(e); }
+        else if (e.solid) this.hardBlockers.push(e);
+      }
       this.npcs.update(dt);
       for (const e of this.effects) e.update?.(dt, this);
     }
@@ -689,12 +737,19 @@ export class Game {
     // item sync every few seconds
     this.itemTimer = (this.itemTimer || 0) - dt;
     if (this.itemTimer <= 0) { this.itemTimer = 3; this.syncItems(); }
+    // the truck, accidents and their aftermath
+    if (this.car && this.car.map === this.map && !this.frozen) this.car.update(dt, this);
+    if (!this.frozen) this.accidents.update(dt);
+    if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 10);
     // player movement
     p.updateAnim(dt);
     p.moving = false;
     if (this.doorCooldown > 0) this.doorCooldown -= dt;
     const canMove = inp.enabled && !this.dialog.active && !this.ui.menuOpen && !this.ui.shopOpenFlag && !this.cutsceneActive && !this.transitioning;
-    if (canMove) {
+    if (this.driving) {
+      this.ui.prompt(canMove ? (Math.abs(this.driving.speed) < 18 ? 'Bajarte de la troca' : null) : null);
+      if (canMove && inp.action()) exitCar(this);
+    } else if (canMove) {
       let { x, y } = inp.axis();
       if (this.status.buzz > 45) { const w = Math.sin(this.clock.real * 2.3) * (this.status.buzz - 45) / 110; const nx = x - y * w, ny = y + x * w; x = nx; y = ny; }
       if (x || y) {
@@ -728,7 +783,7 @@ export class Game {
     // hand glow when talking sincerely (the añil stain)
     this.dynamicGlow = this.handGlow > 0;
     // camera
-    const target = { x: p.x, y: p.y - 10 };
+    const target = this.driving ? { x: this.driving.x + Math.cos(this.driving.angle) * this.driving.speed * 0.35, y: this.driving.y - 10 + Math.sin(this.driving.angle) * this.driving.speed * 0.3 } : { x: p.x, y: p.y - 10 };
     if (!this.camLock) {
       const k = Math.min(1, dt * 6);
       this.camera.x = lerp(this.camera.x, target.x, k); this.camera.y = lerp(this.camera.y, target.y, k);

@@ -1,7 +1,7 @@
 // DOM user interface: HUD, dialogue, menus, map, shop, toasts.
 import { TILE, clamp, fmtTime, makeCanvas, DAYS, shade } from './util.js';
 import { G } from './world.js';
-import { drawPerson, PEOPLE_SCALE } from './render/people.js';
+import { drawPortrait as paintPortrait } from './render/people.js';
 import { ITEMS, SHOPS } from './data/items.js';
 import { HILOS_GOAL } from './quests.js';
 import { drawGrayPortrait } from './cutscene.js';
@@ -133,11 +133,7 @@ export class UI {
     const ctx = c.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, S, S);
     if (look.alien) { drawGrayPortrait(ctx, S, performance.now() / 1000); return; }
-    const L = { ...look, body: 1 / PEOPLE_SCALE };
-    const k = S / 30;
-    ctx.save(); ctx.scale(k, k); ctx.translate(-1, -8 - (look.hat === 'sombrero' || look.hat === 'texana' ? -2 : 0));
-    drawPerson(ctx, L, 0, talk ? 'talk' : 'idle');
-    ctx.restore();
+    paintPortrait(ctx, look, S, talk ? 'talk' : 'idle');
     if (look.glow > 0.2) { ctx.fillStyle = `rgba(120,110,255,${0.12 * look.glow})`; ctx.fillRect(0, 0, S, S); }
   }
   async dialogText(text, opts = {}) {
@@ -296,8 +292,7 @@ export class UI {
     t.innerHTML = peopleHTML(g, escapeHTML);
     t.querySelectorAll('canvas[data-look]').forEach(c => {
       const def = g.npcs.defs.find(d => d.id === c.dataset.look); if (!def) return;
-      const L = { ...g.npcs.lookFor(def), body: 1 / PEOPLE_SCALE };
-      const ctx = c.getContext('2d'); ctx.scale(96 / 30, 96 / 30); ctx.translate(-1, -8); drawPerson(ctx, L, 0, 'idle');
+      paintPortrait(c.getContext('2d'), g.npcs.lookFor(def), c.width, 'idle');
     });
   }
   renderSelf() {
@@ -321,8 +316,8 @@ export class UI {
       <div class="card"><h4>Estado</h4><p>${[g.status.enchilado > 0 ? '🌶️ Enchilado' : '', g.status.buzz > 30 ? '🍺 Alegre' : '', g.state.debt > 0 ? `💸 Debes $${g.state.debt} a Don Refugio` : '', '🧶 Hilos: ' + g.state.hilos].filter(Boolean).join(' · ')}</p>
       <p>Conversaciones: ${s.talks || 0} · Días en el pueblo: ${g.clock.dayIndex + 1}</p></div>`;
     t.querySelectorAll('[data-wear]').forEach(b => b.addEventListener('click', () => { wearOutfit(g, b.dataset.wear); this.renderSelf(); }));
-    const c = $('selfPortrait'); const ctx = c.getContext('2d'); const L = { ...g.player.look, body: 1 / PEOPLE_SCALE };
-    ctx.scale(140 / 32, 140 / 32); ctx.translate(0, -3); drawPerson(ctx, L, 0, 'idle');
+    const c = $('selfPortrait'); const ctx = c.getContext('2d');
+    paintPortrait(ctx, g.player.look, c.width, 'idle');
   }
   renderSettings() {
     const g = this.game, t = $('tab-settings'), st = g.settings;

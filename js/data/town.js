@@ -14,6 +14,7 @@ import { GameMap, G, ROADS } from '../world.js';
 import { fbm, hash2, TILE } from '../util.js';
 import { hStreet, vStreet, laneLoop, sprite, building, block, tree, door, area, light, ensureLanes, diagonalRoad, river, distToPolyline } from './build.js';
 import { blockLots } from '../render/structures.js';
+import { randomModel } from '../entities.js';
 
 export const TOWN_W = 300, TOWN_H = 334;
 export const PALMAS = [[148, 12], [118, 22], [90, 34], [66, 43]];
@@ -53,24 +54,28 @@ export function buildTown() {
   const HILL = (x, y) => x < 58 && y > 44 && y < 108; // La Trasquila: no grid on the hill
   const cob = (name) => /Rioseco|Prieto|Caltzontzin|Ocampo|Allende|Constitución|Nicolás/.test(name) ? G.COBBLE : G.ASPHALT;
   // Centro streets are one-way with a parking lane on one side (like the real town: narrow, but cars park)
-  const ONEWAY = { 40: ['E', 1], 60: ['E', 1], 80: ['W', 0], 124: ['E', 1], 140: ['W', 0], 74: ['N', 0], 94: ['N', 0], 110: ['S', 1], 186: ['N', 0], 210: ['S', 1] };
-  const ow = (k) => ONEWAY[k] ? { oneWay: ONEWAY[k][0], park: ONEWAY[k][1] } : {};
+  // (horizontal and vertical streets are keyed separately: y=110 is Diego José Abad, x=110 is Hidalgo)
+  const ONEWAY_H = { 40: ['E', 1], 60: ['E', 1], 80: ['W', 0], 110: ['W', 0], 124: ['E', 1], 140: ['W', 0] };
+  const ONEWAY_V = { 74: ['N', 0], 94: ['N', 0], 110: ['S', 1], 186: ['N', 0], 210: ['S', 1] };
+  const owH = (k) => ONEWAY_H[k] ? { oneWay: ONEWAY_H[k][0], park: ONEWAY_H[k][1] } : {};
+  const owV = (k) => ONEWAY_V[k] ? { oneWay: ONEWAY_V[k][0], park: ONEWAY_V[k][1] } : {};
   for (const [y, name] of HY) {
     const segs = [[28, 262]];
     if (y === 60 || y === 80) segs[0][0] = 58;
     if (y === 140) segs.splice(0, 1, [28, 190], [210, 262]); // San Francisco's atrium interrupts 5 de Mayo
-    for (const [a, b] of segs) hStreet(m, name, a, b, y, 4, { surface: cob(name), ...ow(y) });
+    for (const [a, b] of segs) hStreet(m, name, a, b, y, 4, { surface: cob(name), ...owH(y) });
   }
   for (const [x, name] of VX) {
     const y1 = x >= 210 ? 172 : 228;
     if (x < 58) { vStreet(m, name, x, 18, 44, 4, { surface: G.COBBLE }); vStreet(m, name, x, 106, y1, 4, { surface: G.COBBLE }); }
-    else vStreet(m, name, x, 18, y1, 4, { surface: cob(name), ...ow(x) });
+    else vStreet(m, name, x, 18, y1, 4, { surface: cob(name), ...owV(x) });
   }
   // the avenue: formal cantera sidewalks, asphalt; north to Sahuayo, south to the bosques
   vStreet(m, 'Av. Presidente Lázaro Cárdenas Norte', 150, 0, 110, 6, { surface: G.ASPHALT, walkSurface: G.CANTERA });
   vStreet(m, 'Av. Presidente Lázaro Cárdenas Sur', 150, 110, 244, 6, { surface: G.ASPHALT, walkSurface: G.CANTERA });
   vStreet(m, 'Camino del Bosque', 150, 244, m.h, 4, { surface: G.DIRTROAD, sidewalk: false });
-  hStreet(m, 'Camino al Cerro de San Francisco', 0, 28, 18, 4, { surface: G.DIRTROAD, sidewalk: false });
+  // the way to the Cerro is a stone footpath: no cars go up there
+  m.fill(0, 19, 28, 2, G.ROCKROAD); m.markStreet(0, 18, 28, 4, 'Camino empedrado al Cerro de San Francisco');
   vStreet(m, 'Av. Circunvalación', 258, 18, 179, 6, { surface: G.ASPHALT });
   // south side streets
   hStreet(m, 'Calle Felicitas del Río', 28, 150, 172, 4, { surface: G.ASPHALT });
@@ -137,14 +142,14 @@ export function buildTown() {
   // gardens with iron fences, boxy ficus with whitewashed trunks, jacarandas, iron benches
   const gardens = [[115, 95, 8, 4], [128, 95, 9, 4], [115, 104, 7, 4], [133, 104, 4, 4]];
   for (const [x, y, w, h] of gardens) { m.fill(x, y, w, h, G.GARDEN); m.setSolid(x, y, w, h); m.structures.push({ kind: 'ironFence', x, y, w, h, layer: 3 }); }
-  for (const [x, y, k] of [[117, 97, 'ficus'], [121, 97.5, 'ficus'], [130, 97, 'ficus'], [134.5, 97.5, 'ficus'], [117, 106, 'ficus'], [120.5, 106.5, 'jacaranda'], [135, 106.5, 'ficus'], [114.6, 101, 'jacaranda'], [137.4, 101, 'jacaranda']]) tree(m, x, y, k, { size: k === 'ficus' ? 1.05 : 1.1, collide: [-2, -2, 4, 3] });
+  for (const [x, y, k] of [[117, 97, 'ficus'], [121, 97.5, 'ficus'], [130, 97, 'ficus'], [134.5, 97.5, 'ficus'], [117, 106, 'ficus'], [120.5, 106.5, 'flamboyan'], [135, 106.5, 'ficus'], [114.6, 101, 'flamboyan'], [137.4, 101, 'jacaranda']]) tree(m, x, y, k, { size: k === 'ficus' ? 1.05 : 1.15, collide: [-2, -2, 4, 3] });
   sprite(m, 'kiosco', 126, 104.2, { scale: 1.5, w: 90, up: 100, interact: 'kiosco', priority: true });
   m.setSolid(123, 100, 6, 4);
   light(m, 126, 99, 110, '#ffe2a8');
   sprite(m, 'aguadora', 131.8, 109.3, { scale: 1.35, w: 76, up: 84, collide: [-26, -12, 52, 11], interact: 'aguadora' });
   light(m, 131.8, 107.9, 60, '#ff9a5a');
-  for (const [bx, by] of [[118, 94.2], [132, 94.2], [123.2, 99.5], [129.8, 99.5], [118, 103.2], [123.5, 108.8], [133.5, 102.6]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
-  for (const [lx, ly] of [[114.5, 93.8], [137.5, 93.8], [114.5, 109.4], [137.5, 109.4], [122, 101], [130, 101]]) { sprite(m, 'lamp', lx, ly, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 1, 70); }
+  for (const [bx, by] of [[118, 94.2], [132, 94.2], [123.2, 99.5], [129.8, 99.5], [118, 103.2], [123.5, 108.8], [133.5, 102.6]]) sprite(m, 'ironBench', bx, by, { w: 24, up: 18, collide: [-9, -3, 18, 3], seat: true });
+  for (const [lx, ly] of [[114.5, 93.8], [137.5, 93.8], [114.5, 109.4], [137.5, 109.4], [122, 101], [130, 101]]) { sprite(m, 'farolDoble', lx, ly, { w: 22, up: 54, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 2, 80, '#fff1cf'); }
   sprite(m, 'plaque', 134.9, 110.1, { who: 'canessi', w: 12, up: 12, interact: 'plaque_canessi' });
   // Parque Zaragoza: the general's statue and the two greyhounds facing east, toward the Palacio
   m.fill(138, 84, 12, 26, G.GARDEN); m.fill(141, 92, 6, 10, G.PLAZA); m.fill(146, 93, 4, 8, G.PLAZA);
@@ -152,13 +157,16 @@ export function buildTown() {
   sprite(m, 'galgo', 148.4, 94.6, { scale: 1.15, w: 30, up: 24, collide: [-8, -5, 16, 5], interact: 'galgos' });
   sprite(m, 'galgo', 148.4, 100.4, { scale: 1.15, w: 30, up: 24, collide: [-8, -5, 16, 5], interact: 'galgos' });
   for (const [x, y] of [[139.5, 86], [148, 86], [139.5, 108], [148, 108], [143, 88]]) tree(m, x, y, x < 143 ? 'jacaranda' : 'ficus', { size: 1 });
-  m.setSolid(138, 84, 12, 8); m.setSolid(138, 102, 12, 8); m.setSolid(138, 92, 3, 10);
   area(m, 'Parque Ignacio Zaragoza', 138, 84, 12, 26, 'park');
   // portales south of Diego José Abad: a walkable arcade facing the plaza
   m.fill(114, 114, 36, 2, G.FLOOR_STONE);
   block(m, 114, 116, 36, 8, { facadeH: 34, allHouses: false,
     facades: [{ x: 141, w: 9, exact: true, kind: 'shop', sign: 'TORTILLERÍA MARÍN', signBg: '#f5e6c8', signFg: '#7a1f1a', fh: 34 }] });
-  for (let x = 114.5; x < 150; x += 2) sprite(m, 'portalCol', x, 114.15, { blue: x > 139.5, span: x + 2 < 150 ? 32 : 4, w: 72, up: 50, collide: [-1.4, -2, 2.8, 2] });
+  // Seen from above (the camera looks north), a north-facing arcade shows its tiled roof, the cantera
+  // cornice and the column heads along the edge; it fades out while you walk underneath.
+  sprite(m, 'portalRoof', 132, 116, { fw: 36 * TILE, w: 36 * TILE + 8, up: 44, overlay: [114, 113.7, 36, 2.3], blueFrom: 26 * TILE,
+    signs: [[4, 'LA COCHERA', '#2b2420', '#e9d7b0'], [10, 'NIEVES', '#f5e6ef', '#b2386b'], [17, 'HOTEL PLAZA TARASCA', '#3f3a33', '#f1e2b8'], [30, 'PORTAL AZUL', '#2e6fb3', '#ffffff']] });
+  for (let x = 114.5; x < 150; x += 2) sprite(m, 'label', x, 114.15, { w: 4, up: 4, collide: [-1.4, -2, 2.8, 2] });
   area(m, 'Portales de la Plaza', 114, 114, 26, 2, 'portal');
   area(m, 'Portal Azul', 140, 114, 10, 2, 'portal');
   door(m, 118, 116, 'la_cochera', 'La Cochera (café)', { fromSouth: true, hours: [8, 22] });
@@ -166,10 +174,6 @@ export function buildTown() {
   door(m, 131, 116, 'hotel_tarasca', 'Hotel Plaza Tarasca · Portal Hidalgo 12', { fromSouth: true });
   door(m, 144, 116, 'portal_azul', 'Portal Azul — cenaduría', { fromSouth: true, hours: [9, 23] });
   door(m, 145, 123, 'tortilleria_marin', 'Tortillería Marín', { hours: [6, 15] });
-  sprite(m, 'hangSign', 118, 115.9, { text: 'LA COCHERA', bg: '#2b2420', fg: '#e9d7b0', w: 30, up: 30 });
-  sprite(m, 'hangSign', 124, 115.9, { text: 'NIEVES', bg: '#f5e6ef', fg: '#b2386b', w: 30, up: 30 });
-  sprite(m, 'hangSign', 131, 115.9, { text: 'HOTEL TARASCA', bg: '#3f3a33', fg: '#f1e2b8', w: 30, up: 30 });
-  sprite(m, 'hangSign', 144, 115.9, { text: 'PORTAL AZUL', bg: '#2e6fb3', fg: '#fff', w: 30, up: 30 });
 
   // --- east of the avenue: Palacio Municipal, busto de Diego José Abad, mercado, panadería ----------
   building(m, 'palacio', 156, 84, 30, 21, { tall: 90 });
@@ -188,7 +192,7 @@ export function buildTown() {
   area(m, 'Panadería Mendoza', 190, 64, 20, 16, 'building');
   sprite(m, 'sitio', 189.5, 99, { scale: 1.2, w: 20, up: 24, collide: [-7, -3, 14, 3], interact: 'sitio', sitio: 'Fajardo' });
   area(m, 'Sitio de taxis Fajardo', 186, 92, 4, 12, 'taxi');
-  for (const ty of [93.2, 95.6, 103.2]) sprite(m, 'parkedCarV', 187.5, ty, { color: '#f4f4f0', taxi: true, w: 20, up: 34, collide: [-6, -12, 12, 22], notDays: [6] });
+  for (const ty of [93.2, 95.6, 103.2]) sprite(m, 'parkedCarV', 187.5, ty, { color: '#f4f4f0', taxi: true, model: 'tsuru', w: 26, up: 40, collide: [-6, -12, 12, 22], notDays: [6] });
 
   // --- south of the plaza along the avenue ----------------------------------------------------------
   block(m, 114, 128, 16, 12, { facades: [
@@ -203,7 +207,7 @@ export function buildTown() {
   // Sitio de taxis on Calle Abasolo, between the avenue and Fajardo
   sprite(m, 'sitio', 163.5, 127.95, { scale: 1.2, w: 20, up: 24, collide: [-7, -3, 14, 3], interact: 'sitio', sitio: 'Abasolo' });
   area(m, 'Sitio de taxis Abasolo', 158, 124, 16, 4, 'taxi');
-  for (const tx of [167.5, 170.5, 173.5]) sprite(m, 'parkedCar', tx, 126.95, { color: '#f4f4f0', taxi: '#1b7a3e', w: 36, up: 24, collide: [-14, -6, 28, 6] });
+  for (const tx of [167.5, 170.5, 173.5]) sprite(m, 'parkedCar', tx, 126.95, { color: '#f4f4f0', taxi: true, model: 'tsuru', w: 44, up: 30, collide: [-14, -6, 28, 6] });
   building(m, 'escuelaTipo', 114, 144, 36, 12, { tall: 60 });
   door(m, 132, 155, 'escuela_tipo', 'Escuela “La Tipo”', { hours: [7, 14] });
   area(m, 'Escuela “La Tipo”', 114, 144, 36, 12, 'building');
@@ -258,12 +262,26 @@ export function buildTown() {
   sprite(m, 'mesas', 84.5, 60.95, { color: '#d4302b', w: 44, up: 40, collide: [-18, -4, 36, 4] });
 
   // --- Jardín de la Paz (north, between the avenue and Fajardo) and the Cremería ---------------------------
-  m.fill(156, 44, 30, 16, G.PLAZA);
-  for (const [x, y, w, h] of [[158, 46, 11, 5], [173, 46, 11, 5], [158, 53, 11, 5], [173, 53, 11, 5]]) { m.fill(x, y, w, h, G.GARDEN); m.setSolid(x, y, w, h); m.structures.push({ kind: 'ironFence', x, y, w, h, layer: 3 }); }
-  for (const [x, y] of [[161, 48.6], [166, 49], [176, 48.6], [181, 49], [161, 55.6], [166, 56], [176, 55.6], [181, 56]]) tree(m, x, y, 'jacaranda', { size: 1, collide: [-2, -2, 4, 3] });
-  for (const [bx, by] of [[171, 45.6], [171, 59.2], [157.5, 52.4], [184.5, 52.4]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
-  sprite(m, 'fuenteChica', 171, 52.9, { w: 30, up: 30, collide: [-8, -4, 16, 5] });
-  for (const [lx, ly] of [[157, 45], [185, 45], [157, 59.6], [185, 59.6]]) { sprite(m, 'lamp', lx, ly, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 1, 70); }
+  // Once the town's old cemetery. Open lawns you can cross, a perimeter walk where people do their laps,
+  // two diagonal walks crossing in an X, a ring path and, at the centre, the sculpture of Lucía de la Paz.
+  m.fill(156, 44, 30, 16, G.GARDEN);
+  const PZ = { x: 156, y: 44, w: 30, h: 16, cx: 171, cy: 52 };
+  const pazPaths = { kind: 'pazPaths', ...PZ, layer: 1, margin: 0 };
+  m.structures.push(pazPaths);
+  m.walkway = m.walkway || new Uint8Array(m.w * m.h);
+  for (let y = PZ.y; y < PZ.y + PZ.h; y++) for (let x = PZ.x; x < PZ.x + PZ.w; x++) {
+    const px = x + 0.5, py = y + 0.5, edge = x === PZ.x || y === PZ.y || x === PZ.x + PZ.w - 1 || y === PZ.y + PZ.h - 1;
+    const d1 = distToPolyline(px, py, [[PZ.x + 1, PZ.y + 1], [PZ.x + PZ.w - 1, PZ.y + PZ.h - 1]]), d2 = distToPolyline(px, py, [[PZ.x + PZ.w - 1, PZ.y + 1], [PZ.x + 1, PZ.y + PZ.h - 1]]);
+    const rr = Math.hypot((px - PZ.cx) / 1, (py - PZ.cy) * 1.25);
+    if (edge || d1 < 0.9 || d2 < 0.9 || Math.abs(rr - 5.6) < 0.7 || rr < 2.8) m.walkway[y * m.w + x] = 1;
+  }
+  sprite(m, 'luciaPaz', PZ.cx, PZ.cy + 0.6, { scale: 1.2, w: 34, up: 62, collide: [-6, -5, 12, 6], interact: 'lucia_paz' });
+  const pazTrees = [[160, 47, 'fresno'], [163.5, 50, 'laurel'], [159.5, 55.5, 'jacaranda'], [164, 57.6, 'fresno'], [182, 47, 'laurel'], [178.5, 49.6, 'jacaranda'], [182.5, 56, 'fresno'], [178, 57.6, 'laurel'],
+    [167, 46.2, 'jacaranda'], [175, 46.2, 'jacaranda'], [168.5, 58.6, 'flamboyan'], [174, 58.6, 'jacaranda']];
+  for (const [x, y, k] of pazTrees) tree(m, x, y, k, { size: 1.15 + hash2(x, y, 3) * 0.2, collide: [-2, -2, 4, 3] });
+  for (const [bx, by] of [[171, 47.2], [171, 57.6], [165.3, 52.6], [176.7, 52.6], [157.2, 50.4], [184.8, 50.4]]) sprite(m, 'ironBench', bx, by, { w: 24, up: 18, collide: [-9, -3, 18, 3], seat: true });
+  for (const [lx, ly] of [[156.6, 44.6], [185.4, 44.6], [156.6, 59.6], [185.4, 59.6], [166, 52], [176, 52]]) { sprite(m, 'farolDoble', lx, ly, { w: 22, up: 54, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 2, 74, '#fff1cf'); }
+  // Tacos Pizarro, on the corner of the jardín that faces Av. Lázaro Cárdenas (only at night: see npcs)
   m.floodZones.push({ x: 156, y: 44, w: 30, h: 16 });
   area(m, 'Jardín de la Paz', 156, 44, 30, 16, 'plaza');
   sprite(m, 'seTraspasa', 184.2, 45.4, { label: 'ELOTES Y ESQUITES', w: 30, up: 30, collide: [-2, -2, 4, 2], interact: 'negocio', biz: 'elotes' });
@@ -315,8 +333,16 @@ export function buildTown() {
   area(m, 'UAER — UNAM', 212, 180, 26, 14, 'building');
   m.fill(212, 194, 26, 8, G.PLAZA); m.fill(214, 196, 5, 4, G.GARDEN); m.fill(231, 196, 5, 4, G.GARDEN);
   sprite(m, 'monCardenas', 225, 199.6, { scale: 1.4, w: 34, up: 70, collide: [-12, -7, 24, 7], interact: 'cardenas' });
+  light(m, 225, 200.2, 46, '#ff9a4a'); // the flame at its base never goes out
   area(m, 'Monumento a Lázaro Cárdenas', 212, 194, 26, 8, 'monument');
   for (const [x, y] of [[214, 203], [236, 203], [216.5, 197], [233.5, 197]]) tree(m, x, y, 'jacaranda', { size: 1 });
+  // the ferretería of Francisco and Tío Luis, across from the Monumento a Lázaro Cárdenas
+  block(m, 239, 184, 15, 13, { facadeH: 34, facades: [{ x: 241, w: 11, exact: true, kind: 'shop', sign: 'FERRETERÍA FRANCISCO', signBg: '#f2c230', signFg: '#1f3f8f', fh: 34 }] });
+  m.fill(238, 197, 20, 4, G.PLAZA); m.fill(238, 201, 20, 1, G.SIDEWALK);
+  door(m, 246, 196, 'tienda_960_FERRETERÍA', 'Ferretería Francisco', { hours: [9, 19] });
+  area(m, 'Ferretería Francisco', 239, 184, 15, 17, 'shop');
+  sprite(m, 'tinacos', 241.6, 198.8, { w: 44, up: 26, collide: [-14, -4, 30, 4] });
+  sprite(m, 'tinacos', 252.6, 199.4, { scale: 0.8, w: 44, up: 26, collide: [-12, -3, 24, 3] });
   // south of the stadium: El Santo Remedio (“el Santo Mugrero”) and Ferretuberías
   m.fill(206, 202, 32, 22, G.GRASS);
   block(m, 186, 228, 24, 15, { facadeH: 32, outskirts: true, facades: [
@@ -497,6 +523,8 @@ export function buildTown() {
   sprite(m, 'signpost', 26.5, 172.6, { text: 'COLIMA · PAREDONES', bg: '#1f5fa8', w: 60, up: 30 });
   sprite(m, 'signpost', 262.5, 17, { text: 'LA LAGUNITA · ABADIANO', bg: '#1f5fa8', w: 64, up: 30 });
   vStreet(m, 'Carretera a Sahuayo', 150, 0, 18, 6, { surface: G.ASPHALT, walkSurface: G.SIDEWALK });
+  vStreet(m, 'Carretera a La Lagunita y Abadiano', 258, 0, 18, 6, { surface: G.ASPHALT });
+  m.exits.push({ x: 258, y: 0, w: 6, h: 1, to: 'closed', label: 'La Lagunita', msg: 'La carretera a La Lagunita y a San Antonio Abadiano. De La Lagunita viene buena parte de tu familia… pero todavía no es momento de ir. Primero, Jiquilpan.' });
   hStreet(m, 'Carretera a Colima (MEX 110)', 0, 28, 172, 4, { surface: G.ASPHALT });
   hStreet(m, 'Carretera a Totolán', 262, 300, 171, 8, { surface: G.ASPHALT, median: true });
   m.exits.push({ x: 150, y: 0, w: 6, h: 1, to: 'closed', label: 'Sahuayo', msg: 'La carretera a Sahuayo. El pueblo vecino está a tres kilómetros: comercio, huaraches y mucho movimiento. Por ahora tu historia está aquí, en Jiquilpan.' });
@@ -544,14 +572,33 @@ export function buildTown() {
     if (!p) continue;
     const h = hash2(x, y, 303);
     if (p === 1 && free(x, y) && free(x + 1, y) && free(x - 1, y) && free(x + 2, y) && x % 3 === 0) {
-      if (h < 0.3) sprite(m, 'parkedCar', x + 1, y + 0.95, { color: CARS[Math.floor(hash2(x, y, 304) * CARS.length)], flip: hash2(x, y, 305) > 0.5, model: hash2(x, y, 306) > 0.8 ? 'pickup' : 'tsuru', w: 36, up: 24, collide: [-14, -6, 28, 6] });
+      if (h < 0.3) sprite(m, 'parkedCar', x + 1, y + 0.95, { color: CARS[Math.floor(hash2(x, y, 304) * CARS.length)], flip: hash2(x, y, 305) > 0.5, model: randomModel(() => hash2(x, y, 306)), w: 44, up: 30, collide: [-14, -6, 28, 6] });
       else if (h < 0.4) sprite(m, 'parkedMoto', x + 0.5, y + 0.95, { color: ['#c0392b', '#1f4fa0', '#1b1b1b', '#f39c12'][Math.floor(h * 40) % 4], flip: h > 0.5, w: 20, up: 18, collide: [-5, -3, 10, 3] });
     }
     if (p === 2 && free(x, y) && free(x, y + 1) && free(x, y - 1) && free(x, y + 2) && y % 3 === 0) {
-      if (h < 0.3) sprite(m, 'parkedCarV', x + 0.5, y + 1.9, { color: CARS[Math.floor(hash2(x, y, 304) * CARS.length)], w: 20, up: 34, collide: [-6, -12, 12, 22] });
+      if (h < 0.3) sprite(m, 'parkedCarV', x + 0.5, y + 1.9, { color: CARS[Math.floor(hash2(x, y, 304) * CARS.length)], model: randomModel(() => hash2(x, y, 307)), flip: hash2(x, y, 308) > 0.5, w: 26, up: 40, collide: [-6, -12, 12, 22] });
       else if (h < 0.4) sprite(m, 'parkedMoto', x + 0.5, y + 0.95, { color: ['#c0392b', '#1f4fa0', '#1b1b1b', '#f39c12'][Math.floor(h * 40) % 4], vertical: true, w: 14, up: 20, collide: [-3, -4, 6, 4] });
     }
   }
+
+  // --- combis: three routes with their stops (a blue sign with the route colour) -----------------------
+  m.combiRoutes = {
+    verde: [[136, 112, 'Plaza Principal'], [200, 126, 'San Francisco'], [212, 136, 'Hospital General'], [275, 173, 'La Entrada'], [188, 100, 'Mercado']],
+    roja: [[152, 104, 'Palacio Municipal'], [152, 150, 'Casa de Cárdenas'], [152, 176, 'Estadio'], [152, 238, 'El Bosque'], [140, 126, 'Biblioteca']],
+    amarilla: [[152, 54, 'Jardín de la Paz'], [152, 25, 'Las Palmas'], [152, 4, 'Salida a Sahuayo'], [220, 42, 'El Tanque'], [170, 62, 'Cremería']],
+  };
+  for (const [route, stops] of Object.entries(m.combiRoutes)) for (const st of stops) {
+    // put the sign on the nearest sidewalk beside the street
+    let best = null;
+    for (let r = 0; r < 4 && !best; r++) for (let dy = -r; dy <= r && !best; dy++) for (let dx = -r; dx <= r; dx++) {
+      const g = m.get(st[0] + dx, st[1] + dy);
+      if ((g === G.SIDEWALK || g === G.CANTERA || g === G.PLAZA) && !m.isSolidTile(st[0] + dx, st[1] + dy)) { best = [st[0] + dx, st[1] + dy]; break; }
+    }
+    if (best) sprite(m, 'parada', best[0] + 0.5, best[1] + 0.8, { route, stop: st[2], w: 20, up: 40, collide: [-1, -1, 2, 2], interact: 'parada' });
+  }
+
+  // trays of water that shops leave out for the street dogs
+  for (const [x, y] of [[198.2, 111.1], [148.6, 115.6], [107.6, 156.2], [244.2, 199.6]]) sprite(m, 'waterTray', x, y, { w: 12, up: 6 });
 
   m.spawns = {
     start: { x: 225.5, y: 157.2 },
