@@ -565,7 +565,7 @@ SPRITES.obelisco = {
     ctx.fillStyle = stone; ctx.fillRect(-10, -10, 20, 3);
     ctx.fillStyle = shade(stone, -0.1); ctx.fillRect(-6.5, -20, 13, 10);
     cornice(ctx, -7, -20, 14, stone);
-    plaque(ctx, -5.5, -17, 11, 4, 'RIOSECO', '#4c3d28', '#efd79a');
+    plaque(ctx, -5.5, -17, 11, 4, s.label || 'LA TRASQUILA', '#4c3d28', '#efd79a');
     // shaft
     ctx.fillStyle = vgrad(ctx, -84, -20, shade(stone, 0.15), shade(stone, -0.1));
     ctx.beginPath(); ctx.moveTo(-4.5, -20); ctx.lineTo(-3, -80); ctx.lineTo(0, -86); ctx.lineTo(3, -80); ctx.lineTo(4.5, -20); ctx.fill();

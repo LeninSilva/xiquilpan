@@ -32,18 +32,17 @@ export function buildCerro() {
   const road = [[40, 0], [40, 22], [24, 28], [24, 40], [54, 46], [54, 58], [32, 64], [32, 74], [40, 78], [40, 98], [52, 104], [52, 112], [40, 116], [40, 122]];
   for (let i = 0; i < road.length - 1; i++) {
     let [x, y] = road[i]; const [bx, by] = road[i + 1];
-    const surf = y < 22 ? G.DIRTROAD : G.ROCKROAD;
+    const surf = G.ROCKROAD; // stones and pebbles all the way: a path for feet and horses, not for cars
     while (x !== bx || y !== by) {
       for (let k = -1; k <= 1; k++) m.set(x + (by === y ? 0 : k), y + (by === y ? k : 0), surf);
       x += Math.sign(bx - x); y += Math.sign(by - y);
     }
   }
   m.markStreet(20, 22, 40, 100, 'Camino empedrado al Cerro de San Francisco');
-  m.markStreet(38, 0, 5, 22, 'Camino de terracería (desde Jiquilpan)');
+  m.markStreet(38, 0, 5, 22, 'Camino empedrado (desde Jiquilpan)');
   // the gravity hill: a straight dirt stretch where cars "roll uphill"
   m.markStreet(38, 8, 5, 12, 'La subida mágica');
   sprite(m, 'signpost', 36.2, 12, { text: 'LA SUBIDA MÁGICA', bg: '#7a2f3a', w: 60, up: 30, interact: 'subida' });
-  sprite(m, 'rollingCar', 41, 9, { w: 40, up: 30, interact: 'subida' });
   area(m, 'La subida mágica', 34, 6, 12, 16, 'road');
   // La Piedrita: a footpath east to a little waterfall between black rocks
   for (let x = 42; x < 62; x++) { m.set(x, 24, G.DIRT); m.set(x, 25, G.DIRT); }
@@ -74,6 +73,21 @@ export function buildCerro() {
   sprite(m, 'lamp', 35.5, 91.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 35.5, 91, 80);
   sprite(m, 'lamp', 45.5, 91.8, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 45.5, 91, 80);
   sprite(m, 'signpost', 33, 108.5, { text: 'LA CRUZ ↓', bg: '#6b4a30', w: 40, up: 30 });
+  // the only road for cars: it reaches the pueblito from the back side of the cerro, from Paredones and Abadiano
+  hStreet(m, 'Camino a Paredones y Abadiano', 22, W, 98, 2, { surface: G.DIRTROAD, sidewalk: false });
+  sprite(m, 'signpost', 58.5, 97.4, { text: 'PAREDONES · ABADIANO →', bg: '#1f5fa8', w: 64, up: 30 });
+  m.exits.push({ x: W - 1, y: 96, w: 1, h: 5, to: 'closed', label: 'Paredones', msg: 'El camino de terracería baja por la parte de atrás del cerro, rumbo a Paredones y Abadiano. Es largo; por ahora te quedas por aquí.' });
+  for (const [x, y, c, mdl] of [[30, 98.95, '#8a1f1f', 'tacoma'], [52.5, 98.95, '#e8e2d2', 'tsuru']]) sprite(m, 'parkedCar', x, y, { color: c, model: mdl, w: 44, up: 30, collide: [-14, -6, 28, 6] });
+  // the radio station next to the chapel: a fenced hut and its transmission tower
+  for (let y = 78; y < 84; y++) for (let x = 22; x < 33; x++) m.set(x, y, G.DIRT);
+  building(m, 'radioStation', 23, 79, 7, 4, { tall: 30 });
+  sprite(m, 'antenna', 31.5, 83.4, { scale: 1.8, w: 30, up: 90, collide: [-6, -3, 12, 3] }); m.lights.push({ x: 31.5 * TILE, y: 76 * TILE, r: 26, color: '#ff4a3a' });
+  for (const [x, y, w, h] of [[22, 78, 11, 1], [22, 78, 1, 6], [32, 78, 1, 6], [22, 83, 4, 1], [28, 83, 5, 1]]) { m.structures.push({ kind: 'fence', x, y, w, h, layer: 3 }); m.setSolid(x, y, w, h); }
+  area(m, 'Estación de radio', 22, 78, 11, 6, 'building');
+  // milpas: the rancheros' corn on the way up
+  const milpa = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { const g = m.get(x, y); if (g === G.ROCKROAD || g === G.DIRTROAD || g === G.ROOF || g === G.SLOPE || m.isSolidTile(x, y)) continue; m.set(x, y, G.FIELD); if ((x + y) % 1 === 0) sprite(m, 'milpa', x + 0.5, y + 0.9, { seed: x * 31 + y, w: 20, up: 30 }); } };
+  milpa(28, 30, 8, 7); milpa(46, 64, 7, 7); milpa(12, 62, 8, 8); milpa(46, 14, 10, 3);
+  area(m, 'Milpa de los Novoa', 46, 14, 10, 3, 'ranch'); area(m, 'Milpas del cerro', 28, 30, 8, 7, 'ranch');
   // summit plateau: camp, the llano where the lights come down, the cross at the top
   for (let y = 106; y < 136; y++) for (let x = 26; x < 58; x++) {
     const d = ((x - 42) / 15) ** 2 + ((y - 121) / 14) ** 2;
@@ -175,3 +189,54 @@ export function buildAbadiano() {
   return m;
 }
 export function buildSarabia() { return village('sarabia', 'Francisco Sarabia', 56, 42, { seed: 97, church: 'FCO. SARABIA', churchColor: '#e8e6f2', school: true, elev: 1550 }); }
+
+// La Lagunita: a village of adobe and tile on the shore of a small lagoon full of tule, north-east of
+// Jiquilpan, on the road to Abadiano. Much of the abuelo's family comes from here.
+export function buildLagunita() {
+  const W = 70, H = 52;
+  const m = new GameMap('lagunita', 'La Lagunita', W, H, { fill: G.GRASS, baseElev: 1538 });
+  m.ambient = 'village';
+  ensureLanes(m);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const n = fbm(x * 0.08, y * 0.08, 61, 3);
+    m.set(x, y, n > 0.58 ? G.FIELD : G.GRASS);
+    m.elev[y * W + x] = 1538 + y * 0.15 + fbm(x * 0.05, y * 0.05, 62, 3) * 6;
+  }
+  // the lagoon to the north, ringed with tule and a muddy shore
+  for (let y = 0; y < 22; y++) for (let x = 0; x < W; x++) {
+    const d = ((x - 34) / 30) ** 2 + ((y - 6) / 15) ** 2 + (fbm(x * 0.15, y * 0.15, 63, 2) - 0.5) * 0.35;
+    if (d < 1) { m.set(x, y, G.WATER); m.elev[y * W + x] = 1534; }
+    else if (d < 1.25) m.set(x, y, G.DIRT);
+  }
+  for (let i = 0; i < 160; i++) { const x = 2 + hash2(i, 1, 64) * (W - 4), y = 1 + hash2(i, 2, 64) * 22; const tx = Math.floor(x), ty = Math.floor(y); if (m.get(tx, ty) === G.DIRT || (m.get(tx, ty) === G.WATER && m.get(tx, ty + 2) !== G.WATER)) sprite(m, 'tule', x, y + 0.8, { seed: i, w: 16, up: 22 }); }
+  for (const [x, y] of [[22, 15.6], [47, 16.2]]) sprite(m, 'canoa', x, y, { w: 40, up: 12 });
+  area(m, 'La laguna', 4, 0, 62, 20, 'river');
+  // the street: from the road to Jiquilpan (south) to the plaza, and on to Abadiano (east)
+  vStreet(m, 'Camino a Jiquilpan', 33, 26, H, 4, { surface: G.DIRTROAD, sidewalk: false });
+  hStreet(m, 'Calle de la Laguna', 4, W, 26, 3, { surface: G.DIRTROAD, sidewalk: false });
+  // the little plaza and the chapel of the Virgen del Rosario
+  m.fill(24, 29, 22, 8, G.PLAZA);
+  building(m, 'capilla', 29, 20, 12, 8, { label: 'LA LAGUNITA', color: '#efe3cf', tall: 60 });
+  door(m, 35, 27, 'capilla_sf', 'Capilla de La Lagunita');
+  tree(m, 26, 33, 'fresno', { size: 1.3 }); tree(m, 44, 33, 'laurel', { size: 1.2 }); tree(m, 38.5, 35.5, 'jacaranda', { size: 1.1 });
+  for (const [bx, by] of [[30, 32.4], [40, 32.4]]) sprite(m, 'bench', bx, by, { w: 20, up: 12, collide: [-8, -4, 16, 4], seat: true });
+  sprite(m, 'lamp', 25, 30, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, 25, 29.5, 80);
+  // adobe houses, with the house of the tío abuelo Ezequiel at the corner facing the lagoon
+  const lots = [[8, 29, 9, 7], [8, 39, 9, 7], [47, 29, 10, 7], [47, 39, 9, 7], [20, 39, 10, 7], [58, 29, 9, 7]];
+  for (const [x, y, w, h] of lots) { block(m, x, y, w, h, { outskirts: true, facadeH: 26, allHouses: true }); addLotDoors(m, m.structures[m.structures.length - 1]); }
+  building(m, 'casaAbuela', 13, 18, 8, 6, { tall: 40 });
+  door(m, 17, 23, 'casa_ezequiel', 'Casa del tío Ezequiel');
+  sprite(m, 'bench', 19.5, 24.6, { w: 20, up: 12, collide: [-8, -4, 16, 4], seat: true });
+  area(m, 'Casa del tío Ezequiel', 13, 18, 8, 7, 'home');
+  // fields and fences toward Abadiano
+  for (let i = 0; i < 60; i++) { const x = 2 + Math.floor(hash2(i, 5, 65) * (W - 4)), y = 30 + Math.floor(hash2(i, 6, 65) * (H - 32)); const g = m.get(x, y); if (g !== G.GRASS && g !== G.FIELD) continue; if (Math.abs(x - 35) < 13 && y < 38) continue; const r = hash2(i, 7, 65); if (r < 0.4) tree(m, x + 0.5, y + 0.8, r < 0.15 ? 'mezquite' : r < 0.3 ? 'huizache' : 'fresno'); else if (r < 0.6) sprite(m, 'maguey', x + 0.5, y + 0.8, { seed: i, size: 1.2, w: 60, up: 70, collide: [-6, -3, 12, 3] }); else if (r < 0.8) sprite(m, 'milpa', x + 0.5, y + 0.9, { seed: i, w: 20, up: 30 }); }
+  sprite(m, 'signpost', 36.5, 50, { text: 'JIQUILPAN ↓', bg: '#1f5fa8', w: 40, up: 30 });
+  sprite(m, 'signpost', 66, 25.6, { text: 'ABADIANO →', bg: '#1f5fa8', w: 40, up: 30 });
+  m.exits.push({ x: 33, y: H - 1, w: 4, h: 1, to: 'town', tx: 260.5, ty: 2.5, dir: 0, label: 'Regresar a Jiquilpan' });
+  m.exits.push({ x: W - 1, y: 26, w: 1, h: 3, to: 'abadiano', tx: 2.5, ty: 24.6, dir: 3, label: 'San Antonio Abadiano' });
+  area(m, 'La Lagunita', 0, 22, W, H - 22, 'village');
+  m.spawns = { plaza: { x: 35, y: 31 }, entry: { x: 35, y: 48 } };
+  m.structures.sort((a, b) => (a.layer || 0) - (b.layer || 0));
+  m.finalize();
+  return m;
+}

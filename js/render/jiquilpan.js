@@ -653,7 +653,7 @@ SPRITES.plaque = {
 // ---- the avenue: La Tipo, Casa de Lázaro Cárdenas -----------------------------------------------------
 SPRITES.escuelaTipo = {
   draw(ctx, s) {
-    const b = building(ctx, s, { fh: 42, roof: '#c9c1b3', wall: '#f2ede2', band: '#3d6b4a', bandH: 5 });
+    const b = building(ctx, s, { fh: 42, roof: '#c9c1b3', wall: '#f2ede2', band: s.band || '#3d6b4a', bandH: 5 });
     const { x, w } = b;
     // two storeys of classroom windows, central entrance with the name
     ctx.fillStyle = '#d9c9a8'; ctx.fillRect(x, -22, w, 1.6);
@@ -665,7 +665,7 @@ SPRITES.escuelaTipo = {
     }
     ctx.fillStyle = '#f2ede2'; ctx.fillRect(-26, -52, 52, 12);
     cornice(ctx, -26, -52, 52, '#d9c9a8');
-    plaque(ctx, -24, -50, 48, 6, 'ESCUELA “LA TIPO”', '#2f5b3f', '#f4ecd0');
+    plaque(ctx, -24, -50, 48, 6, s.label || 'ESCUELA “LA TIPO”', s.plaqueBg || '#2f5b3f', '#f4ecd0');
     ctx.fillStyle = '#5b3a22'; ctx.fillRect(-10, -24, 20, 24);
     ctx.strokeStyle = '#2b2b2b'; ctx.lineWidth = 0.5; for (let i = -9; i < 10; i += 1.6) { ctx.beginPath(); ctx.moveTo(i, -24); ctx.lineTo(i, 0); ctx.stroke(); }
     // murals of kids' drawings along the lower wall
@@ -1602,4 +1602,86 @@ SPRITES.monCardenas.anim = function (ctx, s, t) {
     ctx.beginPath(); ctx.ellipse(x, -3 - p * 6.5, 1.6 * (1 - p) + 0.3, 2.4 * (1 - p) + 0.3, 0, 0, 7); ctx.fill();
   }
   ctx.restore();
+};
+
+// ISSSTE clinic: same body as the hospital, with the institute's burgundy and gold colours on the sign.
+{
+  const baseHospital = SPRITES.hospital.draw;
+  SPRITES.hospital.draw = function (ctx, s) {
+    baseHospital.call(this, ctx, s);
+    if (!s.issste) return;
+    const w = s.fw;
+    ctx.fillStyle = '#6b1a26'; roundRect(ctx, -w / 2 + 3, -48, w - 6, 8, 1.4); ctx.fill();
+    ctx.fillStyle = '#c9a24a'; ctx.fillRect(-w / 2 + 3, -40.8, w - 6, 0.8);
+    ctx.fillStyle = '#c9a24a'; ctx.beginPath(); ctx.arc(-w / 2 + 10, -44, 3, 0, 7); ctx.fill();
+    ctx.fillStyle = '#6b1a26'; ctx.beginPath(); ctx.moveTo(-w / 2 + 10, -46.4); ctx.lineTo(-w / 2 + 12, -43); ctx.lineTo(-w / 2 + 8, -43); ctx.fill();
+    text(ctx, 'ISSSTE', -w / 2 + 30, -44.1, 4.4, '#f6efe0');
+    text(ctx, 'CLÍNICA HOSPITAL JIQUILPAN', 18, -44.1, 2.6, '#f2dca0');
+  };
+}
+
+// Universidad de la Ciénega: a modern campus — concrete frames, glass, a blue entrance canopy.
+SPRITES.ucemich = {
+  draw(ctx, s) {
+    const b = building(ctx, s, { fh: 44, roof: '#cfd2d4', wall: '#e9ecee', band: '#1d4f91', bandH: 4 });
+    const { x, w } = b;
+    for (let fl = 0; fl < 2; fl++) for (let i = x + 4; i < x + w - 6; i += 9) {
+      const y = -40 + fl * 18;
+      const g = ctx.createLinearGradient(0, y, 0, y + 12); g.addColorStop(0, '#a9c4d6'); g.addColorStop(1, '#3d5668');
+      ctx.fillStyle = g; ctx.fillRect(i, y, 7, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(i + 1, y + 1, 1.2, 10);
+      ctx.fillStyle = '#c9cdd0'; ctx.fillRect(i - 1.2, y - 1, 1.2, 14);
+    }
+    ctx.fillStyle = '#1d4f91'; ctx.fillRect(-22, -26, 44, 3); ctx.fillStyle = '#2b2f33'; ctx.fillRect(-10, -23, 20, 23);
+    ctx.fillStyle = 'rgba(170,205,230,0.45)'; ctx.fillRect(-9, -22, 8.6, 22); ctx.fillRect(0.4, -22, 8.6, 22);
+    ctx.fillStyle = '#1d4f91'; roundRect(ctx, -40, -54, 80, 9, 1.5); ctx.fill();
+    text(ctx, 'UNIVERSIDAD DE LA CIÉNEGA', 0, -50.8, 3.6, '#ffffff');
+    text(ctx, 'DEL ESTADO DE MICHOACÁN DE OCAMPO', 0, -47.4, 2.2, '#cfe0f5');
+    flagPole(ctx, x + w - 10, -44, 24, 0.4);
+  },
+};
+
+// A milpa: a few corn plants with their leaves, a tassel on top and an ear wrapped in husk.
+SPRITES.milpa = {
+  draw(ctx, s) {
+    const r = rng(s.seed || 3);
+    for (let i = 0; i < 3; i++) {
+      const x = -5 + i * 5 + (r() - 0.5) * 1.5, h = 18 + r() * 8;
+      ctx.strokeStyle = '#6f8a3a'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + 0.8, -h / 2, x + (r() - 0.5) * 2, -h); ctx.stroke();
+      for (let k = 0; k < 5; k++) { const y = -3 - k * h / 6, sg = k % 2 ? 1 : -1; ctx.strokeStyle = k % 2 ? '#7f9c44' : '#5f7a30'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + sg * 4, y - 2, x + sg * 6, y + 1.5); ctx.stroke(); }
+      ctx.strokeStyle = '#d9c27a'; ctx.lineWidth = 0.4; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x, -h); ctx.lineTo(x + k * 1.4, -h - 3); ctx.stroke(); }
+      if (r() < 0.6) { ctx.fillStyle = '#c9b46a'; ctx.beginPath(); ctx.ellipse(x + 1.2, -h * 0.45, 0.9, 2.2, 0.3, 0, 7); ctx.fill(); }
+    }
+  },
+};
+// The radio station hut by the chapel of the cerro: concrete, a steel door, cable trays to the tower.
+SPRITES.radioStation = {
+  draw(ctx, s) {
+    const b = building(ctx, s, { fh: 22, roof: '#c9c6c0', wall: '#e9e6e0', band: '#8e2f24', bandH: 3 });
+    ctx.fillStyle = '#5b6066'; ctx.fillRect(-4, -16, 8, 16); ctx.fillStyle = '#7d848a'; ctx.fillRect(-3.4, -15, 3, 14);
+    ctx.fillStyle = '#f2c230'; ctx.beginPath(); ctx.moveTo(10, -16); ctx.lineTo(13, -11); ctx.lineTo(7, -11); ctx.fill(); ctx.fillStyle = '#1b1b1b'; ctx.fillRect(9.7, -15, 0.6, 2.4);
+    plaque(ctx, -20, -21, 14, 4, 'RADIO', '#1f3f6f', '#ffffff');
+    ctx.fillStyle = '#9aa0a5'; ctx.fillRect(b.x + b.w - 6, -s.fd + 4, 3, 14);
+  },
+};
+
+// Tule reeds at the edge of the lagoon, and a fishermen's canoe pulled up on the mud.
+SPRITES.tule = {
+  draw(ctx, s) {
+    const r = rng(s.seed || 1);
+    for (let i = 0; i < 9; i++) {
+      const x = (r() - 0.5) * 10, h = 12 + r() * 10, lean = (r() - 0.5) * 4;
+      ctx.strokeStyle = r() < 0.5 ? '#5f7a34' : '#7d944a'; ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + lean * 0.4, -h / 2, x + lean, -h); ctx.stroke();
+      if (r() < 0.35) { ctx.fillStyle = '#6b4a2a'; ctx.beginPath(); ctx.ellipse(x + lean * 0.9, -h + 2, 0.7, 2.2, 0, 0, 7); ctx.fill(); }
+    }
+  },
+};
+SPRITES.canoa = {
+  draw(ctx) {
+    shadowBlob(ctx, 1, 1, 18, 3, 0.25);
+    ctx.fillStyle = '#5a3e26'; ctx.beginPath(); ctx.moveTo(-18, -3); ctx.quadraticCurveTo(0, 4, 18, -3); ctx.lineTo(16, -6); ctx.quadraticCurveTo(0, 0, -16, -6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#7a5636'; ctx.beginPath(); ctx.moveTo(-16, -6); ctx.quadraticCurveTo(0, 0, 16, -6); ctx.quadraticCurveTo(0, -3, -16, -6); ctx.fill();
+    ctx.strokeStyle = '#3e2a18'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(-6, -4); ctx.lineTo(10, -12); ctx.stroke();
+  },
 };

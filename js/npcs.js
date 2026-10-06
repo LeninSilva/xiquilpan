@@ -156,7 +156,7 @@ const POIS = {
   palacio: [[170, 106.5], [163, 107]],
   santuario: [[64, 136.5]], sanfrancisco: [[195, 146], [200, 152]], monjas: [[86, 103]],
   bosque: [[60, 252.6], [110, 252.6], [175, 252.6], [230, 252.6], [194, 254.5]],
-  juarez: [[29, 70], [35, 71], [32, 62]],
+  juarez: [[55, 46], [55.5, 52], [54.5, 58], [50, 63], [172, 230], [168, 238]],
   paz: [[171, 51], [163, 52], [179, 52], [165, 45.2]],
   escuela: [[132, 157], [124, 157]],
   entrada: [[284, 171.6], [268, 172], [292, 171.6]],
@@ -435,11 +435,8 @@ export class NPCManager {
     for (const v of this.vehicles) {
       if (v.map !== map || (!v.emergency && dist(v.x, v.y, g.player.x, g.player.y) > 34 * TILE)) { v.dead = true; }
     }
-    if (map.id === 'cerro' && map.road) { // one or two cars a day go up the rocky road
-      if (!this.vehicles.some(v => !v.dead) && Math.random() < 0.004) {
-        const up = Math.random() < 0.5, pts = up ? map.road : map.road.slice().reverse();
-        const v = new RoadTruck(map, pts, pick(R, ['#8a1f1f', '#e8e2d2', '#2b4c8a', '#5b6b3a'])); this.vehicles.push(v); this.add(v);
-      }
+    if (map.id === 'cerro') { // no cars on the stone path; only in the pueblito, which they reach by the back road
+      if (g.player.y > 80 * TILE && g.player.y < 112 * TILE && this.vehicles.filter(v => !v.dead).length < 1 && Math.random() < 0.05) this.spawnVehicle(pick(R, ['pickup', 'car', 'moto']), false);
       return;
     }
     if (map.id !== 'town' || !map.laneDir) return;
@@ -454,6 +451,10 @@ export class NPCManager {
     // Los Rinos: weekend mornings, a convoy of cyclists
     const d = g.clock.weekday;
     if (!this.rinosOut && (((d === 0 || d === 6) && h >= 7 && h < 11 && R() < 0.5) || (h >= 6 && h < 8 && R() < 0.08))) { this.spawnRinos(); return; }
+    if (h >= 13 && h < 17 && !this.vehicles.some(v => v.delivery && !v.dead) && R() < 0.25) { // La Chata delivering buckets of beer
+      const at = this.findLaneTile(false);
+      if (at) { const v = new Vehicle(map, at[0], at[1], 'moto', this.seed++); v.color = '#c0392b'; v.basket = true; v.delivery = true; v.riderLook = this.lookFor(this.defs.find(d => d.id === 'chata')); v.fleet = this.vehicles; this.vehicles.push(v); this.add(v); v.bubble = { text: '¡Cubetazo a domicilio!', t: 3 }; return; }
+    }
     const kind = pick(R, ['car', 'car', 'car', 'car', 'taxi', 'taxi', 'pickup', 'moto', 'moto', 'moto', 'bici', 'bici']);
     this.spawnVehicle(kind, nearBosque && (h >= 19 || h < 1));
   }
@@ -566,7 +567,7 @@ export class NPCManager {
       }
       // cows and horses loose on the slopes
       const free = (x, y) => !map.isSolidTile(Math.floor(x), Math.floor(y));
-      const herd = [[20, 34, 'cow'], [26, 36, 'cow'], [58, 60, 'cow'], [16, 58, 'cow'], [60, 96, 'cow'], [22, 100, 'cow'], [48, 16, 'horse'], [52, 18, 'horse'], [18, 88, 'horse'], [60, 70, 'horse']];
+      const herd = [[20, 34, 'cow'], [26, 36, 'cow'], [58, 60, 'cow'], [16, 58, 'cow'], [60, 96, 'cow'], [22, 100, 'cow'], [62, 20, 'cow'], [14, 24, 'cow'], [64, 76, 'cow'], [48, 16, 'horse'], [52, 18, 'horse'], [18, 88, 'horse'], [60, 70, 'horse'], [16, 30, 'horse'], [62, 50, 'horse']];
       herd.forEach(([x, y, k], i) => { if (!free(x, y)) return; add(new Animal(map, x * TILE, y * TILE, k, k === 'cow' ? { variant: ['negra', 'cafe', 'pinta'][i % 3], r: 70 } : { color: ['#6b4428', '#2b2420', '#8a6a4a', '#d8d0c0'][i % 4], r: 90 })); });
     } else if (map.id === 'abadiano') {
       for (let i = 0; i < 6; i++) add(new Animal(map, (20 + i * 3) * TILE, (30 + (i % 3)) * TILE, 'chicken', { r: 50 }));

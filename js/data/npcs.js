@@ -559,6 +559,21 @@ export const NAMED = [
     lines: ['El Comité de Pueblo Mágico no es para tomarse fotos: es para cuidar lo que somos.', 'Los perritos de la plaza son de todos. Por eso les ponemos agua en la tarde.', 'El Portal Azul lleva cuarenta años dando de cenar. Pozole los jueves, enchiladas siempre.'],
     sched: [{ h: [10, 23], map: 'town', at: [146.8, 114.9], act: 'stand', dir: 0 }],
   },
+  {
+    id: 'chata', name: 'La Chata', role: 'atiende el Modelorama de Las Palmas', shop: 'modelorama', likes: ['refresco', 'taco'],
+    look: { female: true, age: 'adult', hair: 'short_f', hairColor: '#21170f', hat: 'cap', capColor: '#1f3f8f', top: 'tshirt', topColor: '#f2c230', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#1b1b1b', earrings: false, nose: 'straight', jaw: 'square', brows: 0.9, lips: 'thin', girth: 0.95 },
+    persona: 'Mayra, “La Chata”, 31 años, atiende el Modelorama de Las Palmas. Marimacha, directa, bromista y muy trabajadora; en su motoneta roja con canasta reparte cubetas de cerveza a domicilio por todo el pueblo. Conoce a todos y sabe todos los chismes, pero no los cuenta (casi nunca).',
+    lines: ['¿Cubeta? Te la llevo a tu casa en diez minutos, carnal.', 'Aquí enfrente están los escalones tricolores. Los del gimnasio los suben a las seis de la mañana… y luego vienen por sus Ultras.', 'Si me pagas a tiempo, eres mi cliente favorito. Si no, también, pero menos.'],
+    sched: [{ h: [10, 13], map: 'town', at: [57.5, 40.6], act: 'stand', dir: 0 }, { h: [17, 23], map: 'town', at: [57.5, 40.6], act: 'stand', dir: 0 }],
+  },
+  {
+    id: 'ezequiel', name: 'Tío Ezequiel', short: 'el tío Ezequiel', role: 'primo de tu abuelo, de La Lagunita', family: true, likes: ['pan', 'mezcal', 'rebozo'],
+    look: { age: 'elder', hair: 'short', hairColor: '#e3dfd8', mustache: true, hat: 'sombrero', top: 'shirt', topColor: '#e8e2d2', bottom: 'pants', bottomColor: '#4a4a52', shoes: 'huaraches', girth: 0.9, nose: 'aquiline', jaw: 'long', eyes: 'droopy', brows: 1.0, skin: '#a5704a' },
+    persona: 'Don Ezequiel, 86 años, primo hermano de Don Miguel, de La Lagunita. Fue tintorero de añil como sus padres, pescador en la laguna, y es el único que sabe a dónde suben de noche Miguel y Toño. Habla despacio, con imágenes; recuerda todo.',
+    lines: ['La laguna era más grande cuando yo era niño. Todo era más grande, o yo más chiquito.', 'El añil no se compra, mijo: se espera. Como la gente.', 'Aquí las noches todavía están oscuras. Por eso se ven las cosas.'],
+    sched: [{ h: [6, 21], map: 'lagunita', at: [19.5, 24.9], act: 'sit', dir: 0 }, { h: [0, 24], map: 'casa_ezequiel', at: [8, 6], act: 'stand' }],
+    noCerro: true,
+  },
 ];
 
 // Market stalls (interior) — each vendor is an NPC in the mercado map.

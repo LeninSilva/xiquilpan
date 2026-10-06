@@ -38,8 +38,10 @@ function azotea(ctx, x, y, w, h, seed, r) {
   if (w > 10 && h > 8 && r() < 0.8) { // tinaco (black water tank)
     const tx = x + 3 + r() * (w - 10), ty = y + 2 + r() * (h - 9);
     ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(tx + 4, ty + 6.5, 4, 2, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = '#2a2b2e'; ctx.fillRect(tx, ty + 1, 7, 5);
-    ctx.fillStyle = '#3b3c40'; ctx.beginPath(); ctx.ellipse(tx + 3.5, ty + 1, 3.5, 1.6, 0, 0, 7); ctx.fill();
+    const beige = r() < 0.35; // Citijal tinacos: black or beige, with their blue band
+    ctx.fillStyle = beige ? '#d8cda6' : '#2a2b2e'; ctx.fillRect(tx, ty + 1, 7, 5);
+    ctx.fillStyle = beige ? '#ece3c4' : '#3b3c40'; ctx.beginPath(); ctx.ellipse(tx + 3.5, ty + 1, 3.5, 1.6, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#2a5ea8'; ctx.fillRect(tx, ty + 3.2, 7, 0.8);
     ctx.fillStyle = '#555'; ctx.beginPath(); ctx.ellipse(tx + 3.5, ty + 0.8, 1.2, 0.6, 0, 0, 7); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(tx + 1, ty + 2, 1, 3.5);
   }
@@ -520,4 +522,17 @@ STRUCTURE_DRAW.pazPaths = (ctx, s) => {
   ctx.fillStyle = 'rgba(150,110,80,0.35)';
   for (let a = 0; a < 4; a++) { const an = a * Math.PI / 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * 30, cy + Math.sin(an) * 25); ctx.lineTo(cx + Math.cos(an + 0.25) * 18, cy + Math.sin(an + 0.25) * 15); ctx.lineTo(cx + Math.cos(an - 0.25) * 18, cy + Math.sin(an - 0.25) * 15); ctx.fill(); }
   ctx.restore();
+};
+
+// The tricolor stairs of La Trasquila: each riser painted green, white or red, worn in the middle.
+STRUCTURE_DRAW.tricolorSteps = (ctx, s) => {
+  const X = s.x * TILE, Y = s.y * TILE, W = s.w * TILE, H = s.h * TILE;
+  const cols = ['#1f7a45', '#f2efe6', '#c3262f'];
+  const step = 4;
+  for (let i = 0, y = Y; y < Y + H; y += step, i++) {
+    ctx.fillStyle = '#b9ad98'; ctx.fillRect(X, y, W, step); // the tread
+    ctx.fillStyle = cols[i % 3]; ctx.fillRect(X, y + step - 1.6, W, 1.6); // the painted riser
+    ctx.fillStyle = 'rgba(80,60,40,0.18)'; ctx.fillRect(X + W * 0.3, y + 0.4, W * 0.4, step - 2); // worn by footsteps
+  }
+  ctx.fillStyle = '#8f8574'; ctx.fillRect(X - 1.5, Y, 1.5, H); ctx.fillRect(X + W, Y, 1.5, H);
 };

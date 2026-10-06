@@ -144,6 +144,12 @@ export const SHOPS = {
     ['sabritas', 'Papitas', '🥔', 18, { panza: 2 }, ''],
     ['croquetas', 'Croquetas (a granel)', '🥣', 15, { give: 'croquetas' }, 'Para los perritos.'],
   ] },
+  farmacia_gdl: { name: 'Farmacias Guadalajara', sub: 'En el centro del mercado', items: [
+    ['aspirina', 'Analgésico (tira)', '💊', 25, {}, 'Para el dolor de cabeza del tianguis.'],
+    ['suero', 'Suero oral', '🧃', 22, { panza: 1, cure: 'enchilado_soft' }, 'Para después de la salsa de Don Chon.'],
+    ['curitas', 'Curitas', '🩹', 15, {}, ''],
+    ['refresco', 'Agua embotellada', '💧', 14, { give: 'refresco' }, ''],
+  ] },
   modelorama: { name: 'Modelorama Las Palmas', sub: 'Cerveza fría, hielo y botanas · servicio a domicilio', items: [
     ['cerveza', 'Caguama Victoria', '🍺', 48, { buzz: 30 }, 'Retornable.'],
     ['cerveza', 'Modelo Especial (lata)', '🍺', 28, { buzz: 15 }, ''],

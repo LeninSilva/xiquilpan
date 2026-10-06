@@ -10,8 +10,8 @@ const PLACES = {
   cerro: ['town', 1.5, 20], summit: ['cerro', 41.5, 118.6], tona: ['cerro', 37, 93.4], kiosco: ['town', 126, 105.4], unam: ['town', 225, 194.5],
   palacio: ['town', 170, 105.6], hospital: ['town', 224, 140.4], templo: ['town', 195, 143.4], beto: ['town', 171, 51.5], escuela: ['town', 132, 156.6],
   chema: ['town', 121, 115.4], poncho: ['town', 156.5, 248.4], chon: ['town', 222, 217.2], guero: ['town', 125, 84.2], biblioteca: ['town', 140, 140.4],
-  tianguis_fri: ['town', 171, 61], mercado: ['town', 200, 110.4], cochera: ['town', 118, 115], chamacuero: ['town', 14.5, 25.6], parque: ['town', 32, 72],
-  bosque: ['town', 194, 253.5], loteria: ['town', 119.5, 108.8], marin: ['town', 119, 93.4], reboceria: ['town', 62, 40.4], casita: ['town', 29, 254.4],
+  tianguis_fri: ['town', 171, 61], mercado: ['town', 200, 110.4], cochera: ['town', 118, 115], chamacuero: ['town', 14.5, 25.6], parque: ['town', 52, 64],
+  bosque: ['town', 194, 253.5], lagunita: ['town', 260.5, 1.5], ezequiel: ['lagunita', 19.5, 25], loteria: ['town', 119.5, 108.8], marin: ['town', 119, 93.4], reboceria: ['town', 62, 40.4], casita: ['town', 29, 254.4],
 };
 
 export class Quests {
@@ -33,7 +33,7 @@ export class Quests {
     c.push(id);
     this.game.ui.toast(`Pista (${c.length}): ${CLUE_NPC[id] || id}`, 'quest');
     this.game.sfx('clue');
-    if (this.s.act === 1 && c.length >= 3 && this.q('main').stage < 2) { this.set('main', 2); this.game.ui.toast('Ya sabes a dónde fueron: el Cerro de San Francisco.', 'quest'); }
+    if (this.s.act === 1 && c.length >= 3 && this.q('main').stage < 2) { this.set('main', 2); this.game.ui.toast('Fueron al Cerro de San Francisco… pero ¿a dónde, exactamente? El tío Ezequiel, en La Lagunita, sabe.', 'quest'); }
     this.game.save();
   }
 
@@ -44,6 +44,7 @@ export class Quests {
       case 1:
         if (main.stage < 1) return { title: '¿Han visto a mi abuelo?', text: 'Habla con tu abuela.', at: PLACES.home };
         if (main.stage < 2) return { title: '¿Han visto a mi abuelo?', text: `Pregunta en el pueblo por Don Miguel y Don Toño. Pistas: ${s.clues.length}/3`, at: this.nearestClue() };
+        if (!this.f.ezequiel) return { title: 'La Lagunita', text: 'Ve a La Lagunita (por la carretera del norte, junto a Circunvalación, o en taxi). El tío Ezequiel sabe a dónde suben de noche.', at: PLACES.lagunita };
         if (!g.hasItem('linterna')) return { title: 'Rumbo al cerro', text: 'Consigue una linterna (OXXO, “Frijoles”, el tianguis… o pídesela a tu abuela).', at: PLACES.home };
         return { title: 'Rumbo al cerro', text: 'Sube al Cerro de San Francisco: sal por el poniente, por la colonia del panteón, y sigue el camino de terracería.', at: PLACES.cerro };
       case 2:
@@ -87,7 +88,8 @@ export class Quests {
     if (s.act === 1) {
       if (id === 'abuela' && main.stage < 1) return 'main';
       if (['rosita', 'chuy', 'lupe', 'refugio'].includes(id) && main.stage >= 1 && !s.clues.includes(id)) return 'main';
-      if (id === 'abuela' && main.stage >= 2 && !this.game.hasItem('linterna')) return 'main';
+      if (id === 'abuela' && main.stage >= 2 && this.f.ezequiel && !this.game.hasItem('linterna')) return 'main';
+      if (id === 'ezequiel' && main.stage >= 2 && !this.f.ezequiel) return 'main';
     }
     if (s.act === 2 && id === 'miguel') return 'main';
     if (s.act === 2 && id === 'tona' && !s.clues.includes('tona')) return 'main';
@@ -124,6 +126,7 @@ export class Quests {
     if (id === 'miguel' && s.act === 2) return async (d) => { await this.campScene(npc, d); return 'end'; };
     if (id === 'abuela' && s.act === 3 && main.stage < 31) return async (d) => { await this.returnHomeScene(npc, d); return true; };
     if (id === 'abuela' && s.act === 1 && main.stage < 1) return async (d) => { d.end(); await this.game.cutscene('intro'); return 'end'; };
+    if (id === 'ezequiel' && s.act === 1 && main.stage >= 2 && !this.f.ezequiel) return async (d) => { await this.ezequielScene(npc, d); return true; };
     return null;
   }
   async returnHomeScene(npc, d) {
@@ -138,6 +141,26 @@ export class Quests {
     await d.say(npc, c.value === 'h' ? 'Me lo contó tu abuelo. Luces, un “señor gris”… Mijo, yo te creo porque eres mi nieto. Pero el pueblo no te va a creer.' : 'Eso dice tu abuelo. Y yo le creo, porque tiene cincuenta años sin mentirme. Pero el pueblo… el pueblo ya se está riendo.');
     await d.say(npc, 'Tu abuelo dice que les dieron un mensaje. Que lo tienen que decir en la plaza. Ay, Dios… Anda, ve con él. Está en la banca de la plaza, junto a la Aguadora.');
     this.set('main', 31);
+  }
+
+  // The tío abuelo Ezequiel, on his bench facing the lagoon, tells where they go.
+  async ezequielScene(npc, d) {
+    const g = this.game;
+    await d.narrate('Un viejo flaco, con el sombrero echado para atrás, mira la laguna desde una banca de madera. No voltea. Te reconoce por los pasos.');
+    await d.say(npc, `Tienes los pasos de Miguel. Pesados de un lado, como si la tierra le debiera algo. Siéntate, ${g.state.name}. Ya sé a qué vienes.`);
+    await d.say(npc, 'Aquí, cuando éramos niños, el agua llegaba hasta la puerta de la capilla. Nuestras madres metían la tela en las tinas de añil y la sacaban verde, y nosotros veíamos cómo el aire la iba poniendo azul. Esa fue la primera magia que vimos. La segunda vino del cielo.');
+    await d.say(npc, 'Fue en el setenta y nueve. Tu abuelo y yo andábamos pescando de noche. Se levantó una luz de la laguna, sin ruido, sin viento, y se fue despacito rumbo al Cerro de San Francisco. Nadie nos creyó. Así que dejamos de contarlo y empezamos a esperar.');
+    const c = await d.choose([{ text: '¿A dónde suben, tío? ¿A qué lugar del cerro?', value: 'where', tag: 'honest' }, { text: '¿Usted también cree que van a volver?', value: 'believe', tag: 'kind' }], npc);
+    if (c.value === 'believe') await d.say(npc, 'Yo creo en lo que vi. Y en lo que no vi también, porque si no, ¿qué chiste tendría ser viejo? Pero te pregunté otra cosa sin decirla, mijo: te pregunté si tú vas a ir por ellos.');
+    await d.say(npc, 'No a la cruz, como todos piensan. Al llano que está detrás, donde el pasto se queda aplastado en círculos aunque no pase ganado. Allá prenden su fogata, de cara al sur, y esperan con los ojos abiertos hasta que se les cierran.');
+    await d.say(npc, 'Sube por el camino empedrado, el de piedra bola; no hay otro. Pasa por los ranchos de los Novoa y de los Salazar, pasa la capilla de San Francisco y la caseta del radio. De ahí ya se ve la cruz. No te desvíes a La Piedrita, que de noche el agua habla y uno se queda oyendo.');
+    await d.say(npc, 'Y llévate luz, pero no la del teléfono. Esa nomás te enseña lo que ya traes en la mano. Una linterna de pilas, un ocote, algo que alumbre para afuera.');
+    await d.narrate('El tío Ezequiel saca de la bolsa de la camisa una foto doblada en cuatro: dos muchachos flacos junto a una canoa, y arriba, en la esquina, una mancha de luz que nadie supo explicar.');
+    await d.say(npc, 'Dásela a Miguel cuando lo encuentres. Dile que el primo Cheque todavía mira la laguna. Y que no se le ocurra irse sin despedirse.');
+    this.f.ezequiel = true; g.addStat('palabra', 2); g.addStat('corazon', 2);
+    if (!g.hasItem('foto_luces')) g.giveItem('foto_luces');
+    g.ui.toast('Ya sabes a dónde van: el llano detrás de la cruz del Cerro de San Francisco.', 'quest');
+    if (g.flags.mancha) g.gainHilo(npc);
   }
 
   // ---------- dialogue options per NPC ---------------------------------------

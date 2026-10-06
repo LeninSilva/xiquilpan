@@ -109,6 +109,11 @@ const table = (x, y, props = {}) => ({ kind: 'table', x, y, w: 30, up: 20, colli
 const shelf = (x, y, fw, props = {}) => ({ kind: 'shelf', x, y, fw, w: fw + 6, up: 40, collide: [-fw / 2, -6, fw, 6], ...props });
 
 const BUILDERS = {
+  casa_ezequiel: () => room('casa_ezequiel', 'Casa del tío Ezequiel', { w: 16, h: 11, floor: G.FLOOR_STONE, wall: '#e9dcc4', wall2: '#d8c6a6', band: '#2a3f7a',
+    deco: [{ kind: 'cross', x: 7 }, { kind: 'frame', x: 3, color: '#b8a888' }, { kind: 'frame', x: 4.4, color: '#a89878' }, { kind: 'window', x: 12 }],
+    items: [{ kind: 'telar', x: 4.6, y: 6.6, w: 40, up: 34, collide: [-16, -4, 30, 4], interact: 'telar' }, { kind: 'rebozoRack', x: 11.5, y: 3.6, w: 40, up: 34, collide: [-16, -3, 32, 3], seed: 9 },
+      { kind: 'altarCasa', x: 7.5, y: 2.8, w: 30, up: 40, collide: [-10, -4, 20, 4], interact: 'altar_casa' }, table(11.5, 8, { cloth: '#2a3f7a', items: true })],
+    lights: [[8, 6, 110, '#ffd28a']], dim: 0.22 }),
   casa_abuela: () => room('casa_abuela', 'Casa de la abuela', { w: 16, h: 12, floor: G.FLOOR_TILE, wall: '#f4eadb', band: '#2f5a4a', tiles: true,
     deco: [{ kind: 'window', x: 2 }, { kind: 'frame', x: 6, color: '#d8c7a8' }, { kind: 'frame', x: 7.2, color: '#c9d6de' }, { kind: 'window', x: 12 }, { kind: 'cross', x: 9.6 }],
     rugs: [{ x: 5, y: 5, w: 6, h: 4, color: '#7a2f3a' }],
@@ -126,11 +131,22 @@ const BUILDERS = {
     for (const [x, y, shop, sign, goods] of stalls) items.push(counter(x, y, 72, { sign, goods, shop, interact: 'shopcounter', color: '#b7a58a' }));
     items.push(counter(36.5, 12.2, 34, { sign: 'FRUTAS Y VERDURAS', goods: ['#f28c28', '#e53935', '#ffd54f', '#7cb342', '#43a047'], shop: 'mercado_frutas', interact: 'shopcounter', color: '#8a6a48' }));
     items.push(counter(2.6, 12.2, 30, { sign: 'VERDURAS', goods: ['#43a047', '#e53935', '#8d6e63', '#fdd835'], color: '#8a6a48' }));
+    // Farmacias Guadalajara, right in the middle of the mercado
+    items.push(counter(11, 12.2, 56, { sign: 'FARMACIAS GUADALAJARA', signBg: '#ffffff', signFg: '#1b4b9a', goods: ['#ffffff', '#1b4b9a', '#e53935', '#7cc4e8'], shop: 'farmacia_gdl', interact: 'shopcounter', color: '#e8eef5' }));
+    items.push({ kind: 'meatHooks', x: 30, y: 15.6, fw: 34, w: 40, up: 44 });
     for (let x = 4; x < 38; x += 6) items.push({ kind: 'lampHang', x, y: 11.5, w: 10, up: 60 });
     return room('mercado', 'Mercado Municipal', { w: 40, h: 24, floor: G.MARKET, wall: '#e7ddc8', band: '#1f5a3a', exit: 20, topExit: 20,
       deco: [{ kind: 'papel', x: 1, n: 16 }, { kind: 'papel', x: 21, n: 16 }, { kind: 'sign', x: 15, w: 70, text: 'MERCADO MUNICIPAL', bg: '#1f5a3a' }],
       items, lights: [[10, 10, 140], [30, 10, 140], [20, 20, 140]], dim: 0.08 });
   },
+  cbtis: () => room('cbtis', 'CBTIS Jiquilpan', { w: 22, h: 12, floor: G.FLOOR_TILE, wall: '#eef0ea', band: '#7a1f2b',
+    deco: [{ kind: 'sign', x: 3, w: 100, text: 'CBTIS · BACHILLERATO TECNOLÓGICO', bg: '#5a1a22' }, { kind: 'window', x: 16 }, { kind: 'flag', x: 1 }],
+    items: [...[4, 8, 12, 16].map(x => ({ kind: 'pupitre', x, y: 6.6, w: 16, up: 16, collide: [-5, -3, 10, 3] })), ...[4, 8, 12, 16].map(x => ({ kind: 'pupitre', x, y: 9.2, w: 16, up: 16, collide: [-5, -3, 10, 3] })),
+      { kind: 'toolWall', x: 19.5, y: 3.4, w: 30, up: 30 }, table(19, 8, { color: '#6b4a30', items: true })], lights: [[10, 6, 140]] }),
+  ucemich: () => room('ucemich', 'Universidad de la Ciénega', { w: 24, h: 13, floor: G.FLOOR_STONE, wall: '#f2f4f5', band: '#1d4f91',
+    deco: [{ kind: 'sign', x: 3, w: 120, text: 'UCEMICH · INNOVACIÓN EDUCATIVA · NANOTECNOLOGÍA · GENÓMICA ALIMENTARIA', bg: '#1d4f91' }, { kind: 'window', x: 18 }, { kind: 'window', x: 21 }],
+    items: [{ kind: 'bookshelf', x: 4, y: 4.2, fw: 40, w: 44, up: 40, collide: [-20, -5, 40, 5], seed: 31 }, table(10, 7, { color: '#d9d2c6', items: true }), table(14, 7, { color: '#d9d2c6', items: true }),
+      table(10, 10, { color: '#d9d2c6' }), table(14, 10, { color: '#d9d2c6', items: true }), counter(20, 8.4, 40, { color: '#1d4f91', sign: 'SERVICIOS ESCOLARES', signBg: '#ffffff', signFg: '#1d4f91' })], lights: [[8, 6, 150], [18, 6, 150]] }),
   panaderia: () => room('panaderia', 'Panadería Mendoza', { w: 16, h: 10, floor: G.FLOOR_TILE, wall: '#f6ead3', band: '#7a3e1d',
     deco: [{ kind: 'sign', x: 3, w: 80, text: 'PANADERÍA MENDOZA · DESDE 1958', bg: '#7a3e1d' }, { kind: 'window', x: 13 }],
     items: [counter(8, 6.4, 90, { goods: ['#f3d9a5', '#e8b86b', '#c98a4a', '#f7e7c9', '#d9a066'], color: '#9a6a42', shop: 'panaderia', interact: 'shopcounter' }), shelf(4, 3.2, 40, { goods: ['#f3d9a5', '#e8b86b', '#c98a4a', '#f7e7c9'] }), shelf(12, 3.2, 40, { goods: ['#f3d9a5', '#e8b86b', '#c98a4a', '#f7e7c9'] })], lights: [[8, 5, 110]] }),

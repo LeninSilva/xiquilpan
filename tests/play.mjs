@@ -206,6 +206,48 @@ scenarios.life = async function () {
   await sleep(2500);
   console.log('money after', await G(() => window.__game.state.money), 'tortillas_ok', await G(() => window.__game.flags.tortillas_ok));
 };
+scenarios.dogs = async () => {
+  // a stray: pet and feed it until it follows you
+  await G(() => { const g = window.__game; g.changeMap('town', 199, 112, 0, { instant: true }); g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 10 * 60; g.state.inventory.hueso = 3; });
+  await sleep(1500); await shot('mercado_dogs');
+  const n = await G(() => window.__game.npcs.dogs.length); console.log('dogs', n);
+  for (let i = 0; i < 3; i++) {
+    await G(() => { const g = window.__game, d = g.npcs.dogs[0]; g.player.x = d.x; g.player.y = d.y - 12; g.player.dir = 0; d.path = null; d.state = 'idle'; d.timer = 30; });
+    await sleep(200); console.log('it', await G(() => { const it = window.__game.findInteraction(); return it && (it.type + ':' + (it.e?.def?.name || it.s?.kind)); }));
+    await page.keyboard.press('Space'); await sleep(400);
+    await drive(['Llevártelo', 'Canelo', 'comer']);
+  }
+  console.log('companion', await G(() => JSON.stringify(window.__game.state.dog)));
+  await G(() => { const g = window.__game; g.player.x += 60; }); await sleep(2000); await shot('companion');
+  // Claudia's errand
+  await G(() => { const g = window.__game; g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 12 * 60; g.npcs.timer = 0; g.npcs.update(0.01); });
+  await talkTo('claudia', ['preocupada', 'Cuente']);
+  await talkTo('claudia', ['Abadiano']);
+  await sleep(1500); console.log('map', await G(() => window.__game.map.id), 'stage', await G(() => window.__game.state.quests.s_perro?.stage));
+  await shot('abadiano');
+  await G(() => { const g = window.__game; g.player.x = 47.5 * 16; g.player.y = 28.6 * 16; g.player.dir = 1; });
+  await sleep(300); console.log('it2', await G(() => { const it = window.__game.findInteraction(); return it && (it.type + ':' + (it.e?.def?.name || it.s?.kind || it.s?.tree)); }));
+  await page.keyboard.press('Space'); await sleep(500); await drive([]);
+  await talkTo('mela', ['Claudia']); await talkTo('betito', ['Viste', 'valiente']);
+  console.log('stage', await G(() => window.__game.state.quests.s_perro?.stage), 'items', await G(() => Object.keys(window.__game.state.inventory).join(',')));
+  await talkTo('chueco', ['colgó', 'Retroceder', 'policía']);
+  await sleep(500); await drive(['policía']);
+  console.log('stage', await G(() => window.__game.state.quests.s_perro?.stage));
+  await G(() => { const g = window.__game; g.changeMap('town', 146, 116, 1, { instant: true }); g.npcs.timer = 0; g.npcs.update(0.01); });
+  await talkTo('claudia', ['sabemos']);
+  console.log('done', await G(() => window.__game.state.quests.s_perro?.done), 'money', await G(() => window.__game.state.money));
+};
+scenarios.lagunita = async () => {
+  await G(() => { const g = window.__game; g.quests.set('main', 2); g.state.clues = ['rosita', 'chuy', 'lupe']; g.changeMap('town', 260.5, 1.6, 1, { instant: true }); g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 10 * 60; });
+  await hold('ArrowUp', 800); await sleep(1800);
+  console.log('map', await G(() => window.__game.map.id)); await shot('lagunita');
+  await talkTo('ezequiel', ['¿A dónde']);
+  console.log('ezequiel', await G(() => window.__game.flags.ezequiel), await G(() => window.__game.quests.objective().text));
+  await G(() => { const g = window.__game; g.changeMap('cerro', 40, 96, 0, { instant: true }); g.clock.minutes = Math.floor(g.clock.minutes / 1440) * 1440 + 11 * 60; for (let i = 0; i < 40; i++) g.npcs.syncTraffic(); });
+  await sleep(2000); await shot('cerro_village');
+  await G(() => { const g = window.__game; g.changeMap('cerro', 40, 30, 0, { instant: true }); });
+  await sleep(1500); await shot('cerro_path');
+};
 await scenarios[scenario]();
 const state = await G(() => ({ act: window.__game.state.act, map: window.__game.map.id, ents: window.__game.entities.length, fps: 0 }));
 console.log(JSON.stringify(state));

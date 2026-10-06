@@ -4,35 +4,45 @@ import { HILOS_GOAL } from './quests.js';
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
-// --- the visitor -------------------------------------------------------------
-export function drawGray(ctx, t = 0, lookUp = 0) {
-  ctx.fillStyle = 'rgba(20,20,35,0.28)'; ctx.beginPath(); ctx.ellipse(0, 0, 5, 1.8, 0, 0, 7); ctx.fill();
-  const skin = '#aab3b8', dark = '#7e888d';
-  // legs & thin body
-  ctx.fillStyle = dark; ctx.fillRect(-1.6, -9, 1.2, 9); ctx.fillRect(0.5, -9, 1.2, 9);
-  ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(0, -13, 2.6, 5, 0, 0, 7); ctx.fill();
-  // long arms with three long fingers
-  ctx.strokeStyle = skin; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-2.2, -16); ctx.quadraticCurveTo(-4, -11, -3.6, -6); ctx.moveTo(2.2, -16); ctx.quadraticCurveTo(4, -11, 3.6 + Math.sin(t) * 0.3, -6); ctx.stroke();
-  ctx.lineWidth = 0.35;
-  for (const s of [-1, 1]) for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(s * 3.6, -6); ctx.lineTo(s * 3.6 + i * 0.5, -4.2); ctx.stroke(); }
-  // indigo stain on the right hand
-  ctx.fillStyle = 'rgba(70,60,200,0.8)'; ctx.beginPath(); ctx.arc(3.6, -5.8, 0.7, 0, 7); ctx.fill();
+// --- the visitors -------------------------------------------------------------
+// Drawn after what the children of the Ariel School (Ruwa, Zimbabwe, 1994) described: small beings
+// in tight, shiny black suits, thin bodies and long thin necks, big heads and enormous black eyes
+// that wrap around the face; one of them with long black hair. They do not speak with the mouth.
+export function drawGray(ctx, t = 0, lookUp = 0, hair = false) {
+  const sg = ctx.createRadialGradient(0, 0, 0.3, 0, 0, 6); sg.addColorStop(0, 'rgba(10,10,20,0.45)'); sg.addColorStop(1, 'rgba(10,10,20,0)');
+  ctx.save(); ctx.scale(1, 0.32); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(0, 0, 6, 0, 7); ctx.fill(); ctx.restore();
+  const suit = (x0, y0, x1, y1, w) => { const g = ctx.createLinearGradient(x0 - w, 0, x0 + w, 0); g.addColorStop(0, '#3a3d4a'); g.addColorStop(0.4, '#14151b'); g.addColorStop(1, '#050507'); ctx.strokeStyle = g; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
+  // thin legs and body in the black suit, with a sheen down the left side
+  suit(-0.9, -8.5, -1, -0.6, 1.3); suit(0.9, -8.5, 1, -0.6, 1.3);
+  ctx.fillStyle = '#0d0e13'; ctx.beginPath(); ctx.ellipse(0, -12.4, 2.4, 4.6, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(160,170,210,0.28)'; ctx.beginPath(); ctx.ellipse(-1.2, -13, 0.5, 3.4, 0.1, 0, 7); ctx.fill();
+  // long arms; three long fingers
+  suit(-2, -15.6, -3.2, -10.2, 0.9); suit(2, -15.6, 3.3 + Math.sin(t) * 0.2, -10.2, 0.9);
+  ctx.strokeStyle = '#aeb6bb'; ctx.lineWidth = 0.7; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-3.2, -10.2); ctx.lineTo(-3.4, -7); ctx.moveTo(3.3, -10.2); ctx.lineTo(3.5, -7); ctx.stroke();
+  ctx.lineWidth = 0.28;
+  for (const s of [-1, 1]) for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(s * 3.45, -7); ctx.lineTo(s * 3.45 + i * 0.45, -5.2); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(70,60,200,0.8)'; ctx.beginPath(); ctx.arc(3.5, -6.8, 0.6, 0, 7); ctx.fill(); // the añil on its fingertips
   ctx.lineCap = 'butt';
-  // big head
-  const hy = -24 - lookUp;
-  const g = ctx.createRadialGradient(-2, hy - 3, 1, 0, hy, 9);
-  g.addColorStop(0, '#d3dade'); g.addColorStop(1, '#8e989d');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, hy, 6.4, 7.4, 0, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-3, hy + 5); ctx.quadraticCurveTo(0, hy + 10, 3, hy + 5); ctx.fill();
-  // almond eyes
+  // the long thin neck
+  ctx.fillStyle = '#9aa3a8'; ctx.fillRect(-0.55, -20.5, 1.1, 4.2);
+  // the head: a large inverted pear, pale grey
+  const hy = -25 - lookUp;
+  if (hair) { ctx.fillStyle = '#0a0a0e'; ctx.beginPath(); ctx.ellipse(0, hy + 2.5, 6.4, 8.6, 0, 0, 7); ctx.fill(); }
+  const g = ctx.createRadialGradient(-2, hy - 3, 0.8, 0, hy, 8.5);
+  g.addColorStop(0, '#d9dfe2'); g.addColorStop(0.6, '#aab3b8'); g.addColorStop(1, '#7c868b');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-5.6, hy - 1); ctx.bezierCurveTo(-6.4, hy - 9, 6.4, hy - 9, 5.6, hy - 1); ctx.bezierCurveTo(5, hy + 4, 1.6, hy + 6.6, 0, hy + 6.8); ctx.bezierCurveTo(-1.6, hy + 6.6, -5, hy + 4, -5.6, hy - 1); ctx.fill();
+  if (hair) { ctx.fillStyle = '#0a0a0e'; ctx.beginPath(); ctx.moveTo(-5.8, hy - 1); ctx.bezierCurveTo(-6.6, hy - 9.6, 6.6, hy - 9.6, 5.8, hy - 1); ctx.lineTo(4.4, hy - 4.2); ctx.quadraticCurveTo(0, hy - 7, -4.4, hy - 4.2); ctx.closePath(); ctx.fill(); }
+  // the enormous black eyes, slanted, wrapping toward the sides
   for (const s of [-1, 1]) {
-    ctx.save(); ctx.translate(s * 2.6, hy + 1); ctx.rotate(s * 0.45);
-    ctx.fillStyle = '#0b0b12'; ctx.beginPath(); ctx.ellipse(0, 0, 2.2, 1.2, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(120,140,255,0.55)'; ctx.beginPath(); ctx.ellipse(-0.6, -0.3, 0.6, 0.3, 0, 0, 7); ctx.fill();
+    ctx.save(); ctx.translate(s * 2.5, hy + 0.6); ctx.rotate(s * 0.5);
+    const eg = ctx.createRadialGradient(-0.6, -0.4, 0.1, 0, 0, 2.6); eg.addColorStop(0, '#20202c'); eg.addColorStop(1, '#020203');
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.ellipse(0, 0, 2.6, 1.35, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(170,190,255,0.5)'; ctx.beginPath(); ctx.ellipse(-0.9, -0.45, 0.7, 0.28, 0, 0, 7); ctx.fill();
     ctx.restore();
   }
-  ctx.strokeStyle = '#6d777c'; ctx.lineWidth = 0.25; ctx.beginPath(); ctx.moveTo(-0.6, hy + 6); ctx.lineTo(0.6, hy + 6); ctx.stroke();
+  ctx.fillStyle = '#6d777c'; ctx.beginPath(); ctx.arc(-0.35, hy + 3.4, 0.14, 0, 7); ctx.arc(0.35, hy + 3.4, 0.14, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#6d777c'; ctx.lineWidth = 0.22; ctx.beginPath(); ctx.moveTo(-0.7, hy + 5); ctx.lineTo(0.7, hy + 5); ctx.stroke();
 }
 
 export function drawGrayPortrait(ctx, S, t = 0) {
@@ -40,20 +50,94 @@ export function drawGrayPortrait(ctx, S, t = 0) {
   const g0 = ctx.createRadialGradient(S / 2, S / 2, 10, S / 2, S / 2, S);
   g0.addColorStop(0, '#2a2a5a'); g0.addColorStop(1, '#0a0a1a');
   ctx.fillStyle = g0; ctx.fillRect(0, 0, S, S);
-  ctx.translate(S / 2, S * 0.58); const k = S / 22; ctx.scale(k, k);
+  ctx.translate(S / 2, S * 0.56); const k = S / 22; ctx.scale(k, k);
+  ctx.fillStyle = '#0d0e13'; ctx.beginPath(); ctx.ellipse(0, 15, 6, 4, 0, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#9aa3a8'; ctx.fillRect(-0.8, 6, 1.6, 6);
   const g = ctx.createRadialGradient(-2, -3, 1, 0, 0, 10);
-  g.addColorStop(0, '#d3dade'); g.addColorStop(1, '#8e989d');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 8, 9.5, 0, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-4, 6); ctx.quadraticCurveTo(0, 13, 4, 6); ctx.fill();
+  g.addColorStop(0, '#d9dfe2'); g.addColorStop(0.6, '#aab3b8'); g.addColorStop(1, '#7c868b');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-7.4, -1); ctx.bezierCurveTo(-8.4, -12, 8.4, -12, 7.4, -1); ctx.bezierCurveTo(6.6, 5, 2.2, 8.6, 0, 8.8); ctx.bezierCurveTo(-2.2, 8.6, -6.6, 5, -7.4, -1); ctx.fill();
   for (const s of [-1, 1]) {
-    ctx.save(); ctx.translate(s * 3.3, 1.2); ctx.rotate(s * 0.45);
-    ctx.fillStyle = '#07070d'; ctx.beginPath(); ctx.ellipse(0, 0, 2.9, 1.6, 0, 0, 7); ctx.fill();
-    // a tiny reflection of the three men in the eye
-    ctx.fillStyle = 'rgba(255,190,120,0.8)'; for (let i = -1; i <= 1; i++) ctx.fillRect(i * 0.7 - 0.12, -0.2, 0.24, 0.6);
-    ctx.fillStyle = 'rgba(150,170,255,0.6)'; ctx.beginPath(); ctx.ellipse(-0.9, -0.5, 0.8, 0.35, 0, 0, 7); ctx.fill();
+    ctx.save(); ctx.translate(s * 3.3, 0.8); ctx.rotate(s * 0.5);
+    ctx.fillStyle = '#030305'; ctx.beginPath(); ctx.ellipse(0, 0, 3.5, 1.8, 0, 0, 7); ctx.fill();
+    // in its eyes: a world on fire, and three small men by a fire
+    const pulse = (Math.sin(t * 1.5) + 1) / 2;
+    ctx.fillStyle = `rgba(255,${120 + pulse * 60},60,${0.35 + pulse * 0.3})`; ctx.beginPath(); ctx.ellipse(0.6, 0.5, 1.6, 0.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,190,120,0.8)'; for (let i = -1; i <= 1; i++) ctx.fillRect(i * 0.7 - 0.12, -0.3, 0.24, 0.6);
+    ctx.fillStyle = 'rgba(150,170,255,0.6)'; ctx.beginPath(); ctx.ellipse(-1.2, -0.6, 1, 0.35, 0, 0, 7); ctx.fill();
     ctx.restore();
   }
+  ctx.strokeStyle = '#6d777c'; ctx.lineWidth = 0.3; ctx.beginPath(); ctx.moveTo(-0.9, 6.2); ctx.lineTo(0.9, 6.2); ctx.stroke();
   ctx.restore();
+}
+
+// --- the vision they put in your head: a painted sequence, full screen ---------------------------
+export function playVision(ui) {
+  return new Promise(resolve => {
+    const el = document.createElement('div'); el.className = 'vision';
+    const cv = document.createElement('canvas'); el.appendChild(cv);
+    const cap = document.createElement('div'); cap.className = 'vision-cap'; el.appendChild(cap);
+    document.body.appendChild(el);
+    const W = cv.width = Math.min(1200, innerWidth * (devicePixelRatio || 1)), H = cv.height = Math.min(1200, innerHeight * (devicePixelRatio || 1));
+    const ctx = cv.getContext('2d');
+    const scenes = [
+      { d: 7, cap: 'Ves la Tierra desde muy alto. Toda está encendida: millones de luces pequeñas, una frente a cada rostro.' },
+      { d: 7, cap: 'Los rostros se inclinan hacia las luces. Nadie mira al de al lado. Los ojos crecen; las bocas se achican.' },
+      { d: 8, cap: 'Las fábricas no duermen. Arden los bosques. La Ciénega se seca y la laguna se vuelve polvo.' },
+      { d: 7, cap: 'La plaza de Jiquilpan, vacía un viernes. El kiosco oxidado. Las jacarandas, secas. Nadie se acuerda de nadie.' },
+      { d: 8, cap: '“No tiene que ser así”, sientes. Y ves la plaza llena: gente que se mira, que se escucha, que se toma de la mano.' },
+    ];
+    const t0 = performance.now();
+    const R = (i) => { const x = Math.sin(i * 127.1) * 43758.5453; return x - Math.floor(x); };
+    const frame = (now) => {
+      const t = (now - t0) / 1000;
+      let acc = 0, idx = 0; for (; idx < scenes.length; idx++) { if (t < acc + scenes[idx].d) break; acc += scenes[idx].d; }
+      if (idx >= scenes.length) { el.classList.add('out'); setTimeout(() => { el.remove(); resolve(); }, 900); return; }
+      const lt = t - acc, sc = scenes[idx], fade = Math.min(1, lt / 1.2, (sc.d - lt) / 1.2);
+      if (cap.dataset.i !== String(idx)) { cap.dataset.i = idx; cap.textContent = sc.cap; }
+      ctx.globalAlpha = 1; ctx.fillStyle = '#05040a'; ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = Math.max(0, fade);
+      const cx = W / 2, cy = H / 2, m = Math.min(W, H);
+      if (idx === 0) { // the earth, covered in small cold lights
+        const g = ctx.createRadialGradient(cx - m * 0.1, cy - m * 0.1, m * 0.05, cx, cy, m * 0.36); g.addColorStop(0, '#1d3a5a'); g.addColorStop(1, '#060b14');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, m * 0.34, 0, 7); ctx.fill();
+        for (let i = 0; i < 900; i++) { const a = R(i) * 6.283, r = Math.sqrt(R(i + 9)) * m * 0.33; const tw = (Math.sin(t * 3 + i) + 1) / 2; ctx.fillStyle = `rgba(150,200,255,${0.3 + tw * 0.6})`; ctx.fillRect(cx + Math.cos(a + t * 0.05) * r, cy + Math.sin(a + t * 0.05) * r * 0.98, 2, 2); }
+      } else if (idx === 1) { // faces bent over glowing rectangles, eyes growing
+        for (let i = 0; i < 9; i++) {
+          const x = (i % 3 + 0.5) * W / 3, y = (Math.floor(i / 3) + 0.5) * H / 3, s = m * 0.11, grow = 1 + lt * 0.08;
+          ctx.fillStyle = '#7d8a96'; ctx.beginPath(); ctx.ellipse(x, y, s * 0.75, s, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = '#05050a'; for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + sx * s * 0.3, y, s * 0.18 * grow, s * 0.1 * grow, sx * 0.4, 0, 7); ctx.fill(); }
+          ctx.fillStyle = '#3c4650'; ctx.fillRect(x - s * 0.1 / grow, y + s * 0.5, s * 0.2 / grow, s * 0.03);
+          const pg = ctx.createRadialGradient(x, y + s * 1.2, 2, x, y + s * 1.2, s); pg.addColorStop(0, 'rgba(140,200,255,0.9)'); pg.addColorStop(1, 'rgba(140,200,255,0)');
+          ctx.fillStyle = pg; ctx.fillRect(x - s, y + s * 0.4, s * 2, s * 1.6);
+          ctx.fillStyle = '#cfe8ff'; ctx.fillRect(x - s * 0.22, y + s * 1, s * 0.44, s * 0.6);
+        }
+      } else if (idx === 2) { // smokestacks, fire, a dried lake
+        const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#2a0d08'); sky.addColorStop(0.6, '#7a2a10'); sky.addColorStop(1, '#3a2a1a'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+        for (let i = 0; i < 7; i++) { const x = W * (0.1 + i * 0.13), h = H * (0.25 + R(i) * 0.2); ctx.fillStyle = '#140c08'; ctx.fillRect(x, H * 0.62 - h, W * 0.04, h); for (let k = 0; k < 6; k++) { const p = ((t * 0.3 + k / 6 + i * 0.1) % 1); ctx.fillStyle = `rgba(60,50,45,${0.5 * (1 - p)})`; ctx.beginPath(); ctx.arc(x + W * 0.02 + p * 60, H * 0.62 - h - p * H * 0.3, 10 + p * 50, 0, 7); ctx.fill(); } }
+        for (let i = 0; i < 40; i++) { const x = R(i + 3) * W, f = (Math.sin(t * 8 + i) + 1) / 2; ctx.fillStyle = `rgba(255,${120 + f * 80},30,0.8)`; ctx.beginPath(); ctx.moveTo(x - 10, H * 0.66); ctx.lineTo(x, H * 0.66 - 20 - f * 30); ctx.lineTo(x + 10, H * 0.66); ctx.fill(); }
+        ctx.fillStyle = '#8a7656'; ctx.fillRect(0, H * 0.66, W, H * 0.34);
+        ctx.strokeStyle = '#5a4a32'; ctx.lineWidth = 2; for (let i = 0; i < 30; i++) { const x = R(i + 7) * W, y = H * 0.7 + R(i + 8) * H * 0.28; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 30, y + 8); ctx.lineTo(x + 50, y - 4); ctx.stroke(); }
+      } else if (idx === 3) { // the empty plaza, the rusted kiosco, dead jacarandas
+        ctx.fillStyle = '#2a2830'; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#4a4650'; ctx.fillRect(0, H * 0.62, W, H * 0.38);
+        ctx.fillStyle = '#6a5040'; ctx.beginPath(); ctx.moveTo(cx - m * 0.2, H * 0.42); ctx.lineTo(cx, H * 0.3); ctx.lineTo(cx + m * 0.2, H * 0.42); ctx.fill();
+        ctx.strokeStyle = '#5a3a2a'; ctx.lineWidth = 3; for (const k of [-0.16, -0.06, 0.06, 0.16]) { ctx.beginPath(); ctx.moveTo(cx + k * m, H * 0.42); ctx.lineTo(cx + k * m, H * 0.6); ctx.stroke(); }
+        ctx.fillStyle = '#6a6070'; ctx.fillRect(cx - m * 0.22, H * 0.6, m * 0.44, H * 0.06);
+        for (const sx of [0.12, 0.88]) { ctx.strokeStyle = '#3a3030'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(W * sx, H * 0.66); ctx.lineTo(W * sx, H * 0.4); ctx.moveTo(W * sx, H * 0.48); ctx.lineTo(W * sx + 40, H * 0.36); ctx.moveTo(W * sx, H * 0.45); ctx.lineTo(W * sx - 35, H * 0.34); ctx.stroke(); }
+        for (let i = 0; i < 20; i++) { const x = R(i + 30) * W, y = H * 0.7 + R(i + 31) * H * 0.25; ctx.fillStyle = 'rgba(140,200,255,0.5)'; ctx.fillRect(x, y, 3, 5); } // phones left on the ground
+      } else { // the full plaza: people looking at each other, warm light
+        const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#1b2a5a'); sky.addColorStop(1, '#e8925a'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#d8c6a8'; ctx.fillRect(0, H * 0.62, W, H * 0.38);
+        ctx.fillStyle = '#f3efe6'; ctx.fillRect(cx - m * 0.2, H * 0.52, m * 0.4, H * 0.1); ctx.fillStyle = '#cf4a2c'; for (const k of [-0.2, -0.07, 0.06, 0.19]) ctx.fillRect(cx + k * m, H * 0.52, m * 0.02, H * 0.1);
+        ctx.fillStyle = '#7d868c'; ctx.beginPath(); ctx.moveTo(cx - m * 0.24, H * 0.42); ctx.lineTo(cx, H * 0.3); ctx.lineTo(cx + m * 0.24, H * 0.42); ctx.fill();
+        for (const sx of [0.1, 0.9]) { ctx.fillStyle = '#8e6cc4'; ctx.beginPath(); ctx.arc(W * sx, H * 0.42, m * 0.12, 0, 7); ctx.fill(); }
+        for (let i = 0; i < 26; i++) { const x = (i + 0.5) / 26 * W, y = H * (0.7 + (i % 3) * 0.08), s = m * 0.03; ctx.fillStyle = ['#c8463a', '#2e78c4', '#2f9356', '#f2c230', '#efe8da'][i % 5]; ctx.fillRect(x - s * 0.6, y - s * 2, s * 1.2, s * 2); ctx.fillStyle = '#b9835b'; ctx.beginPath(); ctx.arc(x, y - s * 2.6, s * 0.6, 0, 7); ctx.fill(); if (i % 2 === 0) { ctx.strokeStyle = '#b9835b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + s * 0.6, y - s * 1.4); ctx.lineTo(x + W / 26 - s * 0.6, y - s * 1.4); ctx.stroke(); } }
+        const glow = ctx.createRadialGradient(cx, H * 0.55, 10, cx, H * 0.55, m * 0.6); glow.addColorStop(0, 'rgba(255,220,160,0.35)'); glow.addColorStop(1, 'rgba(255,220,160,0)'); ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
 }
 
 // --- sky effects ------------------------------------------------------------------
@@ -92,11 +176,11 @@ class SkyLights {
 }
 
 class GrayEntity {
-  constructor(map, x, y) { this.map = map; this.x = x; this.y = y; this.t = 0; this.alpha = 0; this.solid = false; this.lookUp = 0; }
+  constructor(map, x, y, hair) { this.map = map; this.x = x; this.y = y; this.t = 0; this.alpha = 0; this.solid = false; this.lookUp = 0; this.hair = hair; }
   update(dt) { this.t += dt; }
   draw(ctx, game) {
     ctx.save(); ctx.globalAlpha = this.alpha; ctx.translate(this.x, this.y); ctx.scale(1.25, 1.25);
-    drawGray(ctx, this.t, this.lookUp);
+    drawGray(ctx, this.t, this.lookUp, this.hair);
     ctx.restore();
   }
 }
@@ -171,8 +255,9 @@ async function ufo(game) {
   game.dynamicLights = [{ x: sky.landX, y: sky.landY, r: 200, color: '#9fb4ff', power: 0.9 }];
   P.pose = null; P.dir = 1;
   const gray = new GrayEntity(game.map, sky.landX, sky.landY);
-  game.effects.push(gray);
-  for (let i = 0; i <= 20; i++) { gray.alpha = i / 20; await wait(50); }
+  const gray2 = new GrayEntity(game.map, sky.landX + 26, sky.landY - 4, true); // the second one, with long black hair, stays by the craft
+  game.effects.push(gray, gray2);
+  for (let i = 0; i <= 20; i++) { gray.alpha = i / 20; gray2.alpha = i / 20; await wait(50); }
   // it walks toward the camp
   for (let i = 0; i <= 50; i++) { gray.x = lerp(sky.landX, 43.5 * TILE, i / 50); gray.y = lerp(sky.landY, 117.6 * TILE, i / 50); await wait(40); }
   if (tono) { tono.look.holds = 'rifle'; tono.dir = 1; }
@@ -185,12 +270,17 @@ async function ufo(game) {
   await wait(400);
   await d.scene(async d => {
     await d.narrate('Y entonces todo se detiene. El fuego queda quieto, como pintado. El viento no sopla. Don Toño es una estatua con el dedo en el gatillo. Tú no puedes mover ni los párpados.');
-    await d.narrate('El ser camina entre ustedes sin prisa. Es pequeño, gris, delgado. Se detiene frente a Don Toño y lo mira a los ojos. Luego frente a tu abuelo. Luego frente a ti.');
+    await d.narrate('Son dos. Pequeños, del tamaño de un niño. Un traje negro, ceñido, que brilla con la luz de la nave como piel de pez. El cuello largo y delgadísimo. La cabeza grande, gris, y unos ojos negros enormes que le dan la vuelta a la cara. El otro, junto a la nave, tiene el pelo negro y largo, y no se mueve.');
+    await d.narrate('El primero camina entre ustedes sin prisa. Se detiene frente a Don Toño. Luego frente a tu abuelo. Luego frente a ti, y te mira a los ojos. No puedes dejar de mirar esos ojos: son como asomarse a un pozo sin fondo.');
     const visitor = { name: '…', role: 'el visitante', look: { alien: true } };
-    await d.say(visitor, '(No mueve la boca. Su voz suena dentro de tu cabeza, con la voz de tu propia abuela, de tu maestra de primaria, de todos a la vez.)');
+    await d.say(visitor, '(No mueve la boca. Lo que dice no son palabras: son imágenes que se te meten en la cabeza, y una voz que suena como la de tu abuela, la de tu maestra de primaria, la de todos a la vez.)');
+  });
+  await playVision(ui);
+  await d.scene(async d => {
+    const visitor = { name: '…', role: 'el visitante', look: { alien: true } };
     await d.say(visitor, 'Nosotros también teníamos una plaza. Y un kiosco. Y viernes.');
-    await d.say(visitor, 'Pusimos una luz pequeña entre cada rostro. Nuestros ojos crecieron para mirarla. Nuestras bocas se hicieron pequeñas, porque ya no hablábamos.');
-    await d.say(visitor, 'Díganles que apaguen la luz pequeña. Que se miren. Que se escuchen. Antes de que olviden cómo.');
+    await d.say(visitor, 'Pusimos una luz pequeña entre cada rostro. Nuestros ojos crecieron para mirarla. Nuestras bocas se hicieron pequeñas, porque ya no hablábamos. Y mientras mirábamos la luz, se nos secó el agua y se nos quemó la tierra.');
+    await d.say(visitor, 'Cuiden su tierra. Apaguen la luz pequeña. Mírense. Escúchense. Tengan compasión unos de otros. Antes de que olviden cómo.');
     await d.narrate('El ser toma la mano derecha de tu abuelo. Donde lo toca queda una mancha azul, profunda, del color del añil. Luego toma la tuya.');
   });
   game.flags.mancha = true;
@@ -200,7 +290,7 @@ async function ufo(game) {
   game.sfx('hilo');
   await wait(1200);
   await ui.fade(true, true, 1400);
-  game.effects = game.effects.filter(e => e !== sky && e !== gray);
+  game.effects = game.effects.filter(e => e !== sky && e !== gray && e !== gray2);
   game.dynamicLights = [];
   game.frozen = false;
   // five months later

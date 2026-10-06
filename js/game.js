@@ -2,7 +2,7 @@
 import { TILE, clamp, dist, lerp, pick } from './util.js';
 import { G } from './world.js';
 import { buildTown, applyWeekday } from './data/town.js';
-import { buildCerro, buildTotolan, buildAbadiano, buildSarabia } from './data/regions.js';
+import { buildCerro, buildTotolan, buildAbadiano, buildSarabia, buildLagunita } from './data/regions.js';
 import { buildInterior } from './data/interiors.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
@@ -29,8 +29,8 @@ const SAVE_KEY = 'xiq_save', SETTINGS_KEY = 'xiq_settings';
 const INFO = {
   aguadora: 'La Fuente de la Aguadora. El conjunto lo diseñó el escultor Federico Canessi, que vivió en Jiquilpan de 1934 a 1940. Honra a las mujeres que acarreaban el agua en cántaros desde la Fuente del Zalate hasta las casas, antes de que hubiera tubería. Hoy es el símbolo del pueblo.',
   fuente: 'La fuente del Jardín Zaragoza. Los niños le avientan monedas y piden deseos; los novios se sientan en su orilla los viernes.',
-  obelisco: 'El obelisco a Rioseco y Ornelas. Por su forma, aquí le dicen “el monumento de la botella”.',
-  juarez: 'Monumento a Benito Juárez. La escultura, sobre su base piramidal, se instaló en 1939 en el Parque Juárez y en 1968 se trasladó al mirador. Desde aquí se ve todo Jiquilpan y, al fondo, el Cerro de San Francisco.',
+  obelisco: 'El obelisco de La Trasquila. Por su forma le dicen “La Botellita”. Para llegar hay que subir los escalones pintados de verde, blanco y rojo; unos los suben corriendo, otros se sientan a medio camino a ver el pueblo.',
+  juarez: 'Monumento a Benito Juárez, al final de su escalinata, detrás del estadio, entre callejones empedrados. Desde aquí se ve el bosque y, al fondo, el Cerro de San Francisco.',
   cardenas: 'Monumento al General Lázaro Cárdenas del Río (1895–1970), nacido en Jiquilpan. Presidente de México de 1934 a 1940; el 18 de marzo de 1938 decretó la expropiación petrolera. Por eso el estadio se llama así. A sus pies arde una llama que nunca se apaga: la gente dice que mientras arda, el pueblo no olvida.',
   pescados: 'La Fuente de los Pescados, en el camellón de Av. Las Palmas. De noche, junto a ella, se ponen unos tacos que valen la pena.',
   estadio: 'La portada del Estadio 18 de Marzo, con su águila de bronce en lo alto. El nombre recuerda el 18 de marzo de 1938, el día de la expropiación petrolera. A los lados, dos tablas con las palabras del General Cárdenas: “Los recursos naturales del país deben servir para su propia prosperidad. Entregarlos a intereses extraños es traicionar la patria.”',
@@ -53,7 +53,7 @@ const INFO = {
   plaque_quote: '“Los recursos naturales del país deben servir para su propia prosperidad. Entregarlos a intereses extraños es traicionar la patria.” — General Lázaro Cárdenas del Río.',
   plaque_bejar: 'Placa: Feliciano Béjar (Jiquilpan, 1920 – Ciudad de México, 2007), pintor y escultor, creador de los “magiscopios” de vidrio y acero.',
   piedrita: 'La Piedrita. Un hilo de agua que baja entre las piedras negras y cae a una poza chiquita. Aquí suben las parejas, los que van a rezar y los que vienen a ver las luces. En la piedra alguien rayó: “AQUÍ LAS VIMOS — 1998”.',
-  subida: 'La “subida mágica”. Dicen que si dejas el carro en neutral aquí, se va solito para arriba. Los que saben dicen que es ilusión óptica. Los que han visto las luces dicen que no.',
+  subida: 'La “subida mágica”. Cuentan que si pones aquí una canica, o un bote, se va solito para arriba. Antes los de los ranchos subían con su carro a probarlo; ahora el camino es puro empedrado y ya no sube ninguno. Los que saben dicen que es ilusión óptica. Los que han visto las luces dicen que no.',
   trash: 'Bolsas de basura, latas y una silla rota. Por eso le dicen “El Santo Mugrero”.',
   palenque: 'El palenque del estadio. En temporada (de noviembre a Reyes) hay peleas de gallos y bailes hasta las cuatro de la mañana.',
   lucia_paz: 'La escultura de Lucía de la Paz, en el centro del jardín que lleva su nombre. A su alrededor, los andadores en cruz y en círculo; en la orilla, la vuelta que la gente da para hacer ejercicio. Los más viejos cuentan, en voz baja, que este jardín fue el panteón del pueblo, y que por eso los árboles crecen tan grandes.',
@@ -208,6 +208,7 @@ export class Game {
     else if (id === 'totolan') m = buildTotolan();
     else if (id === 'abadiano') m = buildAbadiano();
     else if (id === 'sarabia') m = buildSarabia();
+    else if (id === 'lagunita') m = buildLagunita();
     else m = buildInterior(id);
     if (m) this.maps[id] = m;
     return m;
@@ -511,6 +512,7 @@ export class Game {
       { text: 'Al Bosque Juárez (la Portada) — $35', value: ['town', 194, 253.5, 35] },
       { text: 'A la Casita de Piedra — $40', value: ['town', 29.5, 255, 40] },
       { text: 'A la salida al Cerro (por el panteón) — $40', value: ['town', 6, 20, 40] },
+      ...(this.quests.q('main').stage >= 2 ? [{ text: 'A La Lagunita — $50', value: ['lagunita', null, null, 50] }] : []),
       { text: 'A Totolán, Abadiano o Sarabia', value: ['closed', null, null, 0] },
       { text: 'A Sahuayo — $90', value: ['sahuayo', null, null, 90] },
       { text: 'Mejor no', value: null },
@@ -594,14 +596,15 @@ export class Game {
     for (const e of this.entities) {
       if (e === p || e.map !== m || e.hidden) continue;
       if (!(e.def || e.item || e.owner)) continue;
-      const d = dist(px, py, e.x, e.y - (e.def ? 4 : 0));
+      const d = dist(px, py, e.x, e.y - (e.def ? 4 : 0)) + (e.companion ? 20 : 0); // your own dog never steals the button
       if (d < bd) { bd = d; best = { type: e.item ? 'item' : 'npc', e: e.owner || e }; }
     }
     // a quest landmark right in front of you (the kiosco) wins over a passer-by
     if (best && best.e.def?.crowd) {
       for (const s of m.spritesInView(p.x - 40, p.y - 40, p.x + 40, p.y + 40)) if (s.priority && s.interact && dist(px, py, s.x, s.y - 4) < 30) return { type: 'sprite', s };
     }
-    if (best) return best;
+    if (best && !best.e.companion) return best;
+    const dogBest = best; best = null;
     // sprites with an interaction
     for (const s of m.spritesInView(p.x - 40, p.y - 40, p.x + 40, p.y + 40)) {
       if (!s.interact) continue;
@@ -614,7 +617,7 @@ export class Game {
     const tx = Math.floor((p.x + fx * 12) / TILE), ty = Math.floor((p.y + fy * 12) / TILE);
     const door = m.doors.find(d => tx >= d.x && tx < d.x + d.w && ty >= d.y && ty < d.y + d.h);
     if (door) return { type: 'door', door };
-    return null;
+    return dogBest;
   }
   promptFor(it) {
     if (!it) return null;
@@ -798,6 +801,10 @@ export class Game {
   }
   useExit(ex) {
     if (ex.to === '__back' || ex.to === '__back2') { this.exitInterior(ex.to); return; }
+    if (ex.to === 'closed' && ex.label === 'La Lagunita' && this.quests.q('main').stage >= 2) { // the road opens once you know whom to ask
+      this.transition(() => { this.returnStack = []; this.clock.minutes += 30; this.changeMap('lagunita', 35, 48, 1); this.ui.banner('La Lagunita', 'De aquí es la familia de tu abuelo'); });
+      return;
+    }
     if (ex.to === 'closed') {
       const p = this.player;
       if (ex.w >= ex.h) p.y += (ex.y === 0 ? 1 : -1) * 22; else p.x += (ex.x === 0 ? 1 : -1) * 22;

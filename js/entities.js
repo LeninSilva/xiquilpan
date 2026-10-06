@@ -429,7 +429,14 @@ function drawTwoWheeler(ctx, v, d, game) {
   const horiz = d === DIR.E || d === DIR.W;
   const t = v.animT || 0;
   const color = v.kind === 'rino' ? (v.teamBike || '#e8e8e8') : v.color;
-  if (horiz) { ctx.save(); if (d === DIR.W) ctx.scale(-1, 1); drawBikeSide(ctx, v.kind === 'moto' ? 'moto' : 'bici', color, t); ctx.restore(); }
+  if (horiz) {
+    ctx.save(); if (d === DIR.W) ctx.scale(-1, 1); drawBikeSide(ctx, v.kind === 'moto' ? 'moto' : 'bici', color, t);
+    if (v.basket) { // the delivery basket with a bucket of beer and ice
+      ctx.fillStyle = '#6b4a2e'; ctx.fillRect(-10, -12, 6, 4.2); ctx.strokeStyle = '#3e2a18'; ctx.lineWidth = 0.25; for (let i = -10; i < -4; i += 1.2) { ctx.beginPath(); ctx.moveTo(i, -12); ctx.lineTo(i, -7.8); ctx.stroke(); }
+      ctx.fillStyle = '#e8e8e6'; ctx.fillRect(-9.2, -15, 4.4, 3.4); ctx.fillStyle = '#f2d24a'; ctx.fillRect(-8.6, -16.4, 0.9, 2); ctx.fillRect(-7.2, -16.8, 0.9, 2.4); ctx.fillStyle = '#cfe8f2'; ctx.fillRect(-9, -15.4, 4, 0.6);
+    }
+    ctx.restore();
+  }
   else drawBikeTop(ctx, v.kind === 'moto' ? 'moto' : 'bici', color);
   if (v.riderLook) {
     const dir = d === DIR.N ? 1 : d === DIR.S ? 0 : d === DIR.W ? 2 : 3;

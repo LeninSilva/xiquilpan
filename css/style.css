@@ -275,3 +275,7 @@ body.talking .tracker, body.talking .compass, body.cine .tracker { opacity: 0; p
 .pelea-zone { position: absolute; top: 0; bottom: 0; background: linear-gradient(#f2c94c, #d9a52a); border-radius: 13px; }
 .pelea-mark { position: absolute; top: -2px; bottom: -2px; width: 6px; background: #3a2418; border-radius: 3px; }
 .pelea-msg { text-align: center; margin: 12px 0 2px; color: #5a3e2a; min-height: 2.6em; }
+.vision { position: fixed; inset: 0; z-index: 60; background: #05040a; display: grid; place-items: center; animation: rise .8s ease-out; transition: opacity .9s; }
+.vision.out { opacity: 0; }
+.vision canvas { width: 100%; height: 100%; object-fit: cover; }
+.vision-cap { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); width: min(560px, 88vw); text-align: center; color: #e9e4ff; font-family: Fraunces, Georgia, serif; font-size: clamp(16px, 2.4vw, 22px); line-height: 1.45; text-shadow: 0 2px 12px rgba(0,0,0,0.9); }

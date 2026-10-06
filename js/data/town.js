@@ -9,7 +9,8 @@
 //    (statue + two greyhounds by Durenne) on its east side; across the avenue, the Palacio Municipal.
 //  * The Parroquia de San Francisco is at Fajardo and Abasolo Oriente.
 //  * The MEX 15 leaves east toward Totolán / Zamora, with the Pueblo Mágico roundabout at the entrance.
-//  * Av. Las Palmas runs diagonally north-west up to the Monumento a Juárez on La Trasquila hill.
+//  * Av. Las Palmas runs diagonally north-west to La Trasquila hill: tricolor stairs climb to “La Botellita”.
+//  * The Monumento a Juárez and its escalinata stand on a rise behind the stadium, among cobbled lanes.
 import { GameMap, G, ROADS } from '../world.js';
 import { fbm, hash2, TILE } from '../util.js';
 import { hStreet, vStreet, laneLoop, sprite, building, block, tree, door, area, light, ensureLanes, diagonalRoad, river, distToPolyline } from './build.js';
@@ -34,7 +35,8 @@ export function buildTown() {
     if (y < 25) e -= (25 - y) * 0.25;
     if (x < 110) e += (110 - x) * 0.07;                       // the west side is higher (water runs east)
     e += (300 - x) * 0.012;                                   // …and the valley tilts a little east, toward the river
-    const tq = ((x - 32) ** 2 + (y - 72) ** 2) / (2 * 17 * 17); e += 46 * Math.exp(-tq); // La Trasquila
+    const tq = ((x - 46) ** 2 + (y - 66) ** 2) / (2 * 17 * 17); e += 46 * Math.exp(-tq); // La Trasquila (La Botellita on top)
+    const ej = ((x - 172) ** 2 + (y - 238) ** 2) / (2 * 7 * 7); e += 9 * Math.exp(-ej); // the little rise of the Monumento a Juárez
     const sc = ((x - 40) ** 2 + (y - 30) ** 2) / (2 * 20 * 20); e += 22 * Math.exp(-sc); // San Cayetano
     const jp = ((x - 171) ** 2 + (y - 52) ** 2) / (2 * 7 * 7); e -= 5 * Math.exp(-jp);   // Jardín de la Paz sits in a dip
     m.elev[y * m.w + x] = e;
@@ -102,26 +104,31 @@ export function buildTown() {
   door(m, 82, 28, 'tortilleria', 'Tortillería de la curva (Maseca)', { hours: [6, 15] });
   area(m, 'Tortillería de la curva', 78, 23, 8, 6, 'shop');
 
-  // --- La Trasquila hill, Monumento a Juárez and its escalinata ----------------------------------
+  // --- La Trasquila hill: the tricolor stairs from Constitución up to La Botellita (the obelisk) ---------------
+  // Across the street, at the foot of the stairs, the Modelorama of Las Palmas.
   for (let y = 44; y < 108; y++) for (let x = 6; x < 58; x++) if (HILL(x, y) && !ROADS.has(m.get(x, y))) m.set(x, y, fbm(x * 0.1, y * 0.1, 3) > 0.52 ? G.FOREST : G.GRASS);
-  m.fill(26, 64, 12, 9, G.PLAZA);
-  sprite(m, 'monJuarez', 32, 69.5, { scale: 1.4, w: 44, up: 60, collide: [-17, -8, 34, 8], interact: 'juarez' });
-  m.fill(31, 44, 3, 20, G.STAIRS);
-  for (let x = 26.4; x < 37.8; x += 1.1) if (x < 30.5 || x > 34.5) sprite(m, 'balustre', x, 64.7, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
-  for (let y = 65.5; y < 73; y += 1.1) for (const x of [26.4, 37.6]) sprite(m, 'balustre', x, y, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
-  for (let y = 45; y < 64; y += 3) { sprite(m, 'balustre', 30.6, y + 0.6, { w: 8, up: 10, collide: [-2, -2, 4, 2] }); sprite(m, 'balustre', 34.4, y + 0.6, { w: 8, up: 10, collide: [-2, -2, 4, 2] }); }
-  for (const [x, y] of [[40, 50], [54, 52], [20, 60], [14, 80], [44, 84], [22, 96], [50, 98], [12, 50], [48, 70]]) tree(m, x, y, 'jacaranda', { size: 1.1 });
+  const STX = 54, STY = 44, STH = 16;               // the stairs: 3 tiles wide, 16 long
+  m.fill(46, STY + STH, 12, 8, G.PLAZA);            // the mirador on top
+  m.fill(STX, STY, 3, STH, G.STAIRS);
+  m.structures.push({ kind: 'tricolorSteps', x: STX, y: STY, w: 3, h: STH, layer: 2, margin: 0 });
+  sprite(m, 'obelisco', 52, STY + STH + 4.6, { scale: 1.35, w: 60, up: 100, collide: [-10, -8, 20, 8], interact: 'obelisco' });
+  for (let x = 46.4; x < 57.8; x += 1.1) if (x < STX - 0.4 || x > STX + 3.2) sprite(m, 'balustre', x, STY + STH + 0.7, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
+  for (let y = STY + STH + 1.5; y < STY + STH + 8; y += 1.1) for (const x of [46.4, 57.6]) sprite(m, 'balustre', x, y, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
+  for (const [bx, by] of [[49, STY + STH + 2.2], [55, STY + STH + 7.2]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
+  // wild trees on both sides of the stairs: jacarandas, fresnos, a huizache
+  for (let y = STY + 1; y < STY + STH; y += 2.6) { tree(m, STX - 1.2, y + 0.6, ['jacaranda', 'fresno', 'jacaranda', 'huizache'][Math.floor(y) % 4], { size: 0.9 + (y % 3) * 0.08, collide: [-2, -2, 4, 3] }); if (y < STY + STH - 2) tree(m, STX + 4.2, y + 1.6, ['fresno', 'jacaranda', 'eucalipto'][Math.floor(y) % 3], { size: 0.95, collide: [-2, -2, 4, 3] }); }
+  for (const [x, y] of [[40, 50], [30, 52], [20, 60], [14, 80], [44, 84], [22, 96], [50, 98], [12, 50], [36, 70]]) tree(m, x, y, 'jacaranda', { size: 1.1 });
   for (let i = 0; i < 70; i++) {
     const x = 7 + Math.floor(hash2(i, 1, 99) * 50), y = 45 + Math.floor(hash2(i, 2, 99) * 62);
-    if (!HILL(x, y) || m.get(x, y) === G.PLAZA || m.get(x, y) === G.STAIRS || Math.abs(x - 32) < 7 && y > 60 && y < 75) continue;
+    if (!HILL(x, y) || m.get(x, y) === G.PLAZA || m.get(x, y) === G.STAIRS || (x > STX - 9 && x < STX + 5 && y < STY + STH + 9)) continue;
     const kinds = ['jacaranda', 'eucalipto', 'fresno', 'bush', 'huizache', 'jacaranda'];
     const k = kinds[Math.floor(hash2(i, 3, 99) * kinds.length)];
     if (k === 'bush') sprite(m, 'bush', x + 0.5, y + 0.8, { seed: i, w: 24, up: 18, collide: [-4, -3, 8, 3] });
     else tree(m, x + 0.5, y + 0.8, k);
   }
   area(m, 'Cerrito de La Trasquila', 6, 44, 52, 62, 'park');
-  area(m, 'Mirador y Monumento a Juárez', 26, 62, 12, 11, 'monument');
-  area(m, 'Escalinata de Juárez', 30, 44, 5, 20, 'stairs');
+  area(m, 'Mirador de La Trasquila — “La Botellita”', 46, STY + STH, 12, 8, 'monument');
+  area(m, 'Escalones de La Trasquila (los tricolores)', STX, STY, 3, STH, 'stairs');
 
   // --- Plaza Principal (Jardín) --------------------------------------------------------------
   const PX = 114, PY = 93, PW = 24, PH = 17;
@@ -245,9 +252,9 @@ export function buildTown() {
   for (const [x, y] of [[78.8, 67], [93.2, 67], [78.8, 78.6], [93.2, 78.6]]) tree(m, x, y, 'ficus', { size: 0.85, collide: [-2, -2, 4, 3] });
   area(m, 'Santuario del Sagrado Corazón', 78, 64, 16, 16, 'building');
   m.fill(78, 128, 16, 12, G.PLAZA); m.fill(80, 130, 12, 8, G.GARDEN); m.fill(84, 130, 4, 8, G.PLAZA);
-  sprite(m, 'obelisco', 86, 136.5, { scale: 1.35, w: 60, up: 100, collide: [-10, -8, 20, 8], interact: 'obelisco' });
+  sprite(m, 'fuenteChica', 86, 135.2, { scale: 1.2, w: 30, up: 30, collide: [-8, -4, 16, 5] });
   for (const [x, y] of [[81, 131], [91, 131], [81, 138], [91, 138]]) tree(m, x, y, 'jacaranda', { size: 0.9 });
-  area(m, 'Obelisco a Rioseco y Ornelas (“la Botella”)', 78, 128, 16, 12, 'monument');
+  area(m, 'Jardín Rioseco y Ornelas', 78, 128, 16, 12, 'park');
   building(m, 'hospital', 54, 84, 20, 22, { label: 'CLÍNICA IMSS', tall: 60 });
   door(m, 64, 105, 'hospital', 'Clínica IMSS');
   area(m, 'Clínica IMSS', 54, 84, 20, 22, 'building');
@@ -290,9 +297,9 @@ export function buildTown() {
   area(m, 'Cremería La Paz', 166, 22, 9, 18, 'shop');
 
   // --- east side: hospital, abuela, micheladas ---------------------------------------
-  building(m, 'hospital', 214, 128, 20, 12, { label: 'HOSPITAL GENERAL', tall: 60 });
-  door(m, 224, 139, 'hospital', 'Hospital General');
-  area(m, 'Hospital General', 214, 128, 20, 12, 'building');
+  building(m, 'hospital', 214, 128, 20, 12, { label: 'ISSSTE · CLÍNICA HOSPITAL', issste: true, tall: 60 });
+  door(m, 224, 139, 'hospital', 'ISSSTE — Clínica Hospital Jiquilpan');
+  area(m, 'Clínica Hospital del ISSSTE', 214, 128, 20, 12, 'building');
   block(m, 214, 144, 7, 12); block(m, 229, 144, 5, 12);
   building(m, 'casaAbuela', 221, 147, 8, 9, { tall: 40 });
   m.fill(221, 144, 8, 3, G.ROOF); m.setSolid(221, 144, 8, 3);
@@ -391,9 +398,14 @@ export function buildTown() {
   tree(m, 33.5, 35, 'jacaranda', { size: 1.1 }); tree(m, 46, 35, 'jacaranda', { size: 1 });
   area(m, 'Barrio de San Cayetano', 28, 18, 30, 26, 'district');
   area(m, 'Capilla de San Cayetano', 32, 22, 16, 17, 'building');
-  block(m, 54, 22, 20, 18, { outskirts: true, facades: [{ x: 58, w: 9, exact: true, kind: 'shop', sign: 'REBOZOS · TALLER', signBg: '#5b3f7a', signFg: '#f7e7c9', wall: '#f1e4d0', fh: 30 }] });
-  door(m, 62, 39, 'reboceria', 'Taller de rebozos de Doña Amparo', { hours: [8, 19] });
-  area(m, 'Taller de rebozos', 58, 22, 9, 18, 'shop');
+  block(m, 54, 22, 20, 18, { outskirts: true, facades: [{ x: 54, w: 6, exact: true, kind: 'shop', sign: 'MODELORAMA', signBg: '#f2c230', signFg: '#1f3f8f', wall: '#f7f3e8', band: '#1f3f8f', fh: 30 },
+    { x: 62, w: 9, exact: true, kind: 'shop', sign: 'REBOZOS · TALLER', signBg: '#5b3f7a', signFg: '#f7e7c9', wall: '#f1e4d0', fh: 30 }] });
+  door(m, 66, 39, 'reboceria', 'Taller de rebozos de Doña Amparo', { hours: [8, 19] });
+  door(m, 57, 39, 'tienda_970_MODELORAMA', 'Modelorama Las Palmas', { hours: [10, 23] });
+  sprite(m, 'beerCrates', 55.2, 40.4, { n: 6, seed: 3, w: 30, up: 20, collide: [-11, -4, 22, 4] });
+  sprite(m, 'parkedMoto', 59.4, 40.6, { color: '#c0392b', basket: true, w: 20, up: 18, collide: [-5, -3, 10, 3] });
+  area(m, 'Modelorama Las Palmas', 54, 22, 6, 18, 'shop');
+  area(m, 'Taller de rebozos', 62, 22, 9, 18, 'shop');
   building(m, 'chamacuero', 8, 26, 12, 9, { tall: 40 });
   door(m, 14, 34, 'chamacuero', 'Mezcal El Chamacuero', { hours: [9, 20] });
   area(m, 'El Chamacuero (mezcal)', 6, 24, 18, 14, 'shop');
@@ -413,7 +425,7 @@ export function buildTown() {
   }
   area(m, 'Colonia del Panteón', 0, 0, 110, 18, 'district');
   sprite(m, 'signpost', 3.5, 23, { text: '← SAN FRANCISCO · RANCHOS', bg: '#6b4a30', w: 70, up: 30 });
-  for (let i = 0; i < 16; i++) sprite(m, 'agave', 4 + (i % 8) * 2.5, 40 + Math.floor(i / 8) * 2, { w: 22, up: 16, collide: [-3, -2, 6, 2] });
+  for (let i = 0; i < 16; i++) sprite(m, 'agave', 8 + (i % 8) * 2.5, 46 + Math.floor(i / 8) * 2.2, { w: 22, up: 16, collide: [-3, -2, 6, 2] });
   m.fill(266, 30, 28, 16, G.DIRT);
   for (const [x, y, w, h] of [[266, 30, 28, 1], [266, 45, 12, 1], [282, 45, 12, 1], [266, 30, 1, 16], [293, 30, 1, 16]]) { m.structures.push({ kind: 'fence', x, y, w, h, layer: 3 }); m.setSolid(x, y, w, h); }
   sprite(m, 'corralShade', 274, 36, { scale: 1.2, w: 60, up: 44, collide: [-12, -8, 24, 8], interact: 'pajarete' });
@@ -455,6 +467,33 @@ export function buildTown() {
   for (const [lx, ly] of [[60, 253], [110, 253], [175, 253], [230, 253], [60, 325], [230, 325]]) { sprite(m, 'lamp', lx, ly, { scale: 1.25, w: 8, up: 32, collide: [-1, -1, 2, 2] }); light(m, lx, ly - 1, 70); }
   sprite(m, 'signpost', 156.5, 330, { text: 'BOSQUE · FIN DEL CAMINO', bg: '#6b4a30', w: 60, up: 30 });
   m.exits.push({ x: 0, y: 18, w: 1, h: 4, to: 'cerro', tx: 40.5, ty: 2.6, dir: 0, label: 'Cerro de San Francisco' });
+
+  // --- CBTIS (bachillerato tecnológico), on the east side by Circunvalación ------------------------------
+  building(m, 'escuelaTipo', 238, 144, 20, 12, { tall: 60, label: 'C.B.T.i.s. JIQUILPAN', band: '#7a1f2b', plaqueBg: '#5a1a22' });
+  door(m, 248, 155, 'cbtis', 'CBTIS — Centro de Bachillerato Tecnológico industrial y de servicios', { hours: [7, 20] });
+  area(m, 'CBTIS', 238, 144, 20, 12, 'building');
+  // --- Universidad de la Ciénega (UCEMICH), up the hill on the way out to Sahuayo -----------------------
+  for (let y = 0; y < 18; y++) for (let x = 156; x < 196; x++) { const d = Math.hypot((x - 176) / 16, (y - 8) / 9); if (d < 1) m.elev[y * m.w + x] += 14 * (1 - d * d); }
+  m.fill(162, 2, 28, 15, G.GRASS);
+  building(m, 'ucemich', 164, 3, 24, 9, { tall: 50 });
+  m.fill(164, 12, 24, 3, G.PLAZA); m.fill(174, 15, 4, 3, G.PLAZA);
+  hStreet(m, 'Av. de la Universidad', 156, 174, 15, 3, { surface: G.ASPHALT, sidewalk: false });
+  door(m, 176, 11, 'ucemich', 'Universidad de la Ciénega del Estado de Michoacán de Ocampo', { hours: [7, 21] });
+  for (const [x, y] of [[163, 13], [189, 13], [166, 16.5], [186, 16.5]]) tree(m, x, y, 'fresno', { size: 1.1 });
+  sprite(m, 'signpost', 157.5, 14.4, { text: 'UNIVERSIDAD DE LA CIÉNEGA ↑', bg: '#1d4f91', w: 70, up: 30 });
+  area(m, 'Universidad de la Ciénega (UCEMICH)', 162, 2, 28, 16, 'building');
+  // --- Monumento a Juárez and its escalinata, on a rise behind the stadium, among cobbled lanes -------------
+  vStreet(m, 'Callejón de la Escalinata', 158, 228, 244, 3, { surface: G.COBBLE, sidewalk: false });
+  vStreet(m, 'Callejón del Rincón', 182, 228, 244, 3, { surface: G.COBBLE, sidewalk: false });
+  for (let x = 156; x < 186; x++) for (const y of [224, 225, 226, 227]) if (m.get(x, y) === G.DIRTROAD) m.set(x, y, G.COBBLE);
+  m.fill(165, 233, 14, 8, G.PLAZA);
+  m.fill(171, 228, 3, 5, G.STAIRS);
+  sprite(m, 'monJuarez', 172, 237.6, { scale: 1.4, w: 44, up: 60, collide: [-17, -8, 34, 8], interact: 'juarez' });
+  for (let x = 165.4; x < 178.8; x += 1.1) if (x < 170.6 || x > 174.4) sprite(m, 'balustre', x, 233.7, { w: 8, up: 12, collide: [-2, -2, 4, 2] });
+  for (const [x, y] of [[166, 236], [178, 236], [167, 240.6], [177, 240.6], [161.5, 231], [186.5, 231]]) tree(m, x, y, y > 238 ? 'cipres' : 'jacaranda', { size: 1.05, collide: [-2, -2, 4, 3] });
+  for (const [bx, by] of [[168, 239.4], [176, 239.4]]) sprite(m, 'bench', bx, by, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
+  area(m, 'Monumento a Juárez', 165, 233, 14, 8, 'monument');
+  area(m, 'Escalinata de Juárez', 171, 228, 3, 5, 'stairs');
 
   // --- the remaining blocks of the grid (every lot gets a door) ------------------------------------------
   const vx = [28, 50, 74, 94, 110, 150, 186, 210, 234, 258];

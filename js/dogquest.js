@@ -97,8 +97,8 @@ SIDE.s_perro = {
     if (id === 'claudia' && st >= 1 && st < 6) return [{ text: 'Lléveme a Abadiano.', tag: 'quest', run: async d => {
       await d.say(npc, 'Ándale. Toñito sale ahorita. Y llévate algo para Doña Mela; la gente grande agradece que la visiten.');
       if (st < 2) Q.set('s_perro', 2);
-      d.end();
-      g.transition(() => { g.returnStack = []; g.clock.minutes += 25; g.changeMap('abadiano', 30.5, 26.6, 0); g.ui.banner('San Antonio Abadiano', 'Municipio de Jiquilpan'); });
+      setTimeout(() => g.transition(() => { g.returnStack = []; g.clock.minutes += 25; g.changeMap('abadiano', 30.5, 26.6, 0); g.ui.banner('San Antonio Abadiano', 'Municipio de Jiquilpan'); }), 50);
+      return 'end';
     } }];
     if (id === 'claudia' && st === 6 && !Q.done('s_perro')) return [{ text: 'Ya sabemos quién fue.', tag: 'honest', run: async d => {
       await d.say(npc, g.flags.chueco_let_go ? 'Lo dejaste ir… Entiendo que quisieras darle una oportunidad. Ojalá la aproveche. Doña Mela al menos sabe la verdad.' : 'Ya me llamó el comandante. Lo detuvieron con el mecate en la moto. Doña Mela le puso una cruz de flores a la Canela.', { expr: g.flags.chueco_let_go ? 'sad' : 'happy' });
