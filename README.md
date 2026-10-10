@@ -1,4 +1,4 @@
-# Añil — Las luces del Cerro de San Francisco
+# Las luces del Cerro
 
 Un RPG de acción y aventura ambientado en **Jiquilpan de Juárez, Michoacán**. Es una web app instalable (PWA) que funciona en el celular (Android y iPhone) y en la computadora.
 

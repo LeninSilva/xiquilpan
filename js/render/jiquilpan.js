@@ -1118,12 +1118,13 @@ SPRITES.portadaEstadio = {
     pil(-W / 2 + 2, H - 6); pil(-ar - 7, H + 6); pil(ar + 7, H + 6); pil(W / 2 - 2, H - 6);
     // cartouche and eagle
     ctx.fillStyle = cant; ctx.beginPath(); ctx.moveTo(-4, -H - 20); ctx.lineTo(4, -H - 20); ctx.lineTo(3, -H - 12); ctx.lineTo(0, -H - 10); ctx.lineTo(-3, -H - 12); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = cantD; ctx.beginPath(); ctx.arc(0, -H - 16, 1.6, 0, 7); ctx.fill();
     stoneEagle(ctx, 0, -H - 21, cantL, cant);
+    // the date, cut under the eagle
+    ctx.save(); ctx.fillStyle = '#3d2519'; ctx.font = 'bold 2.6px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('1935', 0, -H - 15.6); ctx.restore();
     // side panels: painted quotes and small shuttered windows
     for (const d of [-1, 1]) {
       const cx = d * 36;
-      const lines = d < 0 ? ['Los recursos naturales del', 'país deben servir para', 'su propia prosperidad'] : ['Entregarlos a intereses', 'extraños es', 'traicionar a la patria'];
+      const lines = d < 0 ? ['Los recursos naturales del', 'país deben servir para', 'su propia prosperidad'] : ['Entregarlos a intereses', 'extranjeros es', 'traición a la patria'];
       ctx.fillStyle = '#2a2420'; ctx.font = 'italic 2.5px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       lines.forEach((l, i) => ctx.fillText(l, cx, -H + 10 + i * 3.4));
       ctx.fillStyle = '#7a5236'; ctx.fillRect(cx - 5, -12, 10, 8); ctx.strokeStyle = '#5a3a26'; ctx.lineWidth = 0.4; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(cx - 5, -11 + k * 2); ctx.lineTo(cx + 5, -11 + k * 2); ctx.stroke(); }

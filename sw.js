@@ -1,5 +1,5 @@
 // Offline cache for the web app (network-first for code, so updates arrive quickly).
-const CACHE = 'xiquilpan-v4';
+const CACHE = 'xiquilpan-v5';
 const CORE = ['./', 'index.html', 'css/style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/main.js', 'js/game.js', 'js/util.js', 'js/world.js', 'js/input.js', 'js/renderer.js', 'js/entities.js', 'js/npcs.js', 'js/dialogue.js',
   'js/quests.js', 'js/ui.js', 'js/audio.js', 'js/llm.js', 'js/time.js', 'js/cutscene.js', 'js/life.js', 'js/minigames.js', 'js/driving.js', 'js/dogs.js', 'js/dogquest.js',
