@@ -63,6 +63,7 @@ export class Person extends Entity {
     if (!others) return false;
     for (const o of others) {
       if (o === this || !o.solid || o.map !== this.map || o.hidden) continue;
+      if (this.squeeze > 0 && o instanceof Vehicle && !(o.progress > 0 && o.stuck === 0)) continue; // between stopped cars
       const r = (o.radius || 4) + this.radius - 1;
       const dx = x - o.x, dy = (y - o.y) * 1.6;
       if (dx * dx + dy * dy < r * r) {
@@ -146,18 +147,30 @@ export function drawBubble(ctx, x, y, text) {
 // ---------------------------------------------------------------------------
 // A* over the tile grid (4-neighbour), bounded, with a binary heap.
 let _g = null, _came = null, _stamp = null, _gen = 0;
-export function findPath(map, sx, sy, tx, ty, maxNodes = 9000) {
+// opts: avoid (Set of tile indices to treat as blocked), loose (ignore edges & dynamic obstacles).
+// Without `loose`, a failed search is retried loosely, so a squeeze that is passable with a bit of
+// sliding is still used when there is no other way.
+export function findPath(map, sx, sy, tx, ty, maxNodes = 9000, opts = {}) {
+  const p = findPathCore(map, sx, sy, tx, ty, maxNodes, opts);
+  if (p || opts.loose) return p;
+  return findPathCore(map, sx, sy, tx, ty, maxNodes, { loose: true });
+}
+function findPathCore(map, sx, sy, tx, ty, maxNodes, opts) {
   const W = map.w, N = map.w * map.h;
+  const strict = !opts.loose, avoid = opts.avoid;
+  const eH = strict && map.edgeH, eV = strict && map.edgeV, dyn = strict && map.dynBlock, occ = map.occ;
   if (!_g || _g.length < N) { _g = new Float32Array(N); _came = new Int32Array(N); _stamp = new Uint32Array(N); }
   _gen++;
   sx = Math.floor(sx); sy = Math.floor(sy); tx = Math.floor(tx); ty = Math.floor(ty);
   if (!map.inb(tx, ty) || !map.inb(sx, sy)) return null;
-  if (map.isSolidTile(tx, ty)) {
+  // a destination inside something (a wall, a bench, a parked moto, a cart) moves to the nearest free tile
+  const taken = (x, y) => map.isSolidTile(x, y) || (map.colBlock && map.colBlock[y * W + x]) || (strict && map.dynBlock && map.dynBlock[y * W + x]);
+  if (taken(tx, ty)) {
     let found = false;
     for (let r = 1; r < 4 && !found; r++) for (let dy = -r; dy <= r && !found; dy++) for (let dx = -r; dx <= r; dx++) {
-      if (!map.isSolidTile(tx + dx, ty + dy)) { tx += dx; ty += dy; found = true; break; }
+      if (map.inb(tx + dx, ty + dy) && !taken(tx + dx, ty + dy)) { tx += dx; ty += dy; found = true; break; }
     }
-    if (!found) return null;
+    if (!found && map.isSolidTile(tx, ty)) return null;
   }
   const start = sy * W + sx, goal = ty * W + tx;
   const heapI = [], heapF = [];
@@ -179,8 +192,12 @@ export function findPath(map, sx, sy, tx, ty, maxNodes = 9000) {
       if (nx < 0 || ny < 0 || nx >= W || ny >= map.h || map.isSolidTile(nx, ny)) continue;
       const ni = ny * W + nx;
       if (map.colBlock && map.colBlock[ni] && ni !== goal) continue;
+      if (eH && k < 2 && eH[k === 0 ? ni : cur]) continue;       // stepping east into ni / west out of cur
+      if (eV && k >= 2 && eV[k === 2 ? ni : cur]) continue;      // stepping south into ni / north out of cur
+      if (dyn && dyn[ni] && ni !== goal) continue;
+      if (avoid && avoid.has(ni) && ni !== goal) continue;
       const gn = map.ground[ni];
-      const cost = gc + (map.walkway && map.walkway[ni] ? 0.9 : ROADS.has(gn) ? 1.7 : (gn === G.GARDEN || gn === G.GRASS) ? 2.3 : 1);
+      const cost = gc + (map.walkway && map.walkway[ni] ? 0.9 : ROADS.has(gn) ? 1.7 : (gn === G.GARDEN || gn === G.GRASS) ? 2.3 : 1) + (occ && occ[ni] ? 2.5 : 0);
       if (_stamp[ni] === _gen && _g[ni] <= cost) continue;
       _stamp[ni] = _gen; _g[ni] = cost; _came[ni] = cur;
       push(ni, cost + Math.abs(nx - tx) + Math.abs(ny - ty));

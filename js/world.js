@@ -116,23 +116,38 @@ export class GameMap {
       const x0 = Math.floor((px - hw) / TILE), x1 = Math.floor((px + hw) / TILE);
       const y0 = Math.floor((py - hh) / TILE), y1 = Math.floor((py + hh) / TILE);
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (self.isSolidTile(x, y)) return true;
-      const list = self.bucket.get(Math.floor(px / B) + ',' + Math.floor(py / B));
-      if (list) for (const c of list) {
-        if (c.s.acts && !c.s.acts.includes(self.act)) continue;
-        if (px + hw > c.x0 && px - hw < c.x1 && py + hh > c.y0 && py - hh < c.y1) return true;
+      // every bucket the box touches (a box on a bucket edge used to miss colliders on the other side)
+      const bx0 = Math.floor((px - hw) / B), bx1 = Math.floor((px + hw) / B), by0 = Math.floor((py - hh) / B), by1 = Math.floor((py + hh) / B);
+      for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) {
+        const list = self.bucket.get(bx + ',' + by);
+        if (list) for (const c of list) {
+          if (c.s.acts && !c.s.acts.includes(self.act)) continue;
+          if (px + hw > c.x0 && px - hw < c.x1 && py + hh > c.y0 && py - hh < c.y1) return true;
+        }
       }
       return false;
     };
     // tiles whose middle is taken by a sprite collider (bushes, benches, lamps, trees…): pathfinding avoids them
     this.colBlock = new Uint8Array(this.w * this.h);
+    // Passability of the edges between tiles, for a walker going from the middle of one tile to the
+    // middle of the next: edgeH[i] is the step from the tile left of i into i, edgeV[i] the step from
+    // the tile above i into i. Thin things (portal pillars, tree trunks, lamp posts) that leave the
+    // middle of a tile free but stand on the way between two tiles are caught here.
+    this.edgeH = new Uint8Array(this.w * this.h);
+    this.edgeV = new Uint8Array(this.w * this.h);
+    const hit = (c, x0, y0, x1, y1) => c.x1 > x0 && c.x0 < x1 && c.y1 > y0 && c.y0 < y1;
     for (const c of this.colliders) {
       if (c.s.acts || c.s.nightOnly) continue;
-      for (let ty = Math.floor(c.y0 / TILE); ty <= Math.floor(c.y1 / TILE); ty++) for (let tx = Math.floor(c.x0 / TILE); tx <= Math.floor(c.x1 / TILE); tx++) {
+      for (let ty = Math.floor((c.y0 - 13) / TILE); ty <= Math.floor((c.y1 + 9) / TILE); ty++) for (let tx = Math.floor((c.x0 - 12) / TILE); tx <= Math.floor((c.x1 + 12) / TILE); tx++) {
         if (!this.inb(tx, ty)) continue;
-        const X = tx * TILE, Y = ty * TILE;
-        if (c.x1 > X + 3 && c.x0 < X + 13 && c.y1 > Y + 4 && c.y0 < Y + 14) this.colBlock[ty * this.w + tx] = 1;
+        const X = tx * TILE, Y = ty * TILE, i = ty * this.w + tx;
+        if (hit(c, X + 3, Y + 4, X + 13, Y + 14)) this.colBlock[i] = 1;
+        if (hit(c, X - 12, Y + 7, X + 12, Y + 13)) this.edgeH[i] = 1;
+        if (hit(c, X + 3.5, Y - 8.5, X + 12.5, Y + 12.5)) this.edgeV[i] = 1;
       }
     }
+    this.dynBlock = this.dynBlock && this.dynBlock.length === this.w * this.h ? this.dynBlock : new Uint8Array(this.w * this.h);
+    this.occ = this.occ && this.occ.length === this.w * this.h ? this.occ : new Uint8Array(this.w * this.h);
     // sort sprites into row buckets for quick culling
     this.spriteRows = new Map();
     for (const s of this.sprites) {
@@ -141,6 +156,18 @@ export class GameMap {
       this.spriteRows.get(r).push(s);
     }
     this.version++;
+  }
+  // Things that come and go (vendors' carts, parked cars): pathfinding walks around their tiles.
+  setDynamic(boxes) {
+    const key = boxes.map(b => `${b.x0 | 0},${b.y0 | 0},${b.x1 | 0},${b.y1 | 0}`).join(';');
+    if (key === this._dynKey) return;
+    this._dynKey = key;
+    this.dynBlock.fill(0);
+    for (const b of boxes) {
+      for (let ty = Math.floor((b.y0 - 3) / TILE); ty <= Math.floor((b.y1 + 3) / TILE); ty++) for (let tx = Math.floor((b.x0 - 4) / TILE); tx <= Math.floor((b.x1 + 4) / TILE); tx++) {
+        if (this.inb(tx, ty)) this.dynBlock[ty * this.w + tx] = 1;
+      }
+    }
   }
   spritesInView(x0, y0, x1, y1) {
     const out = [];

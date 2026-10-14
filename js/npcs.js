@@ -31,19 +31,58 @@ export class NPC extends Person {
     this.path = null; this.pathI = 0; this.wait = 0; this.home = { x, y };
     this.behaviour = 'stand'; this.speed = 30 + R() * 10;
   }
-  // Caught on a corner or a bush: step free, then find a new way to where we were going.
+  // Caught on something: step free, then plan a new way that avoids the tiles we could not get
+  // through and whatever is standing in them (a cart, a parked car, the player, a cow). Someone who
+  // keeps failing waits a moment like a real person would, and only ever jumps to their destination
+  // when nobody is looking.
   recover(game) {
     this.stuck = 0; this.recoveries = (this.recoveries || 0) + 1;
-    this.unstick();
+    if (this.map.blocked(this.x, this.y, 4, 2.5)) this.unstick();
     const goal = this.path && this.path[this.path.length - 1];
-    if (goal && this.recoveries < 4) {
-      const p = findPath(this.map, this.x / TILE, this.y / TILE, goal[0], goal[1], 6000);
-      if (p) { this.path = p; this.pathI = 1; return; }
+    if (!goal) { this.path = null; return; }
+    if (!game.onScreen(this.x, this.y, 30) && this.recoveries >= 2) { this.arriveAt(game, goal); return; }
+    // crossing the street between cars stuck in traffic: squeeze through, like everybody does
+    if ((game.hardBlockers || []).some(o => o instanceof Vehicle && !o.dead && Math.hypot(o.x - this.x, o.y - this.y) < (o.radius || 6) + 10)) {
+      this.squeeze = 1.6; return;
     }
-    // give up on this walk: stand here, or (if nobody is looking) jump to the destination
-    if (goal && !game.onScreen(this.x, this.y, 30)) { this.x = goal[0] * TILE + 8; this.y = goal[1] * TILE + 10; }
+    const W = this.map.w, avoid = new Set();
+    for (let k = this.pathI; k < Math.min(this.path.length - 1, this.pathI + 2); k++) avoid.add(this.path[k][1] * W + this.path[k][0]);
+    for (const o of game.hardBlockers || []) {
+      if (o === this || Math.hypot(o.x - this.x, o.y - this.y) > 48) continue;
+      const r = Math.ceil(((o.radius || 4) + 4) / TILE);
+      const ox = Math.floor(o.x / TILE), oy = Math.floor(o.y / TILE);
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) avoid.add((oy + dy) * W + ox + dx);
+    }
+    avoid.delete(Math.floor(this.y / TILE) * W + Math.floor(this.x / TILE));
+    const p = this.recoveries <= 5 && findPath(this.map, this.x / TILE, this.y / TILE, goal[0], goal[1], 6000, { avoid });
+    if (p && p.length > 1) { this.path = p; this.pathI = 1; this.pause = this.recoveries > 2 ? 0.6 + R() * 0.8 : 0; return; }
+    // no other way right now: wait a little and try again; after a while give up on this walk
+    if (this.recoveries <= 5) { this.pause = 1 + R() * 1.5; return; }
     this.path = null; this.recoveries = 0;
     if (this.onArrive) this.onArrive(game);
+  }
+  arriveAt(game, goal) {
+    this.x = goal[0] * TILE + 8; this.y = goal[1] * TILE + 10;
+    if (this.map.blocked(this.x, this.y, 4, 2.5)) this.unstick();
+    this.path = null; this.recoveries = 0; this.stuck = 0;
+    if (this.onArrive) this.onArrive(game);
+  }
+  // Steer around hard obstacles (the player, carts, parked cars, animals) a little before reaching them.
+  avoidHard(game, vx, vy) {
+    const sp = Math.hypot(vx, vy); if (sp < 1) return [0, 0];
+    const ux = vx / sp, uy = vy / sp;
+    let ax = 0, ay = 0;
+    for (const o of game.hardBlockers || []) {
+      if (o === this || o.map !== this.map || o.hidden) continue;
+      const dx = o.x - this.x, dy = o.y - this.y;
+      const ahead = dx * ux + dy * uy;
+      if (ahead <= 0 || ahead > 26) continue;
+      const lat = -dx * uy + dy * ux, R0 = (o.radius || 4) + this.radius + 2;
+      if (Math.abs(lat) > R0) continue;
+      const side = lat >= 0 ? -1 : 1, f = (1 - ahead / 26) * (R0 - Math.abs(lat)) / R0;
+      ax += -uy * side * f * sp * 1.6; ay += ux * side * f * sp * 1.6;
+    }
+    return [ax, ay];
   }
   // Repulsion from nearby walkers plus a sidestep to the right when someone is coming head-on.
   separation(game, vx, vy, range = 13) {
@@ -75,30 +114,62 @@ export class NPC extends Person {
     if (this.talking) return;
     if (this.behaviour === 'sit') { this.pose = 'sit'; return; }
     if (this.behaviour === 'phone') { this.look.phone = true; }
+    if (this.squeeze > 0) this.squeeze -= dt;
     if (this.path) {
+      if (this.pause > 0) { this.pause -= dt; return; } // waiting for someone to get out of the way
       const p = this.path[this.pathI];
-      if (!p) { this.path = null; this.onArrive?.(game); return; }
+      if (!p) { this.path = null; this.recoveries = 0; this.onArrive?.(game); return; }
       const tx = p[0] * TILE + 8, ty = p[1] * TILE + 10;
       const dx = tx - this.x, dy = ty - this.y, d = Math.hypot(dx, dy);
-      if (d < 2) { this.pathI++; return; }
+      // a waypoint counts as reached when we are close, or when a crowd has nudged us past it
+      const last = this.pathI >= this.path.length - 1;
+      if (d < (last ? 2 : 5)) { this.pathI++; this.stuck = 0; this.bestD = null; this.recoveries = 0; return; }
       let vx = dx / d * this.speed, vy = dy / d * this.speed;
       // Steering: people keep a little personal space and pass each other on the right instead of
-      // pushing into a knot. Only the player, vehicles and props are hard obstacles for a walker.
+      // pushing into a knot. The player, vehicles, carts and animals are hard obstacles: we start
+      // going round them before we bump into them.
       const [sx, sy] = this.separation(game, vx, vy);
-      vx += sx; vy += sy;
+      const [hx, hy] = this.avoidHard(game, vx, vy);
+      // close to the waypoint the crowd matters less than getting there (no circling round a tile)
+      const w = d < 10 ? 0.4 : 1;
+      vx += (sx * w + hx); vy += (sy * w + hy);
       const sp = Math.hypot(vx, vy) || 1, cap = this.speed * 1.15;
       if (sp > cap) { vx *= cap / sp; vy *= cap / sp; }
       const others = game.hardBlockers || game.entities;
       const bx = this.x, by = this.y;
       this.tryMove(vx, vy, dt, others);
-      if (Math.hypot(this.x - bx, this.y - by) < this.speed * dt * 0.3) { // barely moved: we are caught on something
+      // if steering made us fail, try the plain way to the waypoint
+      if (this.x === bx && this.y === by) this.tryMove(dx / d * this.speed, dy / d * this.speed, dt, others);
+      // stuck = not getting any closer to the waypoint for a while (a crowd can push us around, or we
+      // can dither left and right of an obstacle, without getting anywhere)
+      const d2 = Math.hypot(tx - this.x, ty - this.y);
+      if (this.bestD == null || d2 < this.bestD - 2) { this.bestD = d2; this.stuck = 0; }
+      else {
         this.stuck = (this.stuck || 0) + dt;
-        if (this.stuck > 1.2) this.recover(game);
-      } else this.stuck = 0;
-      this.moving = true; this.setDirFromVec(vx, vy);
+        // close enough to where we were going and something is in the way: we have arrived
+        if (last && d2 < 12 && this.stuck > 0.4) { this.path = null; this.stuck = 0; this.bestD = null; this.recoveries = 0; this.onArrive?.(game); return; }
+        if (this.stuck > 1.2) { this.bestD = null; this.recover(game); }
+      }
+      this.moving = Math.hypot(this.x - bx, this.y - by) > 0.05; this.setDirFromVec(vx, vy);
       return;
     }
     if ((this.behaviour === 'wander' || this.behaviour === 'walk') && this.map.blocked(this.x, this.y, 4, 2.5)) this.unstick(); // never stand inside a bush
+    // never stand around in the street: cars stop for you and you wait for them, and nobody moves
+    if (this.map.outdoor && !this.def?.fixed && this.behaviour !== 'vend' && this.behaviour !== 'dance' && this.behaviour !== 'sit' && ROADS.has(this.map.get(Math.floor(this.x / TILE), Math.floor(this.y / TILE)))) {
+      this.offRoadT = (this.offRoadT || 0) - dt;
+      if (this.offRoadT <= 0) {
+        this.offRoadT = 1.5;
+        const cx = Math.floor(this.x / TILE), cy = Math.floor(this.y / TILE);
+        let best = null;
+        for (let r = 1; r <= 5 && !best; r++) for (let dy = -r; dy <= r && !best; dy++) for (let dx = -r; dx <= r; dx++) {
+          const x = cx + dx, y = cy + dy;
+          if (!this.map.inb(x, y) || this.map.isSolidTile(x, y) || ROADS.has(this.map.get(x, y)) || this.map.colBlock[y * this.map.w + x]) continue;
+          best = [x, y]; break;
+        }
+        const p = best && findPath(this.map, this.x / TILE, this.y / TILE, best[0], best[1], 400);
+        if (p && p.length > 1) { this.path = p; this.pathI = 1; const prev = this.onArrive; this.onArrive = (g) => { this.home = { x: this.x, y: this.y }; this.onArrive = prev; }; return; }
+      }
+    }
     // standing too close to someone else: drift apart a little (no more balls of people)
     if (!this.def?.fixed && this.behaviour !== 'vend' && this.behaviour !== 'sit') {
       const [sx, sy] = this.separation(game, 0, 0, 10);
@@ -123,7 +194,7 @@ export class NPC extends Person {
       if (this.wait <= 0) {
         const r = (this.wanderR || 3) * TILE;
         let tx = this.home.x + (R() - 0.5) * 2 * r, ty = this.home.y + (R() - 0.5) * 2 * r;
-        if (this.map.blocked(tx, ty, 5, 4)) { tx = this.home.x; ty = this.home.y; }
+        if (this.map.blocked(tx, ty, 5, 4) || (this.map.outdoor && ROADS.has(this.map.get(Math.floor(tx / TILE), Math.floor(ty / TILE))))) { tx = this.home.x; ty = this.home.y; }
         const path = findPath(this.map, this.x / TILE, this.y / TILE, tx / TILE, ty / TILE, 400);
         if (path && path.length < 16) { this.path = path; this.pathI = 1; }
         this.wait = 2 + R() * 5;
@@ -203,13 +274,20 @@ export class NPCManager {
   update(dt) {
     const g = this.game;
     this.timer -= dt;
-    if (this.timer <= 0) { this.timer = 1; this.syncNamed(); }
+    if (this.timer <= 0) { this.timer = 1; this.syncNamed(); this.refreshObstacles(); }
     this.crowdTimer -= dt;
     if (this.crowdTimer <= 0) { this.crowdTimer = 1.5; this.syncCrowd(); this.syncAnimals(); }
     this.trafficTimer -= dt;
     if (this.trafficTimer <= 0) { this.trafficTimer = 1.2; this.syncTraffic(); }
     for (const n of this.named.values()) if (n.map === g.map) n.update(dt, g);
-    for (const c of this.crowd) if (c.map === g.map) c.update(dt, g);
+    for (const c of this.crowd) {
+      if (c.map !== g.map) continue;
+      c.update(dt, g);
+      if (c.rewalkAt && g.clock.real > c.rewalkAt && !c.path && !c.talking) {
+        c.rewalkAt = null;
+        if (R() < 0.6) { const [qx, qy] = this.freeSpot(c.map, pick(R, c.rewalkPois)); const p2 = findPath(c.map, c.x / TILE, c.y / TILE, qx, qy); if (p2) { c.path = p2; c.pathI = 1; c.behaviour = 'walk'; } }
+      }
+    }
     for (const v of this.vehicles) {
       v.update(dt, g);
       if (v.route && v.parked && !v.dead) { // a combi at its stop: shout the route, then go on
@@ -223,6 +301,27 @@ export class NPCManager {
     this.kindT = (this.kindT || 0) - dt;
     if (this.kindT <= 0) { this.kindT = 2; dogKindness(g, this.dogs || []); this.syncCompanion(); }
     this.vehicles = this.vehicles.filter(v => !v.dead || this.remove(v));
+  }
+  // Carts, food trucks and parked cars are routed around; people standing still make a tile costlier
+  // to walk through, so walkers go round a group instead of through it.
+  refreshObstacles() {
+    const g = this.game, map = g.map;
+    if (!map.dynBlock) return;
+    const boxes = [];
+    for (const e of g.entities) {
+      if (e.map !== map || e.hidden || !e.solid) continue;
+      if (e instanceof Prop || (e instanceof Vehicle && e.parked) || e === g.car) {
+        const r = e.radius || 10;
+        boxes.push({ x0: e.x - r, y0: e.y - r * 0.6, x1: e.x + r, y1: e.y + r * 0.4 });
+      }
+    }
+    map.setDynamic(boxes);
+    map.occ.fill(0);
+    for (const e of g.people || []) {
+      if (e.path || e.moving || e === g.player) continue;
+      const tx = Math.floor(e.x / TILE), ty = Math.floor(e.y / TILE);
+      if (map.inb(tx, ty)) map.occ[ty * map.w + tx] = 1;
+    }
   }
   remove(e) { const i = this.game.entities.indexOf(e); if (i >= 0) this.game.entities.splice(i, 1); return false; }
   add(e) { this.game.entities.push(e); return e; }
@@ -339,7 +438,8 @@ export class NPCManager {
       if (!path) continue;
       npc.path = path; npc.pathI = 1;
       if (type === 'drinker') { npc.onArrive = () => { npc.behaviour = 'stand'; npc.dir = 0; npc.home = { x: npc.x, y: npc.y }; }; this.crowd.push(npc); this.add(npc); return npc; }
-      npc.onArrive = () => { npc.behaviour = R() < 0.5 ? 'stand' : 'wander'; npc.home = { x: npc.x, y: npc.y }; npc.wanderR = 3; npc.wait = 2; setTimeout(() => { if (!npc.talking && R() < 0.6) { const [qx, qy] = this.freeSpot(npc.map, pick(R, pois)); const p2 = findPath(npc.map, npc.x / TILE, npc.y / TILE, qx, qy); if (p2) { npc.path = p2; npc.pathI = 1; npc.behaviour = 'walk'; } } }, 15000 + R() * 30000); };
+      // after a while there, most people stroll on to somewhere else (in game time, so a paused game stays paused)
+      npc.onArrive = () => { npc.behaviour = R() < 0.5 ? 'stand' : 'wander'; npc.home = { x: npc.x, y: npc.y }; npc.wanderR = 3; npc.wait = 2; npc.rewalkAt = g.clock.real + 15 + R() * 30; npc.rewalkPois = pois; };
       this.crowd.push(npc); this.add(npc);
       return npc;
     }
