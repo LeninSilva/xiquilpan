@@ -4,7 +4,7 @@ export class Input {
     this.keys = new Set();
     this.pressed = new Set(); // edge-triggered this frame
     this.stick = { x: 0, y: 0, active: false, id: null, ox: 0, oy: 0 };
-    this.buttons = { a: false, b: false };
+    this.buttons = { a: false, b: false, item: false };
     this.enabled = true;
     const down = (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
@@ -60,8 +60,9 @@ export class Input {
     zone.addEventListener('touchstart', start, { passive: false });
     zone.addEventListener('touchmove', move, { passive: false });
     zone.addEventListener('touchend', end); zone.addEventListener('touchcancel', end);
-    for (const [id, key] of [['btnA', 'a'], ['btnB', 'b']]) {
+    for (const [id, key] of [['btnA', 'a'], ['btnB', 'b'], ['btnItem', 'item']]) {
       const el = root.querySelector('#' + id);
+      if (!el) continue;
       const on = (e) => { e.preventDefault(); if (!this.buttons[key]) this.pressed.add('btn' + key); this.buttons[key] = true; el.classList.add('on'); };
       const off = (e) => { e.preventDefault(); this.buttons[key] = false; el.classList.remove('on'); };
       el.addEventListener('touchstart', on, { passive: false }); el.addEventListener('touchend', off); el.addEventListener('touchcancel', off);
@@ -83,6 +84,8 @@ export class Input {
   get run() { return this.keys.has('shift') || this.buttons.b; }
   // action: Space / Enter / E / on-screen A
   action() { return this.pressed.has(' ') || this.pressed.has('enter') || this.pressed.has('e') || this.pressed.has('btna'); }
+  // F / Q / the 🎯 button: use what is in your hand
+  use() { return this.pressed.has('f') || this.pressed.has('q') || this.pressed.has('btnitem'); }
   cancel() { return this.pressed.has('escape') || this.pressed.has('btnb') || this.pressed.has('backspace'); }
   was(k) { return this.pressed.has(k); }
   endFrame() { this.pressed.clear(); }

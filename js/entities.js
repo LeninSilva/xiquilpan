@@ -5,6 +5,8 @@ import { drawCar, drawBikeSide, drawBikeTop, PAINTS, MODELS } from './render/car
 import { drawHorse } from './render/jiquilpan.js';
 import { DIR } from './data/build.js';
 import { G, ROADS } from './world.js';
+import { drawRider } from './riding.js';
+import { drawBandage } from './combat.js';
 
 let NEXT_ID = 1;
 
@@ -106,9 +108,11 @@ export class Person extends Entity {
       else if (Math.floor(game.clock.real / 3 + this.id) % 3 === 0) drawBubble(ctx, this.x, this.y - 16, ['Ay…', 'Mi pierna…', 'Ayúdenme…'][this.id % 3]);
       return;
     }
+    if (this.mount) { drawRider(ctx, this, game); if (this.bubble) drawBubble(ctx, this.x, this.y - 64, this.bubble.text); return; }
     const img = getFrame(this.look, this.dir, this.frame());
     const lift = this.pose === 'sit' ? 3 : 0;
     ctx.drawImage(img, this.x - CHAR_W / 2, this.y - 44 + lift, CHAR_W, CHAR_H);
+    if (this.bandaged) drawBandage(ctx, this);
     if (this.look.glow > 0.2) {
       ctx.fillStyle = `rgba(110,120,255,${0.18 * this.look.glow})`;
       ctx.beginPath(); ctx.ellipse(this.x, this.y - 18, 12, 22, 0, 0, 7); ctx.fill();
@@ -492,6 +496,13 @@ export class Animal extends Entity {
       const d = dist(p.x, p.y, this.x, this.y);
       if (d > 26) { this.target = { x: p.x - Math.sign(p.x - this.x) * 18, y: p.y + 4 }; this.wait = 0; this.speed = d > 80 ? 60 : 34; }
       else { this.target = null; this.moving = false; return; }
+    }
+    if (this.comeTo) { // your horse, called with a whistle
+      const dx = this.comeTo.x - this.x, dy = this.comeTo.y - this.y, d = Math.hypot(dx, dy);
+      if (d < 6) { this.comeTo = null; this.moving = false; this.wait = 4; this.home = { x: this.x, y: this.y, r: 10 }; this.speed = 20; return; }
+      const sp = Math.min(this.speed, 30 + d * 0.6), nx = this.x + dx / d * sp * dt, ny = this.y + dy / d * sp * dt;
+      this.x = nx; this.y = ny; this.moving = true; if (Math.abs(dx) > 1) this.dir = dx < 0 ? 2 : 3;
+      return;
     }
     if (this.wait > 0) { this.wait -= dt; this.moving = false; return; }
     if (!this.target) {

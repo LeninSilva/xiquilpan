@@ -6,6 +6,8 @@ import { ITEMS, SHOPS } from './data/items.js';
 import { HILOS_GOAL } from './quests.js';
 import { drawGrayPortrait } from './cutscene.js';
 import { peopleHTML, propsHTML, CLOTHES, wearOutfit, relLevel } from './life.js';
+import { heartsHTML } from './combat.js';
+import { equip, equipped, SLOTS, itemButtonLabel } from './gear.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -69,6 +71,13 @@ export class UI {
     const w = g.env.icon();
     if (this._w !== w) { e.wx.textContent = w; this._w = w; }
     if (this._m !== g.state.money) { e.money.textContent = g.state.money; this._m = g.state.money; }
+    const hk = (g.state.hp ?? 12) + '/' + (g.state.hpMax || 12);
+    if (this._hp !== hk) { $('hearts').innerHTML = heartsHTML(g.state.hp ?? 12, g.state.hpMax || 12); this._hp = hk; }
+    const sk = g.riding?.on ? g.riding.spurs + (g.riding.sprint > 0 ? '!' : '') : '';
+    if (this._sp !== sk) { const el = $('spurs'); el.classList.toggle('hidden', !sk); el.innerHTML = sk ? '<span>🐎</span>' + [0, 1, 2].map(i => `<i class="${i < g.riding.spurs ? 'on' : ''}"></i>`).join('') : ''; this._sp = sk; }
+    document.body.classList.toggle('hurt', (g.hurtFlash || 0) > 0);
+    const blur = g.status.buzz > 45 ? Math.min(1, (g.status.buzz - 45) / 60) : 0;
+    if (Math.abs((this._blur || 0) - blur) > 0.04) { this._blur = blur; document.body.style.setProperty('--drunk', blur.toFixed(2)); document.body.classList.toggle('drunk', blur > 0); }
     const o = g.quests.objective();
     const key = o.title + o.text;
     if (this._o !== key) { e.tracker.innerHTML = `<div class="qt">${o.title}</div><div class="qs">${o.text}</div>`; this._o = key; }
@@ -87,6 +96,12 @@ export class UI {
       e.compass.style.display = ''; const ang = Math.atan2(0 - g.player.y, 40 * TILE - g.player.x) + Math.PI / 2; e.needle.style.transform = `rotate(${ang}rad)`;
     } else e.compass.style.display = 'none';
   }
+  showFoe(name, k) {
+    const el = $('foeBar');
+    if (!name) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden'); $('foeName').textContent = name; $('foeFill').style.width = Math.round(k * 100) + '%';
+  }
+  refreshItemButton() { const b = $('btnItem'); if (b) b.textContent = itemButtonLabel(this.game); }
   prompt(text) {
     if (text === this._prompt) return;
     this._prompt = text;
@@ -275,17 +290,23 @@ export class UI {
   renderBag() {
     const g = this.game, t = $('tab-bag');
     const inv = g.state.inventory;
-    let html = '<div class="grid">';
+    const hand = equipped(g, 'hand'), charm = equipped(g, 'charm');
+    let html = `<div class="card equipbar"><div><span class="kicker">${SLOTS.hand}</span><b>${hand ? ITEMS[hand].ico + ' ' + ITEMS[hand].name : '✋ nada'}</b></div><div><span class="kicker">${SLOTS.charm}</span><b>${charm ? ITEMS[charm].ico + ' ' + ITEMS[charm].name : '—'}</b></div>`
+      + (g.state.horse ? `<div><span class="kicker">Caballo</span><b>🐎 ${escapeHTML(g.state.horse.name)}${g.state.horse.rented ? ' (rentado)' : ''}</b><button data-whistle="1">Chiflarle (H)</button></div>` : '')
+      + `<small>F o 🎯: usar lo que traes en la mano.</small></div><div class="grid">`;
     const keys = Object.keys(inv).filter(k => inv[k] > 0);
     if (!keys.length) html += '<div class="card" style="grid-column:1/-1"><p>Tu morral está vacío. Por ahí hay palos, trompos perdidos… y tiendas.</p></div>';
     for (const k of keys) {
       const it = ITEMS[k] || { name: k, ico: '❔', desc: '' };
-      html += `<div class="item"><div class="ico">${it.ico}</div><b>${it.name}${inv[k] > 1 ? ' ×' + inv[k] : ''}</b><small>${it.desc}</small>${it.type === 'food' || it.type === 'drink' ? `<button data-use="${k}">Consumir</button>` : ''}${k === 'trompo' ? `<button data-spin="1">Bailar el trompo</button>` : ''}</div>`;
+      const on = hand === k || charm === k;
+      const eq = it.equip ? `<button data-equip="${k}" class="${on ? 'on' : ''}">${on ? 'Guardar' : it.equip === 'hand' ? 'Llevar en la mano' : 'Ponértelo'}</button>` : '';
+      html += `<div class="item ${on ? 'equipped' : ''}"><div class="ico">${it.ico}</div><b>${it.name}${inv[k] > 1 ? ' ×' + inv[k] : ''}</b><small>${it.desc}</small>${it.type === 'food' || it.type === 'drink' ? `<button data-use="${k}">Consumir</button>` : ''}${eq}</div>`;
     }
     html += '</div>';
     t.innerHTML = html;
     t.querySelectorAll('[data-use]').forEach(b => b.addEventListener('click', () => { g.consumeItem(b.dataset.use); this.renderBag(); }));
-    t.querySelectorAll('[data-spin]').forEach(b => b.addEventListener('click', () => { this.closeMenu(); g.spinTrompo(); }));
+    t.querySelectorAll('[data-equip]').forEach(b => b.addEventListener('click', () => { equip(g, b.dataset.equip); this.renderBag(); }));
+    t.querySelectorAll('[data-whistle]').forEach(b => b.addEventListener('click', () => { this.closeMenu(); g.riding.whistle(); }));
   }
   renderPeople() {
     const g = this.game, t = $('tab-people');

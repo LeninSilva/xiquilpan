@@ -638,6 +638,24 @@ export function buildTown() {
     if (best) sprite(m, 'parada', best[0] + 0.5, best[1] + 0.8, { route, stop: st[2], w: 20, up: 40, collide: [-1, -1, 2, 2], interact: 'parada' });
   }
 
+  // --- the huerta at the edge of the Bosque Cuauhtémoc: guayabos, mangos, naranjos, a limón and an
+  // aguacate criollo. Knock the fruit down with a stick or a pebble (once a day per tree).
+  const clearAround = (x, y, r) => { m.sprites = m.sprites.filter(sp => Math.hypot(sp.x / TILE - x, sp.y / TILE - y) > r); };
+  clearAround(96, 262, 11);
+  m.fill(86, 254, 22, 16, G.GRASS);
+  const HUERTA = [['guayabo', 88, 256], ['guayabo', 92.5, 257.5], ['mango', 97, 256.4], ['naranjo', 101.5, 257.6], ['limon', 105.5, 256.4],
+    ['guayabo', 89, 262], ['mango', 94, 263.4], ['aguacate', 99.5, 262.2], ['naranjo', 104.4, 263.2], ['guayabo', 90.5, 267.6], ['mango', 96, 268.2], ['naranjo', 102, 267.8]];
+  for (const [k, x, y] of HUERTA) tree(m, x, y, k, { size: 0.95, fruit: true });
+  sprite(m, 'signpost', 87, 253.4, { text: 'HUERTA COMUNITARIA · TOME LO QUE COMA', bg: '#4c7a34', w: 90, up: 30 });
+  area(m, 'La huerta del bosque', 86, 254, 22, 16, 'park');
+  // --- tiro al bote: cans on a wall in a clearing of the Bosque Juárez, for the slingshot ---------------
+  clearAround(206, 262, 7);
+  m.fill(199, 256, 16, 12, G.DIRT);
+  sprite(m, 'botes', 206.5, 259, { n: 5, fw: 44, w: 52, up: 30, collide: [-24, -4, 48, 4] });
+  sprite(m, 'signpost', 199.5, 258.4, { text: 'TIRO AL BOTE', bg: '#7a2f2f', w: 50, up: 30 });
+  sprite(m, 'bench', 206.5, 265.6, { w: 22, up: 14, collide: [-8, -4, 16, 4], seat: true });
+  area(m, 'Tiro al bote', 199, 256, 16, 12, 'park');
+
   // trays of water that shops leave out for the street dogs
   for (const [x, y] of [[198.2, 111.1], [148.6, 115.6], [107.6, 156.2], [244.2, 199.6]]) sprite(m, 'waterTray', x, y, { w: 12, up: 6 });
 

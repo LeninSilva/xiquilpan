@@ -297,9 +297,9 @@ export class NPCManager {
       }
       if (v.bubble) { v.bubble.t -= dt; if (v.bubble.t <= 0) v.bubble = null; }
     }
-    for (const a of this.animals) if (a.map === g.map) a.update(dt, g);
+    for (const a of this.animals) if (a.map === g.map && !a.hidden) a.update(dt, g);
     this.kindT = (this.kindT || 0) - dt;
-    if (this.kindT <= 0) { this.kindT = 2; dogKindness(g, this.dogs || []); this.syncCompanion(); }
+    if (this.kindT <= 0) { this.kindT = 2; dogKindness(g, this.dogs || []); this.syncCompanion(); this.syncHorse(); }
     this.vehicles = this.vehicles.filter(v => !v.dead || this.remove(v));
   }
   // Carts, food trucks and parked cars are routed around; people standing still make a tile costlier
@@ -679,6 +679,13 @@ export class NPCManager {
     }
   }
 
+  // your own horse waits where you left it (or comes with you if you ride it out)
+  syncHorse() {
+    const g = this.game;
+    if (!g.riding || !g.state.horse) return;
+    if (this.animals.some(a => a.owned && a.horse)) return;
+    g.riding.spawnOwned(g.map, (a) => { this.animals.push(a); if (!g.entities.includes(a)) this.add(a); });
+  }
   // your own dog walks with you anywhere outdoors
   syncCompanion() {
     const g = this.game, st = g.state.dog;

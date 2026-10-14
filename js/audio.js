@@ -46,6 +46,15 @@ export class Audio {
       case 'bell': [392, 392 * 2.01, 392 * 3.02].forEach((f, i) => this.tone(f, 2.5, 'sine', 0.12 / (i + 1), 0, 0.002)); break;
       case 'ufo': { const t = this.ctx.currentTime; const o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(880, t + 3); o.frequency.exponentialRampToValueAtTime(110, t + 6); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.08, t + 1); g.gain.linearRampToValueAtTime(0, t + 6); o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 6.1); break; }
       case 'freeze': this.tone(55, 3, 'sine', 0.15, 0, 0.5); break;
+      case 'hit': this.tone(140, 0.09, 'square', 0.08); this.tone(90, 0.12, 'triangle', 0.08, 0.02); break;
+      case 'hurt': this.tone(330, 0.08, 'square', 0.06); this.tone(220, 0.16, 'square', 0.05, 0.06); break;
+      case 'tap': this.tone(1400, 0.03, 'triangle', 0.04); break;
+      case 'clink': this.tone(1760, 0.08, 'triangle', 0.06); this.tone(2350, 0.12, 'sine', 0.04, 0.03); break;
+      case 'whistle': { const t = this.ctx.currentTime; const o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(1500, t); o.frequency.linearRampToValueAtTime(2300, t + 0.18); o.frequency.setValueAtTime(1500, t + 0.3); o.frequency.linearRampToValueAtTime(2500, t + 0.5); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.07, t + 0.03); g.gain.setValueAtTime(0.0001, t + 0.22); g.gain.linearRampToValueAtTime(0.07, t + 0.32); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6); o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.65); break; }
+      case 'neigh': for (let i = 0; i < 6; i++) this.tone(700 - i * 60 + (i % 2) * 120, 0.09, 'sawtooth', 0.025, i * 0.07); break;
+      case 'gallop': for (let i = 0; i < 6; i++) this.tone(110 + (i % 3) * 20, 0.05, 'triangle', 0.07, i * 0.09 + (i % 3 === 2 ? 0.05 : 0)); break;
+      case 'jump': this.tone(300, 0.15, 'triangle', 0.06); this.tone(450, 0.12, 'triangle', 0.04, 0.05); break;
+      case 'land': this.tone(90, 0.12, 'triangle', 0.09); break;
       case 'enchilado': [880, 660, 440].forEach((f, i) => this.tone(f, 0.12, 'square', 0.04, i * 0.08)); break;
     }
   }

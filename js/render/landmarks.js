@@ -967,7 +967,13 @@ const TREE_PALETTES = {
   huizache: ['#5c7a34', '#789a41', '#a7c35b'],
   flamboyan: ['#9c2c1c', '#d8452a', '#f6823f'],
   mezquite: ['#5a6e36', '#71884a', '#93a964'],
+  guayabo: ['#4f7a34', '#6a9441', '#8fb25a'],
+  mango: ['#2f5a2a', '#3e7536', '#5a9446'],
+  naranjo: ['#2f5e2e', '#3f7a38', '#5d9a4a'],
+  limon: ['#3a6a2e', '#4f8a3a', '#72a851'],
+  aguacate: ['#2c4f2a', '#3a6636', '#4f804a'],
 };
+const FRUIT_DOT = { guayabo: ['#e8e07a', '#d8d36a'], mango: ['#f2a93b', '#e86a2b'], naranjo: ['#f28c28', '#f6a640'], limon: ['#9ccc3f', '#c5e06a'], aguacate: ['#2b3a1e', '#3e5b2a'] };
 SPRITES.tree = {
   draw(ctx, s) {
     const r = rng(s.seed || 1);
@@ -982,6 +988,11 @@ SPRITES.tree = {
     ctx.strokeStyle = '#5b3f28'; ctx.lineWidth = 1.4 * k;
     ctx.beginPath(); ctx.moveTo(0, -14 * k); ctx.lineTo(-6 * k, -22 * k); ctx.moveTo(0, -16 * k); ctx.lineTo(5 * k, -24 * k); ctx.stroke();
     treeCanopy(ctx, 0, -30 * k, 17 * k, TREE_PALETTES[kind] || TREE_PALETTES.laurel, r, 10);
+    if (FRUIT_DOT[kind]) for (let i = 0; i < 14; i++) { // the fruit hanging in the canopy
+      const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 13 * k;
+      ctx.fillStyle = FRUIT_DOT[kind][i % 2]; ctx.beginPath(); ctx.arc(Math.cos(a) * d, -30 * k + Math.sin(a) * d * 0.75 + 2, 1.5 * k, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(Math.cos(a) * d - 0.6, -30 * k + Math.sin(a) * d * 0.75 + 1.2, 0.6, 0.6);
+    }
     if (s.tree === 'jacaranda' && s.bloom) { // fallen petals
       for (let i = 0; i < 18; i++) { ctx.fillStyle = r() < 0.5 ? '#9a7bd0' : '#b9a0e6'; ctx.fillRect((r() - 0.5) * 34 * k, (r() - 0.5) * 10 * k, 1, 1); }
     }
@@ -1234,6 +1245,21 @@ SPRITES.antenna = {
 
 // Sign with text on a wall (used for landmarks' names on the map)
 SPRITES.label = { draw() {} };
+// A low adobe wall with five cans on it (they fall when you hit them; they come back by themselves).
+SPRITES.botes = {
+  draw(ctx, s) {
+    const w = s.fw || 44, n = s.n || 5;
+    shadowBlob(ctx, 2, 0, w / 2, 3, 0.2);
+    ctx.fillStyle = '#b98a5e'; ctx.fillRect(-w / 2, -10, w, 10); ctx.fillStyle = '#a3754c'; ctx.fillRect(-w / 2, -10, w, 1.6);
+    ctx.strokeStyle = 'rgba(80,50,30,0.35)'; ctx.lineWidth = 0.4; for (let x = -w / 2 + 6; x < w / 2; x += 7) { ctx.beginPath(); ctx.moveTo(x, -8); ctx.lineTo(x, -1); ctx.stroke(); }
+    const cols = ['#c8102e', '#f2c230', '#2e7d32', '#1f4fa0', '#e8e6e0'];
+    for (let i = 0; i < n; i++) {
+      const x = -w / 2 + (i + 0.5) * w / n;
+      if (s.down && s.down[i]) { ctx.save(); ctx.translate(x + 2, 1.5); ctx.rotate(1.4); ctx.fillStyle = cols[i % 5]; ctx.fillRect(-1.8, -4, 3.6, 5); ctx.restore(); continue; }
+      ctx.fillStyle = cols[i % 5]; ctx.fillRect(x - 1.8, -16, 3.6, 6); ctx.fillStyle = '#d9d9d6'; ctx.fillRect(x - 1.8, -16.6, 3.6, 0.8); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(x - 1.2, -15, 0.7, 4);
+    }
+  },
+};
 
 // Interior furniture (used by interior maps) ---------------------------
 SPRITES.counter = {

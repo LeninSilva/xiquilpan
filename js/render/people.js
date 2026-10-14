@@ -150,8 +150,9 @@ export function drawPerson(ctx, L, dir, frame) {
   ctx.scale(k, k);
   const P = frameOf(L);
   const walking = typeof frame === 'number';
-  const ride = typeof frame === 'string' && frame.startsWith('ride');
-  const ph = walking ? frame : ride ? +frame.slice(4) * 2 : 0;
+  const mount = frame === 'mount'; // on horseback: legs astride, hands forward on the reins
+  const ride = typeof frame === 'string' && (frame.startsWith('ride') || mount);
+  const ph = walking ? frame : ride && !mount ? +frame.slice(4) * 2 : 0;
   const sit = frame === 'sit', hurt = frame === 'hurt', dance = typeof frame === 'string' && frame.startsWith('dance');
   const side = dir === 2 || dir === 3;
   if (dir === 3) ctx.scale(-1, 1);
@@ -163,7 +164,7 @@ export function drawPerson(ctx, L, dir, frame) {
   const bob = walking ? (ph % 2 ? -0.55 : 0.1) : frame === 'idle2' ? -0.25 : dance ? (+frame.slice(5) % 2 ? -1.2 : 0) : 0;
   ctx.translate(0, bob + (sit ? 4.2 : 0) + (ride ? 2.2 : 0));
   const skin = L.enchilado ? mix(L.skin, '#e0463a', 0.3) : L.skin;
-  const C = { L, P, dir, side, frame, walking, ph, sit, ride, hurt, dance, skin };
+  const C = { L, P, dir, side, frame, walking, ph, sit, ride, mount, hurt, dance, skin };
   if (side) drawSide(ctx, C); else drawFront(ctx, C, dir === 1);
   if (L.enchilado) { ctx.fillStyle = 'rgba(160,210,255,0.9)'; ctx.beginPath(); ctx.ellipse(4.2, P.headC - 2, 0.6, 1, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(-4.4, P.headC, 0.5, 0.8, 0, 0, 7); ctx.fill(); }
   ctx.restore();
@@ -180,6 +181,13 @@ function drawFront(ctx, C, back) {
     const lift = Math.max(0, s * swing) * 2.2;
     const x = s * legX, kneeY = P.knee - lift * 0.6 + (sit ? 5 : 0), ankY = P.ankle - lift + (sit ? 1 : 0);
     const thighC = L.bottom === 'skirt' || L.bottom === 'longskirt' ? skin : L.bottomColor;
+    if (C.mount) { // astride: thighs out over the horse's sides, shins hanging down its flanks
+      const kx = s * (P.hw + 2.6), ky = P.hip + 5.5, ax = s * (P.hw + 2.9), ay = P.hip + 12.5;
+      limb(ctx, x, P.hip + 1, kx, ky, P.legW, P.legW * 0.85, L.bottom === 'shorts' ? L.bottomColor : thighC, back);
+      limb(ctx, kx, ky, ax, ay, P.calfW * 1.05, P.calfW * 0.72, legC, back);
+      shoe(ctx, L, ax, ay + 1.2, 0, back);
+      continue;
+    }
     if (!long) {
       limb(ctx, x, P.hip + 1, x * 1.02, kneeY, P.legW, P.legW * 0.85, L.bottom === 'shorts' ? L.bottomColor : thighC, back);
       limb(ctx, x * 1.02, kneeY, x * 0.98, ankY, P.calfW * 1.05, P.calfW * 0.72, legC, back);
@@ -242,6 +250,7 @@ function drawSide(ctx, C) {
     let ax = kx - Math.sin(sa) * shinL, ay = ky + Math.cos(sa) * shinL;
     if (sit) { kx = -6; ky = hy; ax = kx; ay = ky + 9; }
     if (ride) { const pd = (C.ph / 2 | 0) ? s : -s; kx = -4.5; ky = hy + 3 + pd * 2.4; ax = kx + 1.2; ay = ky + 8; }
+    if (C.mount) { kx = -3.8 + s * 0.4; ky = hy + 3.6; ax = kx + 1.4; ay = ky + 7.4; }
     if (!long) {
       limb(ctx, hx, hy, kx, ky, P.legW, P.legW * 0.85, L.bottom === 'shorts' ? L.bottomColor : thighC, back);
       limb(ctx, kx, ky, ax, ay, P.calfW * 1.05, P.calfW * 0.72, legC, back);

@@ -718,15 +718,28 @@ export const SIDE = {
     target: (g) => g.quests.started('s_caballo') && !g.quests.done('s_caballo') && g.flags.lucero_follow ? 'salazar' : null,
     options: (g, npc, Q) => {
       if (npc.def?.id !== 'salazar') return [];
-      if (!Q.started('s_caballo')) return [{ text: '¿Qué busca, señor?', tag: 'quest', run: async d => {
+      const out = [];
+      if (!Q.started('s_caballo')) out.push({ text: '¿Qué busca, señor?', tag: 'quest', run: async d => {
         await d.say(npc, 'A mi yegua, la Lucero. Blanca, con una mancha café en la frente. Anoche se espantó con unas luces y rompió la cerca. Le gusta el agua de La Piedrita. Si me la traes, te pago bien.');
         Q.start('s_caballo');
-      } }];
-      if (g.flags.lucero_follow && !Q.done('s_caballo')) return [{ text: 'Aquí está Lucero', tag: 'kind', run: async d => {
+      } });
+      if (g.flags.lucero_follow && !Q.done('s_caballo')) out.push({ text: 'Aquí está Lucero', tag: 'kind', run: async d => {
         await d.say(npc, '¡Lucero, mi reina! Mira nomás, ni un rasguño. Ten, muchacho, y una cosa más: la noche que se escapó, las luces bajaron hasta el agua. Yo no digo nada… pero las vi.');
         g.flags.lucero_follow = false; g.flags.lucero_home = true; g.addMoney(180); g.addStat('corazon', 4); Q.finish('s_caballo', 'Lucero, el caballo de los Salazar');
-      } }];
-      return [];
+        await d.say(npc, 'Y otra cosa: la Lucero te escogió. Se te fue detrás sin mecate, y eso no lo hace con nadie. Llévatela. Nomás tráemela a herrar cada luna, y si la maltratas, te busco.');
+        const lu = g.npcs.animals.find(a => a.def?.id === 'lucero'); if (lu) { lu.dead = true; g.npcs.remove(lu); g.npcs.animals = g.npcs.animals.filter(a => a !== lu); }
+        g.state.horse = { name: 'Lucero', color: '#f2efe8', mane: '#d8d0c0', map: g.map.id, x: npc.x + 20, y: npc.y + 6 };
+        g.npcs.syncHorse(); g.ui.toast('🐎 Lucero es tuya. Móntala con A; H (o el Morral) para chiflarle.', 'soul');
+      } });
+      // before Lucero is yours, Don Celso hires out El Prieto by the day
+      if (!g.state.horse && !g.flags.lucero_follow) out.push({ text: 'Don Celso, ¿me renta un caballo? ($120 por el día)', tag: 'money', run: async d => {
+        if (g.state.money < 120) { await d.say(npc, 'Ciento veinte, joven. Sin dinero no hay caballo; con caballo no hay prisa.'); return; }
+        g.addMoney(-120);
+        await d.say(npc, 'Llévese al Prieto. Es manso pero no es tonto: no lo meta a los charcos y no lo deje solo de noche. Mañana regresa solito; sabe el camino mejor que usted.');
+        g.state.horse = { name: 'El Prieto', color: '#2b2420', mane: '#141010', rented: true, until: g.clock.dayIndex, map: g.map.id, x: npc.x + 20, y: npc.y + 6 };
+        g.npcs.syncHorse(); g.ui.toast('🐎 El Prieto es tuyo por hoy. Móntalo con A.', 'good');
+      } });
+      return out;
     },
   },
   s_casa: {

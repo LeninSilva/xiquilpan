@@ -159,7 +159,7 @@ export class Renderer {
     }
     // ghost of the player on top, so you never lose them behind the kiosco or a church tower
     if (game.player && game.player.map === map && !game.player.hidden) {
-      ctx.save(); ctx.globalAlpha = 0.28; game.player.draw(ctx, game); ctx.restore();
+      ctx.save(); ctx.globalAlpha = 0.28; game.ghostPass = true; game.player.draw(ctx, game); game.ghostPass = false; ctx.restore();
     }
     // overhead effects in world space
     for (const fx of game.effects) if (fx.map === map) fx.draw(ctx, game);
@@ -174,6 +174,13 @@ export class Renderer {
     if (game.settings?.vignette !== false) this.drawVignette(ctx, map);
     if (game.frozen) { ctx.fillStyle = 'rgba(40,40,140,0.28)'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     if (game.status && game.status.buzz > 45) { ctx.fillStyle = `rgba(255,200,120,${(game.status.buzz - 45) / 500})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+    // seeing double: a drifting ghost of the whole picture (the CSS blur on the canvas does the rest)
+    if (game.status && game.status.buzz > 55) {
+      const k = Math.min(1, (game.status.buzz - 55) / 50), tt = game.clock.real;
+      if (!this.ghost || this.ghost.width !== canvas.width || this.ghost.height !== canvas.height) this.ghost = makeCanvas(canvas.width, canvas.height);
+      const gx = this.ghost.getContext('2d'); gx.clearRect(0, 0, canvas.width, canvas.height); gx.drawImage(canvas, 0, 0);
+      ctx.globalAlpha = 0.3 * k; ctx.drawImage(this.ghost, Math.sin(tt * 1.3) * 7 * k * S, Math.cos(tt * 1.1) * 3 * k * S); ctx.globalAlpha = 1;
+    }
   }
 
   glowSprite(color) {

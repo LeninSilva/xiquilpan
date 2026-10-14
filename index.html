@@ -25,10 +25,16 @@
     <div class="hud-left">
       <div id="placePill" class="pill place"><span id="placeName">Jiquilpan</span><span id="streetName"></span></div>
       <div id="timePill" class="pill time"><span id="wxIcon">☀</span><span id="clockText">7:30 am</span><span id="dayText">Jue</span></div>
+
     </div>
     <div class="hud-right">
       <div class="pill money"><span class="peso">$</span><span id="moneyText">150</span></div>
       <button id="btnMenu" class="round" aria-label="Menú">☰</button>
+    </div>
+    <div class="hud-life">
+      <div id="hearts" class="hearts" aria-label="Salud"></div>
+      <div id="spurs" class="spurs hidden"></div>
+      <div id="foeBar" class="foe hidden"><span id="foeName"></span><i><b id="foeFill"></b></i></div>
     </div>
     <div id="questTracker" class="tracker" role="status"></div>
     <div id="compass" class="compass"><div id="compassNeedle"></div></div>
@@ -40,6 +46,7 @@
     <div id="stickBase"><div id="stickKnob"></div></div>
     <button id="btnA" class="tbtn a">A</button>
     <button id="btnB" class="tbtn b">B</button>
+    <button id="btnItem" class="tbtn item" aria-label="Usar lo que traes en la mano">✋</button>
   </div>
 
   <!-- Contextual prompt -->

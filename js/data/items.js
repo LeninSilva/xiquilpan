@@ -1,8 +1,16 @@
 // Items, food and shop catalogues.
 export const ITEMS = {
   linterna: { name: 'Linterna', ico: '🔦', desc: 'Una linterna de mano. Indispensable para el Cerro de noche.', type: 'tool' },
-  palo: { name: 'Palo', ico: '🪵', desc: 'Un buen palo de fresno. Sirve de bastón, para espantar perros o para bajar guayabas.', type: 'tool' },
-  trompo: { name: 'Trompo', ico: '🪀', desc: 'Un trompo de madera con su cordón. Alguien lo anda buscando.', type: 'quest' },
+  palo: { name: 'Palo', ico: '🪵', desc: 'Un buen palo de fresno. Sirve de bastón, para bajar guayabas… o para defenderte.', type: 'tool', equip: 'hand' },
+  trompo: { name: 'Trompo de Beto', ico: '🪀', desc: 'Un trompo de madera con su cordón. Beto, el del Jardín de la Paz, lo anda buscando.', type: 'quest', equip: 'hand' },
+  trompo_mio: { name: 'Tu trompo', ico: '🪀', desc: 'Trompo de madera de Paracho, pintado a mano, con su cordón de algodón y su púa de fierro. Equípalo y báilalo con F; junto a los niños, te retan.', type: 'tool', equip: 'hand' },
+  resortera: { name: 'Resortera', ico: '🎯', desc: 'Horqueta de guayabo con liga de cámara de llanta. Tumba botes, baja guayabas y mangos. Con la gente, no: te van a querer partir la cara.', type: 'tool', equip: 'hand' },
+  rosario: { name: 'Rosario de las Monjas', ico: '📿', desc: 'Cuentas de madera de olivo y una medalla de la Virgen, hecho por las religiosas del Santuario. Al cuello: los golpes te duelen la mitad, las abuelas te tratan como nieto y rezar te rinde el doble.', type: 'tool', equip: 'charm' },
+  guayaba: { name: 'Guayaba', ico: '🍐', desc: 'Guayaba amarilla, olorosa, recién caída del árbol.', type: 'food', effect: { panza: 2 } },
+  mango: { name: 'Mango', ico: '🥭', desc: 'Mango de la huerta, dulce y escurridizo.', type: 'food', effect: { panza: 3 } },
+  naranja: { name: 'Naranja', ico: '🍊', desc: 'Naranja de la huerta, con más jugo que cáscara.', type: 'food', effect: { panza: 2 } },
+  limon: { name: 'Limón', ico: '🍋', desc: 'Para la sal, la michelada o lo enchilado.', type: 'food', effect: { cure: 'enchilado_soft' } },
+  aguacate: { name: 'Aguacate', ico: '🥑', desc: 'Aguacate criollo de cáscara delgada: se come con todo y cáscara.', type: 'food', effect: { panza: 3 } },
   libro: { name: 'Libro vencido', ico: '📕', desc: '"Pedro Páramo", préstamo de la Biblioteca Gabino Ortiz. Vencido desde hace tres meses.', type: 'quest' },
   bomba: { name: 'Bomba de bici', ico: '🚲', desc: 'Una bomba de aire con una calcomanía de un rinoceronte.', type: 'quest' },
   foto_jeep: { name: 'Foto del jeep', ico: '🖼️', desc: 'Foto antigua: el General Cárdenas junto a su jeep, en la plaza de Jiquilpan.', type: 'quest' },
@@ -229,7 +237,9 @@ export const SHOPS = {
     ['pilas', 'Pilas AA', '🔋', 30, {}, ''],
     ['cemento', 'Bulto de cemento', '🧱', 210, { give: 'cemento' }, ''],
   ] },
-  dulceria: { name: 'Dulcería y paletería', sub: 'Paletas de agua, de leche y dulces', items: [
+  dulceria: { name: 'Dulcería y paletería', sub: 'Paletas de agua, de leche, dulces y juguetes', items: [
+    ['resortera', 'Resortera', '🎯', 40, { give: 'resortera' }, 'La venden junto a los dulces, como si nada.'],
+    ['trompo_nuevo', 'Trompo', '🪀', 35, { give: 'trompo_mio' }, 'Con su cordón.'],
     ['paleta', 'Paleta de agua de limón', '🍭', 15, { cure: 'enchilado' }, ''],
     ['paleta_leche', 'Paleta de leche', '🍦', 20, { panza: 1 }, ''],
     ['dulces', 'Dulces', '🍬', 10, { give: 'dulces' }, ''],
@@ -279,7 +289,8 @@ export const SHOPS = {
   flores: { name: 'Flores del mercado', sub: 'Para quedar bien', items: [['ramo', 'Ramo de flores', '💐', 45, { give: 'ramo' }, 'Se regalan: a quien le guste, le va a gustar mucho.']] },
   tianguis: { name: 'Tianguis', sub: 'Fruta, verdura, ropa, juguetes…', items: [
     ['mandado', 'Mandado (jitomate, aguacate, poblanos, guayabas)', '🛍️', 85, { give: 'bolsa_tianguis' }, 'Lo de la lista de la abuela.'],
-    ['trompo_nuevo', 'Trompo nuevo', '🪀', 30, {}, 'Pintado a mano.'],
+    ['trompo_nuevo', 'Trompo nuevo', '🪀', 30, { give: 'trompo_mio' }, 'Pintado a mano, de Paracho.'],
+    ['resortera', 'Resortera', '🎯', 35, { give: 'resortera' }, 'Horqueta de guayabo y liga de cámara.'],
     ['linterna', 'Linterna china', '🔦', 50, { give: 'linterna' }, 'Quién sabe cuánto dure.'],
     ['cobija', 'Cobija de lana', '🧣', 180, { give: 'cobija' }, 'De San Francisco.'],
     ['ramo', 'Ramo de flores', '💐', 40, { give: 'ramo' }, 'Para regalar.'],

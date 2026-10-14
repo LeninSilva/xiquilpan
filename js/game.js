@@ -23,8 +23,12 @@ import { playLoteria, playTortillas } from './minigames.js';
 import { Accidents, placeCar, saveCar, enterCar, exitCar, carMenu } from './driving.js';
 import { dogInteract, mezquiteScene } from './dogquest.js';
 import { paintSky, skyView } from './render/sky.js';
+import { useHand, equip, equipped, hasCharm } from './gear.js';
+import { Combat } from './combat.js';
+import { Riding } from './riding.js';
 
 const SAVE_KEY = 'xiq_save', SETTINGS_KEY = 'xiq_settings';
+const FRUIT_COLOR = { guayaba: '#d8d36a', mango: '#f2a93b', naranja: '#f28c28', limon: '#8cc63f', aguacate: '#3e5b2a' };
 
 // Short texts for landmarks you can examine.
 const INFO = {
@@ -87,13 +91,17 @@ export class Game {
     this.itemEntities = [];
     this.accidents = new Accidents(this);
     this.shake = 0;
+    this.combat = new Combat(this);
+    this.riding = new Riding(this);
+    this.gearCool = 0; this.hurtFlash = 0;
     this.newState();
   }
 
   // ---- state -------------------------------------------------------------------
   newState() {
     this.state = { name: 'Emiliano', money: 150, inventory: {}, act: 1, era: 'before', quests: {}, clues: [], hilos: 0, hiloNames: [], debt: 0, debtSince: null, freeTacos: 0, believers: 0, ending: null, ateToday: -1, prayed: -1,
-      rel: {}, properties: [], businesses: [], wardrobe: ['jeans', 'sudadera_anil', 'tenis', 'sin_sombrero', 'corte_normal', 'rasurado'], outfit: {}, lastDay: null, earned: 0, jobDay: -1, loteriaDay: -1 };
+      rel: {}, properties: [], businesses: [], wardrobe: ['jeans', 'sudadera_anil', 'tenis', 'sin_sombrero', 'corte_normal', 'rasurado'], outfit: {}, lastDay: null, earned: 0, jobDay: -1, loteriaDay: -1,
+      hp: 12, hpMax: 12, equip: { hand: null, charm: null }, horse: null };
     this.flags = {};
     this.stats = { corazon: 0, palabra: 0, fama: 0, panza: 22, talks: 0 };
     this.status = { enchilado: 0, buzz: 0 };
@@ -153,9 +161,37 @@ export class Game {
     setInterval(() => this.env.fetchLive(), 10 * 60 * 1000);
     setInterval(() => { if (this.playing && !this.dialog.active) this.save(); }, 30000);
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.save(); });
+    window.addEventListener('pagehide', () => this.save());
+    // Android's back button: inside the APK the WebView turns it into history.back(). Close whatever is
+    // open (a minigame, a shop, the menu, a conversation) or open the menu — never drop out of the game.
+    try {
+      history.replaceState({ xiq: 0 }, ''); history.pushState({ xiq: 1 }, '');
+      window.addEventListener('popstate', () => { this.backButton(); history.pushState({ xiq: 1 }, ''); });
+    } catch (e) { /* file:// or sandboxed: no history */ }
+    window.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && this.dialog.active && !this.ui.shopOpenFlag && !document.querySelector('.mg')) { this.backButton(); } });
     // automated-test hook: ?autostart=Name
     const q = new URLSearchParams(location.search);
     if (q.get('autostart') != null) { title.classList.add('hidden'); if (q.get('continue') && this.hasSave()) this.loadGame(); else this.newGame(q.get('autostart') || 'Emiliano', q.has('skipintro')); }
+  }
+  backButton() {
+    const mg = document.querySelector('.mg .mg-x'); if (mg) { mg.click(); return 'minigame'; }
+    if (this.ui.shopOpenFlag) { this.ui.closeShop(); return 'shop'; }
+    if (this.ui.menuOpen) { this.ui.closeMenu(); return 'menu'; }
+    if (this.dialog.active) {
+      const bye = [...document.querySelectorAll('#dlgChoices button')].find(b => /Adiós|No, gracias|Seguir tu camino|Nada|Salir|Irte/.test(b.textContent));
+      if (bye) bye.click(); else if (!document.querySelector('#dlgChoices button')) this.ui.onAdvance();
+      return 'dialog';
+    }
+    if (!document.getElementById('title').classList.contains('hidden')) return 'title';
+    if (this.playing && !this.cutsceneActive && !this.transitioning) { this.ui.openMenu('map'); return 'open-menu'; }
+    return null;
+  }
+  // With a trompo in your hand: next to a kid, a challenge; anywhere else, just make it dance.
+  trompoHere() {
+    const p = this.player;
+    const kid = this.people?.find(e => e !== p && e.look?.age === 'kid' && !e.down && dist(e.x, e.y, p.x, p.y) < 40);
+    if (kid && this.minigameTrompo) return this.minigameTrompo(kid);
+    this.spinTrompo();
   }
   // “Mirar el cielo” from a mirador: the real sky over the valley, live with the game clock
   async lookAtSky() {
@@ -204,6 +240,10 @@ export class Game {
       const d = JSON.parse(localStorage.getItem(SAVE_KEY));
       this.newState();
       Object.assign(this.state, d.state); this.flags = d.flags || {}; Object.assign(this.stats, d.stats); Object.assign(this.status, d.status || {});
+      // saves from before hearts, equipment and horses
+      this.state.hpMax ??= 12; this.state.hp ??= this.state.hpMax; this.state.equip ||= { hand: null, charm: null };
+      if (this.state.horse === undefined) this.state.horse = this.quests.done('s_caballo') ? { name: 'Lucero', color: '#f2efe8', map: 'cerro', x: 19 * TILE, y: 52 * TILE } : null;
+      this.riding.horse = null; this.player.mount = null;
       this.clock.load(d.clock);
       this.returnStack = d.returnStack || []; this.lastOutdoor = d.lastOutdoor || 'town';
       this.playing = true; this.ui.showHUD(true);
@@ -347,15 +387,25 @@ export class Game {
   hasItem(id) { return (this.state.inventory[id] || 0) > 0; }
   giveItem(id, n = 1) { this.state.inventory[id] = (this.state.inventory[id] || 0) + n; const it = ITEMS[id]; this.ui.toast(`Obtuviste: ${it ? it.ico + ' ' + it.name : id}`, 'good'); this.sfx('pickup'); this.quests.onPickup(id); this.save(); }
   giveItemSilent(id) { this.state.inventory[id] = (this.state.inventory[id] || 0) + 1; }
-  takeItem(id) { if (this.state.inventory[id] > 0) this.state.inventory[id]--; if (!this.state.inventory[id]) delete this.state.inventory[id]; }
+  takeItem(id) {
+    if (this.state.inventory[id] > 0) this.state.inventory[id]--;
+    if (!this.state.inventory[id]) { delete this.state.inventory[id]; const e = this.state.equip; if (e) for (const k in e) if (e[k] === id) { e[k] = null; this.ui.refreshItemButton?.(); } }
+  }
+  // Something falls on the ground where you can pick it up (fruit off a tree, a dropped coin…).
+  dropItem(id, x, y) {
+    const it = { map: this.map.id, id, x: x / TILE, y: y / TILE, dropped: true };
+    this.quests.extraItems = (this.quests.extraItems || []).filter(e => !(e.dropped && this.flags['got_' + e.map + e.id + Math.round(e.x)])).concat([it]);
+    this.syncItems();
+  }
   consumeItem(id) {
     const it = ITEMS[id]; if (!it || !this.hasItem(id)) return;
     this.takeItem(id); this.applyEffect(it.effect || {});
     this.ui.toast(`${it.ico} ${it.name}: ¡provecho!`, 'good');
   }
   applyEffect(e) {
-    if (e.panza) this.addStat('panza', e.panza);
-    if (e.buzz) this.status.buzz = Math.max(0, Math.min(100, this.status.buzz + e.buzz));
+    if (e.panza) { this.addStat('panza', e.panza); this.heal(Math.ceil(e.panza / 2)); }
+    if (e.heal) this.heal(e.heal);
+    if (e.buzz) { this.status.buzz = Math.max(0, Math.min(125, this.status.buzz + e.buzz)); if (e.buzz > 0) this.drinkMsg(); }
     if (e.enchilado) { this.status.enchilado = e.enchilado; this.sfx('enchilado'); this.ui.toast('🌶️ ¡AY! ¡Pica, pica, pica!', 'bad'); }
     if (e.cure === 'enchilado' && this.status.enchilado > 0) { this.status.enchilado = 0; this.ui.toast('Ahhh… ya se te quitó lo enchilado.', 'good'); this.quests.onCure('enchilado'); }
     if (e.cure === 'enchilado_soft' && this.status.enchilado > 0) { this.status.enchilado = Math.max(0, this.status.enchilado - 40); if (!this.status.enchilado) this.quests.onCure('enchilado'); }
@@ -502,10 +552,49 @@ export class Game {
     this.transition(() => {
       this.clock.advanceTo(hour);
       this.status.buzz = 0; this.status.enchilado = 0;
+      this.state.hp = this.state.hpMax || 12;
       this.stats.panza = Math.max(0, this.stats.panza - 4);
       this.npcs.timer = 0; this.refreshLook();
       this.ui.toast(`Dormiste. ${this.clock.dateLabel()}`, 'good');
     });
+  }
+  heal(n) { const s = this.state; s.hp = Math.min(s.hpMax || 12, (s.hp ?? 12) + n); }
+  // How drunk you are, in steps: alegre (the world sways), mareado (you weave, the screen swims and
+  // doubles), and past that you trip over your own feet. Keep going and the lights go out.
+  drinkMsg() {
+    const b = this.status.buzz;
+    const msg = b >= 105 ? 'Ya no ves bien. El piso se mueve más que tú.' : b >= 80 ? 'Mareado: cuidado, que te vas de lado.' : b >= 45 ? 'Ya andas alegre. Todo te da risa y el piso no está derecho.' : null;
+    if (msg && msg !== this._drunkMsg) { this._drunkMsg = msg; this.ui.toast('🥴 ' + msg, b >= 80 ? 'bad' : ''); }
+    if (b < 45) this._drunkMsg = null;
+  }
+  drunkenness(dt) {
+    const b = this.status.buzz, p = this.player;
+    if (b < 80 || this.driving || this.dialog.active || this.cutsceneActive || this.ui.menuOpen) return;
+    // trips: more often the drunker you are; never on a horse (the horse knows the way)
+    if (!this.riding.on && p.moving && !this.stumbleT && Math.random() < dt * (b - 75) / 160) {
+      this.stumbleT = 1.4; this.sfx('hurt'); p.bubble = { text: '¡Ups!', t: 1 };
+      if (Math.random() < 0.3 && this.state.money > 20) { const lost = Math.min(this.state.money, 10 + Math.floor(Math.random() * 30)); this.addMoney(-lost); this.ui.toast(`Te tropezaste y se te cayeron $${lost} quién sabe dónde.`, 'bad'); }
+    }
+    if (b >= 112 && !this.blackout) this.passOut();
+  }
+  passOut() {
+    this.blackout = true;
+    const where = this.map.id;
+    this.transition(() => {
+      this.riding.horse && this.riding.dismount(true);
+      this.clock.advanceTo(7.2);
+      this.status.buzz = 18; this.state.hp = Math.max(4, this.state.hp);
+      this.addStat('fama', -3); this.addStat('palabra', -1);
+      this.returnStack = [];
+      // somebody kind gets you somewhere safe: home if you are in town, the bench by the Aguadora otherwise
+      if (where === 'town' || this.map.interior) { this.returnStack = [{ map: 'town', x: 225.5 * TILE, y: 157.2 * TILE, dir: 0 }]; this.changeMap('casa_abuela', 13.5, 7, 0, { instant: true }); }
+      else this.changeMap(where, this.player.x / TILE, this.player.y / TILE, 0, { instant: true });
+      this.blackout = false;
+    }).then(() => { this.blackout = false; return this.dialog.scene(async d => {
+      await d.narrate('Se te apagó la tele. Despiertas con la boca seca, el sol en la cara y una cobija que alguien te echó encima.');
+      if (where === 'town' || this.map.id === 'casa_abuela') await d.say(this.npcs.named.get('abuela') || { name: 'Abuela Chayo' }, '¿Ya despertaste, borrachito? Te trajo Chuy el del taxi, cargado como costal. Tómate tu caldito y luego hablamos. Y no le digas a tu abuelo, que se ríe.');
+      else await d.narrate('No sabes quién te tapó. En el pueblo ya lo saben todos, eso sí.');
+    }); });
   }
   cutscene(name) { return runCutscene(this, name); }
   spinTrompo() {
@@ -597,13 +686,14 @@ export class Game {
     for (const it of this.quests.worldItems()) {
       if (it.map !== this.map.id) continue;
       if (it.repeat && this.hasItem(it.id)) continue;
-      const e = { id: 'item_' + it.id, item: it.id, map: this.map, x: it.x * TILE, y: it.y * TILE, solid: false, update() {}, draw(ctx, game) {
+      const e = { id: 'item_' + it.id, item: it.id, src: it, map: this.map, x: it.x * TILE, y: it.y * TILE, solid: false, update() {}, draw(ctx, game) {
         const t = game.clock.real; const b = Math.sin(t * 3) * 1.2;
         ctx.fillStyle = 'rgba(20,20,35,0.25)'; ctx.beginPath(); ctx.ellipse(this.x, this.y, 4, 1.4, 0, 0, 7); ctx.fill();
         ctx.save(); ctx.translate(this.x, this.y - 3 + b);
         if (this.item === 'palo') { ctx.strokeStyle = '#7a5a36'; ctx.lineWidth = 1.4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-6, 2); ctx.lineTo(6, -3); ctx.moveTo(1, -1); ctx.lineTo(3, -5); ctx.stroke(); }
         else if (this.item === 'trompo') { ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(-3, -3); ctx.lineTo(3, -3); ctx.lineTo(0, 3); ctx.fill(); ctx.fillStyle = '#f2c230'; ctx.fillRect(-3, -3, 6, 1); }
         else if (this.item === 'bomba') { ctx.fillStyle = '#333'; ctx.fillRect(-1, -6, 2, 8); ctx.fillStyle = '#c0392b'; ctx.fillRect(-4, -7, 8, 1.5); }
+        else if (FRUIT_COLOR[this.item]) { ctx.fillStyle = FRUIT_COLOR[this.item]; ctx.beginPath(); ctx.arc(0, 0, 2.6, 0, 7); ctx.fill(); ctx.fillStyle = '#4c8a34'; ctx.fillRect(-0.4, -3.6, 0.8, 1.6); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(-0.9, -0.9, 0.8, 0, 7); ctx.fill(); }
         else { ctx.fillStyle = '#f5f0e6'; ctx.fillRect(-4, -4, 8, 6); ctx.strokeStyle = '#8a6a2f'; ctx.strokeRect(-4, -4, 8, 6); }
         ctx.restore();
         ctx.fillStyle = `rgba(255,255,220,${0.5 + Math.sin(t * 5) * 0.4})`; ctx.beginPath(); ctx.arc(this.x + 4, this.y - 9 + b, 1, 0, 7); ctx.fill();
@@ -649,7 +739,9 @@ export class Game {
     if (!it) return null;
     if (it.type === 'car') return it.e.broken ? 'Ver la troca (descompuesta)' : 'Manejar la troca del abuelo';
     if (it.type === 'npc' && it.e.dog) return it.e.companion ? `Acariciar a ${it.e.name}` : 'Acercarte al perro';
-    if (it.type === 'npc') return it.e.horse ? 'Acariciar a Lucero' : `Hablar con ${it.e.def?.short || it.e.def?.name || it.e.name}`;
+    if (it.type === 'npc' && it.e.horse) return it.e.owned ? `Montar a ${it.e.def.name}` : 'Acariciar a Lucero';
+    if (it.type === 'npc' && this.combat.active && it.e === this.combat.foe) return 'Pegar';
+    if (it.type === 'npc') return `Hablar con ${it.e.def?.short || it.e.def?.name || it.e.name}`;
     if (it.type === 'item') return `Recoger: ${ITEMS[it.e.item]?.name || it.e.item}`;
     if (it.type === 'door') return `Entrar: ${it.door.label}`;
     if (it.type === 'sprite') {
@@ -659,6 +751,8 @@ export class Game {
   }
   async interact(it) {
     if (!it) return;
+    if (it.type === 'npc' && it.e.horse && it.e.owned) { this.riding.mount(it.e); return; }
+    if (it.type === 'npc' && this.combat.active && it.e === this.combat.foe) { this.combat.playerAttack(); return; }
     if (it.type === 'npc' && it.e.horse) {
       if (!this.flags.lucero_follow) { this.flags.lucero_follow = true; it.e.follow = true; this.ui.toast('🐎 Lucero se deja acariciar y te sigue. Llévala con Don Celso Salazar.', 'quest'); this.sfx('clue'); }
       else this.ui.toast('🐎 Lucero resopla y te empuja con la cabeza: quiere ir a casa.', '');
@@ -671,7 +765,7 @@ export class Game {
       const e = it.e;
       const i = this.entities.indexOf(e); if (i >= 0) this.entities.splice(i, 1);
       this.itemEntities = this.itemEntities.filter(x => x !== e);
-      const ex = (this.quests.extraItems || []).find(x => x.id === e.item && x.map === this.map.id);
+      const ex = e.src && (this.quests.extraItems || []).includes(e.src) ? e.src : (this.quests.extraItems || []).find(x => x.id === e.item && x.map === this.map.id);
       if (ex) this.flags['got_' + ex.map + ex.id + Math.round(ex.x)] = true;
       this.giveItem(e.item);
       return;
@@ -728,7 +822,7 @@ export class Game {
     if (this.playing && !this.ui.menuOpen && !this.cutsceneActive && !this.dialog.active) this.clock.tick(dt);
     else { this.clock.dt = dt; if (!frozen) this.clock.real += dt; }
     this.env.update(this.clock, dt);
-    if (this.playing && this.state.lastDay !== this.clock.dayIndex) newDay(this);
+    if (this.playing && this.state.lastDay !== this.clock.dayIndex) { newDay(this); this.riding.newDay(); }
     if (this.map.id === 'town' && this.clock.weekday !== this.lastWeekday) { this.lastWeekday = this.clock.weekday; applyWeekday(this.map, this.clock.weekday); }
     if (this.playing) this.update(dt);
     else { // title backdrop: slow pan across the plaza
@@ -752,7 +846,12 @@ export class Game {
       }
       this.npcs.update(dt);
       for (const e of this.effects) e.update?.(dt, this);
+      this.combat.update(dt);
     }
+    if (this.gearCool > 0) this.gearCool -= dt;
+    if (this.hurtFlash > 0) this.hurtFlash -= dt;
+    // hearts come back slowly when you have eaten
+    if (this.state.hp < (this.state.hpMax || 12) && this.stats.panza > 8 && !this.combat.active) { this.regenT = (this.regenT || 0) + dt; if (this.regenT > 45) { this.regenT = 0; this.heal(1); } }
     this.map.act = this.state.act;
     // an unpaid debt slowly costs you your word
     if (this.debtOverdue() && this.state.debtPenaltyDay !== this.clock.dayIndex) {
@@ -762,6 +861,7 @@ export class Game {
     // status effects
     if (this.status.enchilado > 0) { this.status.enchilado = Math.max(0, this.status.enchilado - dt * 0.5); if (this.status.enchilado === 0) this.refreshLook(); }
     if (this.status.buzz > 0) this.status.buzz = Math.max(0, this.status.buzz - dt * 0.35);
+    this.drunkenness(dt);
     if (this.handGlow > 0) this.handGlow -= dt;
     this.refreshLook();
     // item sync every few seconds
@@ -779,6 +879,12 @@ export class Game {
     if (this.driving) {
       this.ui.prompt(canMove ? (Math.abs(this.driving.speed) < 18 ? 'Bajarte de la troca' : null) : null);
       if (canMove && inp.action()) exitCar(this);
+    } else if (this.riding.on) {
+      this.riding.update(dt, canMove && !this.stumbleT, inp);
+      if (canMove && inp.use()) useHand(this);
+    } else if (canMove && this.stumbleT > 0) {
+      this.stumbleT -= dt; p.pose = 'sit'; p.moving = false; this.ui.prompt(null);
+      if (this.stumbleT <= 0) { p.pose = null; this.stumbleT = 0; }
     } else if (canMove) {
       let { x, y } = inp.axis();
       if (this.status.buzz > 45) { const w = Math.sin(this.clock.real * 2.3) * (this.status.buzz - 45) / 110; const nx = x - y * w, ny = y + x * w; x = nx; y = ny; }
@@ -805,10 +911,13 @@ export class Game {
       // exits
       const ex = this.map.exitAt(p.x, p.y);
       if (ex && !this.transitioning) this.useExit(ex);
-      // interaction prompt & action
+      // interaction prompt & action (in a fight, A hits)
       const it = this.findInteraction();
-      this.ui.prompt(this.promptFor(it));
-      if (inp.action()) this.interact(it);
+      const fight = this.combat.active && (!it || it.type !== 'door');
+      this.ui.prompt(fight ? 'Pegar' : this.promptFor(it));
+      if (inp.action()) { if (fight) this.combat.playerAttack(); else this.interact(it); }
+      if (inp.use()) useHand(this);
+      if (inp.was('h')) this.riding.whistle();
     } else if (!this.dialog.active) this.ui.prompt(null);
     // hand glow when talking sincerely (the añil stain)
     this.dynamicGlow = this.handGlow > 0;
@@ -817,6 +926,7 @@ export class Game {
     if (!this.camLock) {
       const k = Math.min(1, dt * 6);
       this.camera.x = lerp(this.camera.x, target.x, k); this.camera.y = lerp(this.camera.y, target.y, k);
+      if (this.status.buzz > 30) { const w = Math.min(1, (this.status.buzz - 30) / 70), t = this.clock.real; this.camera.x += Math.sin(t * 0.9) * w * 7 * dt * 60 * 0.1; this.camera.y += Math.cos(t * 0.7) * w * 4 * dt * 60 * 0.1; }
     }
     const vw = this.renderer.viewW, vh = this.renderer.viewH, mw = this.map.w * TILE, mh = this.map.h * TILE;
     this.camera.x = mw < vw ? mw / 2 : clamp(this.camera.x, vw / 2, mw - vw / 2);
