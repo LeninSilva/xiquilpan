@@ -1,0 +1,69 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [claude/jiquilpan-rpg-game-95d3a3]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Prepare web assets
+        run: |
+          mkdir -p www
+          tar --exclude='./.git' --exclude='./.github' --exclude='./tests' --exclude='./www' -cf - . | tar -xf - -C www
+
+      - name: Install Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
+
+      - name: Init Capacitor app
+        run: npx cap init 'Las luces del Cerro' io.github.leninsilva.xiquilpan --web-dir=www
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Generate app icon from the game's own artwork
+        run: |
+          mkdir -p resources
+          cp www/icons/icon-512.png resources/icon.png
+          npx capacitor-assets generate --android --iconBackgroundColor '#1c1a24'
+
+      - name: Fix Kotlin stdlib duplicates
+        run: |
+          cat >> android/app/build.gradle << 'EOF'
+
+          configurations.all {
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+          }
+          EOF
+
+      - name: Sync web app
+        run: npx cap sync
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xiquilpan-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
