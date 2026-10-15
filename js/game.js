@@ -777,6 +777,7 @@ export class Game {
     if (it.type === 'door') return `Entrar: ${it.door.label}`;
     if (it.type === 'sprite') {
       const s = it.s;
+      if (s.interact === 'libros' && s.section) return `Ver los libros · ${s.section[0]}${s.section.slice(1).toLowerCase()}`;
       return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', parada: 'Esperar la combi', cielo: 'Mirar el cielo', palenque_bet: 'Ver las peleas', telar: 'Ver el telar', ...PLACE_PROMPTS }[s.interact] || 'Ver';
     }
   }

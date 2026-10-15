@@ -4,7 +4,7 @@
 import { pick, clamp } from './util.js';
 import { ITEMS } from './data/items.js';
 import { hasCharm } from './gear.js';
-import { paintMural } from './render/rooms.js';
+import { paintMural, pointedArch as pointedArchPath } from './render/rooms.js';
 import { BOOKS, SECTION_NOTES } from './data/books.js';
 
 const R = Math.random;
@@ -111,19 +111,35 @@ export function muralViewer(g) {
       <div class="mg-body"><div class="mural-scroll"><canvas width="2400" height="520"></canvas></div><p class="mural-cap"></p><div class="mg-actions"><button class="btn" data-k="prev">◀</button><button class="btn" data-k="next">▶</button></div></div></div>`;
     document.body.appendChild(el);
     const cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
-    ctx.scale(6, 6);
-    paintMural(ctx, 0, 0, 400 / 3, 520 / 6, 1941, 'grisaille', true);
-    paintMural(ctx, 400 / 3, 0, 400 / 3, 520 / 6, 1940, 'color', true);
-    paintMural(ctx, 800 / 3, 0, 400 / 3, 520 / 6, 1942, 'grisaille', true);
-    ctx.fillStyle = '#2b2826'; ctx.fillRect(400 / 3 - 0.6, 0, 1.2, 520 / 6); ctx.fillRect(800 / 3 - 0.6, 0, 1.2, 520 / 6); // the pilasters between the walls
+    // the nave unrolled: two bays of the left wall, the apse, two bays of the right wall
+    cv.width = 3000; cv.height = 520; ctx.scale(6, 6);
+    const VH = 520 / 6;
+    ctx.fillStyle = '#efe9dd'; ctx.fillRect(0, 0, 500, VH);
+    const panels = [[4, 88, 1944, 'grisaille'], [96, 88, 1945, 'grisaille'], [192, 116, 1940, 'color'], [312, 88, 1943, 'grisaille'], [404, 92, 1947, 'grisaille']]; // seed % 3: the crowd, the horses, the fallen
+    for (const [x, w, seed, mode] of panels) {
+      if (mode === 'color') {
+        ctx.save(); pointedArchPath(ctx, x, x + w, 64, 2); ctx.clip(); paintMural(ctx, x, 2, w, 62, seed, 'color', true); ctx.restore();
+        ctx.strokeStyle = '#cfc4ae'; ctx.lineWidth = 1.4; pointedArchPath(ctx, x - 0.7, x + w + 0.7, 64, 1.3); ctx.stroke();
+        ctx.fillStyle = '#4a2c1a'; ctx.fillRect(x - 6, 64, w + 12, VH - 64); // the wood paneling and its doors
+        for (const d of [x + w * 0.2, x + w * 0.8]) { ctx.fillStyle = '#2e1a0f'; ctx.fillRect(d - 6, 66, 12, VH - 66); ctx.fillStyle = '#5e3822'; ctx.fillRect(d - 5.4, 67, 10.8, VH - 67); ctx.fillStyle = '#d9b24a'; ctx.fillRect(d - 1.4, 76, 0.6, 0.6); ctx.fillRect(d + 0.8, 76, 0.6, 0.6); }
+        for (let k = x + w * 0.32; k < x + w * 0.66; k += 7) { ctx.fillStyle = '#5a3520'; ctx.fillRect(k, 68, 5.6, VH - 72); }
+      } else {
+        paintMural(ctx, x, 4, w, VH - 8, seed, 'grisaille', true);
+        ctx.strokeStyle = '#7a7166'; ctx.lineWidth = 0.4; ctx.strokeRect(x, 4, w, VH - 8);
+      }
+    }
+    for (const px of [0, 92, 184, 308, 400, 496]) { ctx.fillStyle = '#d8cfbd'; ctx.fillRect(px, 0, 4, VH); ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(px + 3.4, 0, 0.6, VH); } // the pilasters
     const caps = [
-      '“Mira el muro de la izquierda: todo en grises, como si fuera de humo. Gente amontonada, brazos en alto. Orozco no pintaba héroes bonitos; pintaba al pueblo con el peso que carga.” — Maestra Olga',
-      '“Al fondo, donde antes estaba el altar, el muro grande: los colores de la tierra y del fuego. Lo pintó en 1940, cuando este templo se volvió biblioteca. Dicen que el General venía a verlo trabajar y no decía nada.” — Maestra Olga',
-      '“Y a la derecha, otra vez los grises. Fíjate cómo las figuras se tuercen: no están quietas ni en la pared. Yo llevo treinta años aquí y todavía les encuentro gente nueva.” — Maestra Olga',
-      '“Lo que ves en el juego es un recuerdo, no el mural: para verlo de verdad hay que venir, torcer el cuello y quedarse un rato callado.”',
+      '“Entras y a la izquierda está la gente: todo en grises, como hollín, como humo. El único color es el rojo de las banderas. Orozco no pintaba héroes bonitos; pintaba al pueblo con el peso que carga.” — Maestra Olga',
+      '“Los caballos salen del humo con los ojos en blanco. ¿Ves los sombreros, los rifles? Es la Revolución, pero aquí nadie posa para la foto: todo se mueve, todo se está cayendo.” — Maestra Olga',
+      '“Al fondo, donde antes estaba el altar, bajo el arco en punta: la alegoría, en color. El verde, el blanco y el rojo doblándose como una bandera al viento, el águila, el jaguar, la figura del manto de lumbre, los hombres armados y, abajo, los nopales. Lo pintó en 1940. Dicen que el General venía a verlo trabajar y no decía nada.” — Maestra Olga',
+      '“A la derecha, los caídos. Cuerpos tirados entre el humo, una bandera rota en el suelo, y uno que sigue de pie con los brazos arriba. Llevo treinta años aquí y todavía les encuentro gente nueva a estos muros.” — Maestra Olga',
+      '“Y otra vez la gente, gritando con la boca abierta. Fíjate: ninguno tiene nombre. Ese era el punto.” — Maestra Olga',
+      '“Lo que ves en el juego es un recuerdo, no el mural: para verlo de verdad hay que venir a Jiquilpan, torcer el cuello y quedarse un rato callado.”',
     ];
+    const centers = [48, 140, 250, 356, 450, 250];
     let i = 0; const scroll = el.querySelector('.mural-scroll'), cap = el.querySelector('.mural-cap');
-    const show = () => { cap.textContent = caps[i]; scroll.scrollTo({ left: Math.min(i, 2) * (scroll.scrollWidth - scroll.clientWidth) / 2, behavior: 'smooth' }); };
+    const show = () => { cap.textContent = caps[i]; const k = scroll.scrollWidth / 500; scroll.scrollTo({ left: Math.max(0, centers[i] * k - scroll.clientWidth / 2), behavior: 'smooth' }); };
     el.querySelector('[data-k="prev"]').onclick = () => { i = (i + caps.length - 1) % caps.length; show(); };
     el.querySelector('[data-k="next"]').onclick = () => { i = (i + 1) % caps.length; show(); };
     const close = () => { el.remove(); window.removeEventListener('keydown', key, true); g.input.enabled = true; if (!g.flags.saw_murals) { g.flags.saw_murals = true; g.addStat('corazon', 1); g.ui.toast('Te quedaste un buen rato mirando los muros.', 'good'); } resolve(); };

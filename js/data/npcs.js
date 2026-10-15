@@ -397,7 +397,7 @@ export const NAMED = [
     id: 'olga', name: 'Maestra Olga', role: 'bibliotecaria de la Gabino Ortiz',
     look: { female: true, age: 'elder', hair: 'short_f', top: 'blouse', topColor: '#6c5ce7', bottom: 'skirt', glasses: true, rebozo: '#5b3f7a' },
     persona: 'Maestra Olga, 67 años, bibliotecaria de la Biblioteca Pública Gabino Ortiz; ama los murales de Orozco y los explica con pasión; estricta con los libros vencidos.',
-    sched: [{ h: [9, 19], map: 'biblioteca', at: [14, 17.2], act: 'stand', dir: 0 }],
+    sched: [{ h: [9, 19], map: 'biblioteca', at: [17.5, 30.0], act: 'stand', dir: 0 }],
   },
   {
     id: 'ramirez', name: 'Dr. Ramírez', role: 'investigador de la UNAM (Estudios Regionales)',

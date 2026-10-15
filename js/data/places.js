@@ -74,26 +74,40 @@ registerInteriors({
     m.occupants = { church: true, spots: pewSeats([10.6, 12.2, 13.8], [[2.6, 6.2], [9.8, 13.4]]), n: [1, 4], customers: { counter: [19, 10.4], max: 2, lines: ['Un rompope, madre, del grande.', '¿Tiene cajeta envinada?', 'Una docena de obleas, por favor.', '¿Me bendice este rosario, madre?'] } };
     return m;
   },
-  // ---- Biblioteca Pública Gabino Ortiz: the old nave, painted wall to wall. Wooden bookcases along
-  // the sides, each with its brass plaque; long tables with green lamps; the loan desk by the door.
+  // ---- Biblioteca Pública Gabino Ortiz: the old neo-Gothic church, a long nave of white walls under
+  // the vault. The side walls carry the grisaille murals between pilasters, tall windows above, the
+  // glass-fronted bookcases below; at the end, under the pointed arch, the allegory in colour over the
+  // wood paneling. Red terracotta floor, long tables with green tops and carved chairs.
   biblioteca: () => {
-    const sections = [['HISTORIA', 'historia'], ['SOCIOLOGÍA', 'sociologia'], ['FILOSOFÍA', 'filosofia'], ['MICHOACÁN', 'michoacan'],
-      ['LITERATURA', 'literatura'], ['ENCICLOPEDIAS', 'enciclopedias'], ['ARTE', 'arte'], ['INFANTIL', 'infantil']];
+    const W = 26, H = 36, SIDE = 4, ROWS = 8, BAY = 5.4;
+    const left = [['HISTORIA', 'historia'], ['SOCIOLOGÍA', 'sociologia'], ['FILOSOFÍA', 'filosofia'], ['MICHOACÁN', 'michoacan'], ['HEMEROTECA']];
+    const right = [['LITERATURA', 'literatura'], ['ENCICLOPEDIAS', 'enciclopedias'], ['ARTE', 'arte'], ['INFANTIL', 'infantil'], ['CONSULTA']];
     const items = [
-      { kind: 'label', x: 14, y: 5.7, w: 30, up: 4, interact: 'mural_view' },
-      col(14, 18.6, 'mostrador', 56, 26, { sign: 'PRÉSTAMO Y DEVOLUCIÓN', collide: [-28, -6, 56, 6] }),
-      col(19.8, 18.4, 'fichero', 18, 22, { collide: [-8, -3, 16, 3], interact: 'fichero' }),
-      col(8.6, 18.6, 'globo', 12, 18, { collide: [-3, -2, 6, 2], interact: 'globo' }),
+      col(17.5, 31.2, 'mostrador', 56, 26, { sign: 'PRÉSTAMO Y DEVOLUCIÓN', collide: [-28, -6, 56, 6] }),
+      col(21, 31.0, 'fichero', 18, 22, { collide: [-8, -3, 16, 3], interact: 'fichero' }),
+      col(6.4, 31.4, 'globo', 12, 18, { collide: [-3, -2, 6, 2], interact: 'globo' }),
     ];
-    sections.forEach(([label, key], i) => {
-      const right = i >= 4, k = i % 4;
-      items.push(col(right ? 23.9 : 4.1, 8.4 + k * 3.1, 'estante', 34, 52, { fh: 44, section: label, seed: 30 + i, ladder: k === 1, collide: [-17, -5, 34, 5], interact: 'libros', books: key }));
+    for (const x of [8.5, 13, 17.5]) items.push({ kind: 'label', x, y: ROWS + 0.5, w: 40, up: 4, interact: 'mural_view' });
+    const plaques = { left: [], right: [] };
+    for (const [list, side] of [[left, 'left'], [right, 'right']]) list.forEach(([label, key], k) => {
+      const b0 = ROWS + k * BAY;
+      plaques[side].push({ y: b0 + BAY / 2, text: label });
+      if (key) for (const j of [0, 1]) items.push({ kind: 'label', x: side === 'left' ? SIDE + 0.3 : W - SIDE - 0.3, y: b0 + 1.57 + j * 2.51 + 0.35, w: 20, up: 4, interact: 'libros', books: key, section: label });
     });
-    for (const [x, y] of [[11, 10.6], [17, 10.6], [11, 14.4], [17, 14.4]]) items.push(col(x, y, 'mesaLectura', 60, 22, { collide: [-30, -10, 60, 8], books: !(x === 17 && y === 14.4) }));
-    const m = room('biblioteca', 'Biblioteca Pública Gabino Ortiz', { w: 28, h: 22, side: 2, wallRows: 5, floor: G.FLOOR_WOOD, wall: '#e2d5bd', frame: '#5e4a38',
-      mural: { seed: 1940 }, sideMurals: true, pattern: { pat: 'planks', a: '#6b4528', b: '#8a5a36' }, exit: 14, items, zoom: 0.95,
-      lights: [[14, 8, 170, '#ffe8b8'], [11, 11, 90, '#fff0b0'], [17, 11, 90, '#fff0b0'], [11, 15, 90, '#fff0b0'], [17, 15, 90, '#fff0b0'], [14, 18, 110, '#ffe2a8']], dim: 0.12 });
-    m.occupants = { spots: [[11, 11.9, 1, 'sit', 'lector'], [17.4, 15.7, 1, 'sit'], [9.6, 15.7, 1, 'sit']], n: [1, 3], quiet: true };
+    const spots = [];
+    [12.9, 17.3, 21.7, 26.1].forEach((y, row) => [8.5, 17.5].forEach((x, c) => {
+      items.push(col(x, y, 'mesaLectura', 64, 34, { green: true, lamps: [-16, 16], books: (row + c) % 2 === 0, collide: [-32, -12, 64, 10] }));
+      for (const dx of [-1.25, 0, 1.25]) {
+        items.push(col(x + dx, y - 13 / 16, 'sillaTallada', 12, 24, { back: 'up' }));
+        items.push(col(x + dx, y + 9 / 16, 'sillaTallada', 12, 18, { back: 'down' }));
+        spots.push([x + dx, y - 12 / 16, 0, 'sit', 'lector'], [x + dx, y + 7 / 16, 1, 'sit', 'lector']);
+      }
+    }));
+    const m = room('biblioteca', 'Biblioteca Pública Gabino Ortiz', { w: W, h: H, side: SIDE, wallRows: ROWS, floor: G.FLOOR_TILE, wall: '#efe9dd', frame: '#6e655a',
+      mural: { seed: 1940 }, sideMurals: { bay: BAY, light: true, plaques }, pattern: { pat: 'barro', a: '#9a432b', b: '#b4573a', grout: '#6a3424' }, exit: 13, items, zoom: 1.05,
+      lights: [[13, 9, 200, '#fff0d0'], ...[12.1, 16.5, 20.9, 25.3].flatMap(y => [[8.5, y, 80, '#fff0b0'], [17.5, y, 80, '#fff0b0']]), [17.5, 30, 110, '#ffe2a8']], dim: 0.08 });
+    // the reader by the window always has a seat; the rest come and go
+    m.occupants = { spots: [spots[1], ...spots.filter((_, i) => i !== 1)], n: [1, 4], quiet: true };
     return m;
   },
   // ---- The Ayuntamiento, ground floor: the patio's arcade, the windows of the Registro Civil, the

@@ -90,7 +90,7 @@ await sleep(200);
 check('wear the rosary', await G(() => window.__game.state.equip.charm === 'rosario'));
 
 // 5. the library: browse a shelf, read, the card catalogue, the murals up close
-await G(() => { const g = window.__game; g.clock.minutes = 1440 * 4 + 12 * 60; g.changeMap('biblioteca', 14, 12, 1, { instant: true }); });
+await G(() => { const g = window.__game; g.clock.minutes = 1440 * 4 + 12 * 60; g.changeMap('biblioteca', 13, 20, 1, { instant: true }); });
 const saber0 = await G(() => window.__game.state.saber || 0);
 await G(() => { const g = window.__game; const s = g.map.sprites.find(s => s.books === 'literatura'); g.interact({ type: 'sprite', s }); });
 await sleep(300); await drive(['Azul', 'leerlo']);

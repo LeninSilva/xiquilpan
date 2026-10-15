@@ -86,7 +86,7 @@ export function room(id, name, spec) {
   const wallRows = spec.wallRows ?? 3;
   m.fill(0, 0, w, wallRows, G.WALL); m.setSolid(0, 0, w, wallRows);
   if (spec.grand) m.structures.push({ kind: 'grandwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, deco: spec.deco, seed: id.length * 13, ...spec.grand, layer: 1 });
-  else if (spec.mural) m.structures.push({ kind: 'muralwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, seed: spec.mural.seed || 1940, layer: 1 });
+  else if (spec.mural) m.structures.push({ kind: 'muralwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, side: spec.side || 1, seed: spec.mural.seed || 1940, layer: 1 });
   else m.structures.push({ kind: 'backwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, color2: spec.wall2, band: spec.band, tiles: spec.tiles, deco: spec.deco, layer: 1 });
   const side = spec.side || 1;
   for (let y = 0; y < h; y++) for (let k = 0; k < side; k++) { m.set(k, y, G.VOID); m.set(w - 1 - k, y, G.VOID); }
@@ -106,7 +106,10 @@ export function room(id, name, spec) {
   if (spec.pattern) m.structures.push({ kind: 'floorpat', x: side, y: wallRows, w: w - 2 * side, h: h - wallRows - 1, seed: id.length, ...spec.pattern, layer: 0.5 });
   for (const st of spec.steps || []) m.structures.push({ kind: 'steps', ...st, layer: 0.6 });
   if (spec.frame) m.structures.push({ kind: 'roomframe', w, h, rows: wallRows, top: spec.frame, exits, layer: 1.2 });
-  if (spec.sideMurals) for (const right of [false, true]) m.structures.push({ kind: 'sidemural', x: right ? w - side : 0, y: wallRows - 1, w: side, h: h - wallRows, right, seed: id.length * 7 + (right ? 3 : 0), layer: 1.3 });
+  if (spec.sideMurals) for (const right of [false, true]) { // {bay, light, plaques: {left:[{y,text}], right:[…]}}
+    const o = typeof spec.sideMurals === 'object' ? spec.sideMurals : {};
+    m.structures.push({ kind: 'sidemural', x: right ? w - side : 0, y: wallRows, w: side, h: h - wallRows - 1, right, frame: spec.frame, bay: o.bay, light: o.light, plaques: o.plaques?.[right ? 'right' : 'left'], margin: o.light ? 8 : 2, seed: id.length * 7 + (right ? 3 : 0), layer: 1.3 });
+  }
   for (const st of spec.stairs || []) {
     m.exits.push({ x: st.x, y: st.y, w: st.w || 1, h: st.h || 1, to: st.to, tx: st.tx, ty: st.ty, dir: st.dir ?? 1, stairs: true, label: st.label || 'Escaleras' });
     if (st.solidAround) m.setSolid(st.x, st.y, st.w || 1, st.h || 1, 0);
