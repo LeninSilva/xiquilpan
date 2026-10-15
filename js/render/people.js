@@ -64,6 +64,7 @@ export function makeLook(seed, opts = {}) {
     enchilado: 0, glow: 0,
   };
   if (look.uniform === 'office') { look.top = 'shirt'; look.topColor = opts.topColor || '#f5f5f5'; look.bottom = female ? 'skirt' : 'pants'; look.bottomColor = '#2d3436'; look.shoes = 'shoes'; look.shoeColor = '#1b1b1b'; look.tie = !female; }
+  if (look.uniform === 'monja') { look.top = 'cassock'; look.topColor = opts.topColor || '#2b2b30'; look.bottom = 'longskirt'; look.bottomColor = look.topColor; look.hat = 'veil'; look.rebozo = null; look.shoes = 'shoes'; look.shoeColor = '#1b1b1b'; look.apron = false; }
   if (look.uniform === 'padre') { look.top = 'cassock'; look.topColor = '#1d1d1f'; look.bottom = 'pants'; look.bottomColor = '#1d1d1f'; look.hat = null; }
   if (look.uniform === 'nurse') { look.top = 'scrubs'; look.topColor = opts.topColor || '#7fc8c0'; look.bottom = 'pants'; look.bottomColor = '#7fc8c0'; look.shoes = 'sneakers'; look.shoeColor = '#f5f5f5'; }
   if (look.uniform === 'police') { look.top = 'shirt'; look.topColor = '#1f2d4a'; look.bottom = 'pants'; look.bottomColor = '#1f2d4a'; look.hat = 'cap'; look.capColor = '#1f2d4a'; look.shoes = 'boots'; look.shoeColor = '#111'; }
@@ -525,6 +526,13 @@ function heldItem(ctx, L, x, y, side) {
     ctx.save(); ctx.translate(x, y - 3); const g = ctx.createLinearGradient(-3, 0, 3, 0); g.addColorStop(0, '#efe6c8'); g.addColorStop(1, '#bfb48e');
     ctx.fillStyle = g; roundRect(ctx, -3, -4.4, 6, 8.4, 1.8); ctx.fill(); ctx.fillStyle = '#2b2b2b'; ctx.fillRect(-1.2, -5.2, 2.4, 1); ctx.fillStyle = '#2a5ea8'; ctx.fillRect(-2.2, -1, 4.4, 1); ctx.restore();
   } else if (it === 'charola') { for (let i = -1; i <= 1; i++) { ctx.fillStyle = ['#f2c94c', '#e74c3c', '#f5f0e6'][i + 1]; ctx.beginPath(); ctx.arc(x + i * 1.6, y - 1.4, 0.8, 0, 7); ctx.fill(); } ctx.fillStyle = '#c9ccd1'; ctx.beginPath(); ctx.ellipse(x, y - 0.6, 3, 0.9, 0, 0, 7); ctx.fill(); }
+  else if (it === 'guitar') { // a guitar across the body, neck up to the left
+    ctx.save(); ctx.translate(x - 1.6, y - 1); ctx.rotate(side ? -0.5 : -0.9);
+    ctx.fillStyle = '#3a2214'; ctx.fillRect(-0.4, -9.5, 0.8, 7); ctx.fillStyle = '#2b1a10'; ctx.fillRect(-0.7, -10.6, 1.4, 1.4);
+    ctx.fillStyle = '#c98a4a'; ctx.beginPath(); ctx.ellipse(0, -1.2, 1.9, 1.7, 0, 0, 7); ctx.ellipse(0, 1.6, 2.4, 2.2, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#2b1a10'; ctx.beginPath(); ctx.arc(0, 0, 0.7, 0, 7); ctx.fill(); ctx.restore();
+  } else if (it === 'resortera') { ctx.strokeStyle = '#8a5a34'; ctx.lineWidth = 0.55; ctx.beginPath(); ctx.moveTo(x, y + 1.6); ctx.lineTo(x, y - 0.4); ctx.lineTo(x - 1, y - 2); ctx.moveTo(x, y - 0.4); ctx.lineTo(x + 1, y - 2); ctx.stroke(); ctx.strokeStyle = '#c8102e'; ctx.lineWidth = 0.25; ctx.beginPath(); ctx.moveTo(x - 1, y - 2); ctx.quadraticCurveTo(x, y - 0.6, x + 1, y - 2); ctx.stroke(); }
+  else if (it === 'libros') { for (let i = 0; i < 3; i++) { ctx.fillStyle = ['#c8102e', '#2f5d9a', '#e8b04b'][i]; ctx.fillRect(x - 1.6, y - 1 - i * 0.9, 3.2, 0.85); } }
   else if (it === 'hueso') { ctx.fillStyle = '#efe8d6'; ctx.fillRect(x - 1.4, y - 0.3, 2.8, 0.6); for (const sx of [-1.4, 1.4]) { ctx.beginPath(); ctx.arc(x + sx, y - 0.4, 0.45, 0, 7); ctx.arc(x + sx, y + 0.4, 0.45, 0, 7); ctx.fill(); } }
 }
 
@@ -732,6 +740,7 @@ function negritoMask(ctx, R, view) {
 }
 
 function hairTop(ctx, L, R, view, hc) {
+  if (L.hat === 'veil') return; // the veil covers it all
   if (L.hat === 'sombrero' || L.hat === 'helmet' || L.hat === 'nochebuena') {
     if (L.hair !== 'bald' && L.hat !== 'nochebuena') { ctx.fillStyle = hc; ctx.beginPath(); ctx.ellipse(view === 2 ? R * 0.3 : 0, -R * 0.45, R * 0.98, R * 0.42, 0, 0, Math.PI); ctx.fill(); }
     return;
@@ -791,6 +800,15 @@ function hairTop(ctx, L, R, view, hc) {
 function hat(ctx, L, R, view) {
   if (!L.hat) return;
   const ox = view === 2 ? R * 0.15 : 0;
+  if (L.hat === 'veil') { // a religious sister's veil: black cloth falling to the shoulders, white band at the brow
+    const c = '#1d1d22';
+    ctx.fillStyle = c;
+    if (view === 1) { ctx.beginPath(); ctx.ellipse(0, -R * 0.15, R * 1.18, R * 1.2, 0, 0, 7); ctx.fill(); ctx.fillRect(-R * 1.2, 0, R * 2.4, R * 2.2); return; }
+    if (view === 2) { ctx.beginPath(); ctx.moveTo(-R * 0.55, -R * 1.1); ctx.quadraticCurveTo(R * 1.1, -R * 1.5, R * 1.35, R * 0.2); ctx.lineTo(R * 1.25, R * 2.2); ctx.lineTo(R * 0.1, R * 2.0); ctx.quadraticCurveTo(R * 0.4, R * 0.4, -R * 0.2, -R * 0.55); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#f2f0ea'; ctx.beginPath(); ctx.ellipse(-R * 0.35, -R * 0.62, R * 0.55, R * 0.2, -0.4, 0, 7); ctx.fill(); return; }
+    ctx.beginPath(); ctx.moveTo(-R * 1.18, R * 2.1); ctx.lineTo(-R * 1.15, -R * 0.2); ctx.bezierCurveTo(-R * 1.15, -R * 1.5, R * 1.15, -R * 1.5, R * 1.15, -R * 0.2); ctx.lineTo(R * 1.18, R * 2.1); ctx.lineTo(R * 0.82, R * 2.1); ctx.lineTo(R * 0.86, -R * 0.1); ctx.quadraticCurveTo(0, -R * 0.75, -R * 0.86, -R * 0.1); ctx.lineTo(-R * 0.82, R * 2.1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f2f0ea'; ctx.beginPath(); ctx.moveTo(-R * 0.9, -R * 0.1); ctx.quadraticCurveTo(0, -R * 0.9, R * 0.9, -R * 0.1); ctx.quadraticCurveTo(0, -R * 0.6, -R * 0.9, -R * 0.1); ctx.fill();
+    return;
+  }
   if (L.hat === 'cap') {
     const c = L.capColor || '#c0392b';
     const g = ctx.createLinearGradient(-R, -R * 1.4, R, 0); g.addColorStop(0, shade(c, 0.18)); g.addColorStop(1, shade(c, -0.22));

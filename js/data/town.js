@@ -173,7 +173,7 @@ export function buildTown() {
   // Seen from above (the camera looks north), a north-facing arcade shows its tiled roof, the cantera
   // cornice and the column heads along the edge; it fades out while you walk underneath.
   sprite(m, 'portalRoof', 132, 116, { fw: 36 * TILE, w: 36 * TILE + 8, up: 44, overlay: [114, 113.7, 36, 2.3], blueFrom: 26 * TILE,
-    signs: [[4, 'LA COCHERA', '#2b2420', '#e9d7b0'], [10, 'NIEVES', '#f5e6ef', '#b2386b'], [17, 'HOTEL PLAZA TARASCA', '#3f3a33', '#f1e2b8'], [30, 'PORTAL AZUL', '#2e6fb3', '#ffffff']] });
+    signs: [[4, 'LA COCHERA', '#2b2420', '#e9d7b0'], [10, 'NIEVES', '#f5e6ef', '#b2386b'], [17, 'HOTEL PLAZA TARASCA', '#3f3a33', '#f1e2b8'], [23.5, 'LIBRERÍA', '#5a1a22', '#f7f0d8'], [30, 'PORTAL AZUL', '#2e6fb3', '#ffffff']] });
   for (let x = 114.5; x < 150; x += 2) sprite(m, 'label', x, 114.15, { w: 4, up: 4, collide: [-1.4, -2, 2.8, 2] });
   area(m, 'Portales de la Plaza', 114, 114, 26, 2, 'portal');
   area(m, 'Portal Azul', 140, 114, 10, 2, 'portal');
@@ -181,6 +181,7 @@ export function buildTown() {
   door(m, 124, 116, 'portal_nieves', 'Nevería del Portal', { fromSouth: true, hours: [10, 22] });
   door(m, 131, 116, 'hotel_tarasca', 'Hotel Plaza Tarasca · Portal Hidalgo 12', { fromSouth: true });
   door(m, 144, 116, 'portal_azul', 'Portal Azul — cenaduría', { fromSouth: true, hours: [9, 23] });
+  door(m, 137, 116, 'libreria', 'Librería La Aguadora', { fromSouth: true, hours: [9, 20] });
   door(m, 145, 123, 'tortilleria_marin', 'Tortillería Marín', { hours: [6, 15] });
 
   // --- east of the avenue: Palacio Municipal, busto de Diego José Abad, mercado, panadería ----------
@@ -525,6 +526,9 @@ export function buildTown() {
   }
   // doors for the special blocks too (skip the lots covered by named facades)
   for (const s of m.structures) if (s.kind === 'block' && !s._doors && (s.facadeH ?? 36) > 0) addLotDoors(m, s);
+  // a few ordinary lots are special shops: José Luis's bikes, the last huarachería
+  claimDoor(m, 108, 139, 'bicicleteria', 'Bicicletería José Luis', { hours: [9, 19], sign: 'BICICLETAS', signBg: '#2f9e44' });
+  claimDoor(m, 66, 171, 'huaracheria', 'Huarachería Ortiz (desde 1938)', { hours: [8, 18], sign: 'HUARACHES', signBg: '#6b3f22' });
 
   // --- jacarandas sprinkled at street corners all over town --------------------------------------------
   for (const x of vx) for (const y of hy) {
@@ -670,6 +674,17 @@ export function buildTown() {
   m.structures.sort((a, b) => (a.layer || 0) - (b.layer || 0));
   m.baseSprites = m.sprites.slice();
   return m;
+}
+
+// Turn the generic door nearest to (x, y) into a named place, with a hanging sign on the sidewalk.
+export function claimDoor(m, x, y, to, label, extra = {}) {
+  let best = null, bd = 1e9;
+  for (const d of m.doors) if (d.generic) { const dd = Math.hypot(d.x - x, d.y - y); if (dd < bd) { bd = dd; best = d; } }
+  if (!best || bd > 16) return null;
+  const { sign, signBg, ...rest } = extra;
+  best.to = to; best.label = label; best.generic = false; best.house = false; Object.assign(best, rest);
+  if (sign) sprite(m, 'signpost', best.x + 1.3, best.y + 1.5, { text: sign, bg: signBg || '#5a3a22', w: 40, up: 30, collide: [-1, -1, 2, 2] });
+  return best;
 }
 
 // Every lot of a block gets a door: houses lead into a family home, shops into a small shop.

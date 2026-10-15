@@ -308,3 +308,11 @@ body.drunk #game { filter: blur(calc(var(--drunk, 0) * 1.3px)) saturate(calc(1 +
 .hud-life { position: absolute; top: calc(98px + var(--safe-t)); right: calc(10px + var(--safe-r)); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
 body.talking .hud-life, body.cine .hud-life { opacity: 0; }
 @media (max-width: 480px) { .hud-life { top: calc(104px + var(--safe-t)); } .tracker { max-width: min(300px, 56vw); } }
+/* the murals of the Biblioteca, up close */
+.mg-card.wide { width: min(980px, 96vw); max-height: 94vh; display: flex; flex-direction: column; }
+.mural-view .mg-body { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.mural-scroll { overflow-x: auto; overflow-y: hidden; border-radius: 10px; background: #2b2826; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.mural-scroll canvas { display: block; height: min(46vh, 300px); width: auto; image-rendering: auto; }
+.mural-cap { margin: 0; font-family: Fraunces, Georgia, serif; font-size: 15px; line-height: 1.45; color: #4a3a2a; min-height: 4.4em; }
+@media (max-width: 600px) { .mural-scroll canvas { height: 34vh; } .mural-cap { font-size: 13.5px; } }
+.mural-view .mg-actions { gap: 12px; }

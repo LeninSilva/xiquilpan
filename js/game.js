@@ -4,6 +4,7 @@ import { G } from './world.js';
 import { buildTown, applyWeekday } from './data/town.js';
 import { buildCerro, buildTotolan, buildAbadiano, buildSarabia, buildLagunita } from './data/regions.js';
 import { buildInterior } from './data/interiors.js';
+import './data/places.js';
 import { Renderer } from './renderer.js';
 import { Input } from './input.js';
 import { Clock, Environment } from './time.js';
@@ -26,6 +27,7 @@ import { paintSky, skyView } from './render/sky.js';
 import { useHand, equip, equipped, hasCharm } from './gear.js';
 import { Combat } from './combat.js';
 import { Riding } from './riding.js';
+import { placeInteract, PLACE_PROMPTS } from './placesInteract.js';
 
 const SAVE_KEY = 'xiq_save', SETTINGS_KEY = 'xiq_settings';
 const FRUIT_COLOR = { guayaba: '#d8d36a', mango: '#f2a93b', naranja: '#f28c28', limon: '#8cc63f', aguacate: '#3e5b2a' };
@@ -92,6 +94,7 @@ export class Game {
     this.accidents = new Accidents(this);
     this.shake = 0;
     this.combat = new Combat(this);
+    this.minigames = {}; // filled in by minigames.js
     this.riding = new Riding(this);
     this.gearCool = 0; this.hurtFlash = 0;
     this.newState();
@@ -284,7 +287,7 @@ export class Game {
     if (!m) { this.ui.toast('Ese lugar todavía no está abierto.', 'bad'); return; }
     const prev = this.map;
     this.map = m;
-    const zm = (this.settings.zoom || 1) * (m.interior ? 1.3 : 1);
+    const zm = (this.settings.zoom || 1) * (m.interior ? (m.zoom ?? 1.3) : 1);
     if (this.renderer.zoomMul !== zm) { this.renderer.zoomMul = zm; this.renderer.resize(); }
     if (m.outdoor) this.lastOutdoor = id;
     this.player.map = m; this.player.x = tx * TILE; this.player.y = ty * TILE; this.player.dir = dir; this.player.path = null;
@@ -383,6 +386,9 @@ export class Game {
     L.glow = this.stats.corazon > 50 ? (this.stats.corazon - 50) / 50 : 0;
     L.dirty = this.stats.corazon < -40;
     L.enchilado = this.status.enchilado > 0 ? 1 : 0;
+    // what you carry in your hand shows
+    const h = this.state.equip?.hand && this.hasItem(this.state.equip.hand) ? this.state.equip.hand : null;
+    L.holds = h === 'resortera' ? 'resortera' : h === 'palo' ? 'stick' : (h === 'trompo' || h === 'trompo_mio') ? 'trompo' : null;
   }
   hasItem(id) { return (this.state.inventory[id] || 0) > 0; }
   giveItem(id, n = 1) { this.state.inventory[id] = (this.state.inventory[id] || 0) + n; const it = ITEMS[id]; this.ui.toast(`Obtuviste: ${it ? it.ico + ' ' + it.name : id}`, 'good'); this.sfx('pickup'); this.quests.onPickup(id); this.save(); }
@@ -450,6 +456,8 @@ export class Game {
       this.state.money -= pay; if (pay) this.sfx('coin');
       this.ui.toast(`${ico} ${name} (−$${pay})${pay < price ? ' · precio de amigo' : ''}`, '');
     }
+    if (effect.caguama) this.caguamaBottle(npc);
+    if (effect.returnBottle) { this.returnBottle(npc); return; }
     if (effect.give) { this.state.inventory[effect.give] = (this.state.inventory[effect.give] || 0) + 1; this.quests.onPickup(effect.give); }
     const e2 = { ...effect }; delete e2.give;
     this.applyEffect(e2);
@@ -457,6 +465,27 @@ export class Game {
     if (effect.quality === 'salsa') this.ui.toast('Los tacos, bien. La salsa… sabe a agua de jitomate.', '');
     if (effect.quality === 'excelente') this.ui.toast('¡Qué tacos! Con razón hay fila.', 'good');
     this.quests.onBuy(shopId, entry);
+    this.save();
+  }
+  // Caguamas are returnable: bring an empty, leave a $15 deposit, or — if Don Frijoles trusts you —
+  // promise to bring it back. You drink it there and walk out with the empty bottle.
+  caguamaBottle(npc) {
+    const s = this.state, rel = npc?.def?.id ? relOf(this, npc.def.id) : 0;
+    if (this.hasItem('envase')) { this.takeItem('envase'); this.ui.toast('Cambias tu envase vacío por una llena. Don Frijoles asiente: así se hace.', 'good'); }
+    else if (!s.bottleBan && (this.stats.palabra >= 10 || rel >= 40 || Math.random() < 0.25)) {
+      s.bottleOwed = (s.bottleOwed || 0) + 1; s.bottleSince = this.clock.dayIndex;
+      this.ui.toast('“¿Y el envase? …Ándale pues, ahí me lo traes. Tienes cara de gente decente.”', '');
+    } else if (s.money >= 15) { s.money -= 15; s.deposit = (s.deposit || 0) + 15; this.ui.toast('“¿Y el envase? Son quince de depósito, joven. Cuando lo traigas te los regreso.” (−$15)', ''); }
+    else { s.bottleOwed = (s.bottleOwed || 0) + 1; s.bottleSince = this.clock.dayIndex; this.ui.toast('“¿No traes ni para el depósito? Llévatela. Pero me traes el envase, ¿eh? Aquí lo apunto.”', ''); }
+    this.state.inventory.envase = (this.state.inventory.envase || 0) + 1;
+  }
+  returnBottle(npc) {
+    const s = this.state;
+    if (!this.hasItem('envase')) { this.ui.toast('“¿Cuál envase? Ahí no traes nada, joven.”', ''); return; }
+    this.takeItem('envase');
+    if (s.bottleOwed > 0) { s.bottleOwed--; this.addStat('palabra', 1); this.ui.toast('“¡Mira nomás! Gente de palabra todavía hay.” Don Frijoles tacha tu nombre de la libreta.', 'good'); }
+    else if (s.deposit >= 15) { s.deposit -= 15; this.addMoney(15); this.ui.toast('Te regresa tus quince pesos del depósito.', 'good'); }
+    else this.ui.toast('“Gracias, joven. Este no era mío, pero se lo agradezco al planeta.”', '');
     this.save();
   }
   // Look through a wardrobe, a trunk, a flower pot… once per spot.
@@ -746,7 +775,7 @@ export class Game {
     if (it.type === 'door') return `Entrar: ${it.door.label}`;
     if (it.type === 'sprite') {
       const s = it.s;
-      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', parada: 'Esperar la combi', cielo: 'Mirar el cielo', palenque_bet: 'Ver las peleas', telar: 'Ver el telar' }[s.interact] || 'Ver';
+      return { sitio: 'Pedir un taxi', vendor: 'Comprar', tianguis: 'Ver el puesto', shopcounter: 'Comprar', ferre_counter: 'Comprar', cama: 'Descansar', cocina: 'Comer algo', kiosco: 'Subir al kiosco', fogata: 'Sentarse junto al fuego', billar: 'Jugar billar', search: 'Buscar', push: 'Mover la piedra', lote: 'Ver el terreno', obra: 'Hablar con el maestro albañil', negocio: 'Ver el negocio', wardrobe: 'Cambiarte de ropa', loteria: 'Jugar lotería', parada: 'Esperar la combi', cielo: 'Mirar el cielo', palenque_bet: 'Ver las peleas', telar: 'Ver el telar', ...PLACE_PROMPTS }[s.interact] || 'Ver';
     }
   }
   async interact(it) {
@@ -811,6 +840,7 @@ export class Game {
       case 'fogata': return this.dialog.scene(async d => { await d.narrate('El fuego truena. Huele a ocote y a café de olla. Arriba, las estrellas se ven clarísimas.'); });
       case 'billar': return this.openShop('billar');
       default:
+        if (PLACE_PROMPTS[s.interact]) return placeInteract(this, s);
         if (INFO[s.interact]) return this.dialog.scene(async d => { await d.narrate(INFO[s.interact]); });
     }
   }
@@ -938,6 +968,11 @@ export class Game {
   }
   useExit(ex) {
     if (ex.to === '__back' || ex.to === '__back2') { this.exitInterior(ex.to); return; }
+    if (ex.stairs) { // between floors of the same building: you still leave by the street door
+      if (this.riding.on) this.riding.dismount(true);
+      this.transition(() => { this.changeMap(ex.to, ex.tx, ex.ty, ex.dir ?? 1); this.sfx('door'); });
+      return;
+    }
     if (ex.to === 'closed' && ex.label === 'La Lagunita' && this.quests.q('main').stage >= 2) { // the road opens once you know whom to ask
       this.transition(() => { this.returnStack = []; this.clock.minutes += 30; this.changeMap('lagunita', 35, 48, 1); this.ui.banner('La Lagunita', 'De aquí es la familia de tu abuelo'); });
       return;

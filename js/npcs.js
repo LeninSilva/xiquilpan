@@ -280,9 +280,16 @@ export class NPCManager {
     this.trafficTimer -= dt;
     if (this.trafficTimer <= 0) { this.trafficTimer = 1.2; this.syncTraffic(); }
     for (const n of this.named.values()) if (n.map === g.map) n.update(dt, g);
+    for (const p of this.props.values()) if (p.follows) { const n = p.follows; p.map = n.map; p.x = n.x + [0, 0, -9, 9][n.dir]; p.y = n.y + [7, -4, 1.5, 1.5][n.dir]; }
     for (const c of this.crowd) {
       if (c.map !== g.map) continue;
       c.update(dt, g);
+      if (c.leaveAt && g.clock.real > c.leaveAt && !c.path && !c.talking) { // the customer got what they came for
+        c.leaveAt = null; c.look.holds = 'bag'; c.bubble = { text: pick(R, ['¡Gracias!', 'Que le vaya bien.', 'Ahí nos vemos.']), t: 2 };
+        const door = c.map.exits.find(e => e.to === '__back');
+        const p = door && findPath(c.map, c.x / TILE, c.y / TILE, door.x + 0.5, door.y - 0.4, 2000);
+        if (p) { c.path = p; c.pathI = 1; c.behaviour = 'walk'; c.onArrive = () => { c.expire = -1; c.hidden = true; }; } else c.expire = -1;
+      }
       if (c.rewalkAt && g.clock.real > c.rewalkAt && !c.path && !c.talking) {
         c.rewalkAt = null;
         if (R() < 0.6) { const [qx, qy] = this.freeSpot(c.map, pick(R, c.rewalkPois)); const p2 = findPath(c.map, c.x / TILE, c.y / TILE, qx, qy); if (p2) { c.path = p2; c.pathI = 1; c.behaviour = 'walk'; } }
@@ -361,6 +368,10 @@ export class NPCManager {
         this.dropProp(def.id);
       }
       npc.marker = g.quests.markerFor(def.id);
+      if (def.cart && !this.props.has(def.id) && npc.map === map) { // Doña Leticia's book cart rolls in front of her
+        const p = new Prop(map, npc.x, npc.y + 6, { kind: 'carritoLibros', w: 22, up: 22, seed: 8 });
+        p.solid = false; p.owner = npc; p.follows = npc; this.props.set(def.id, p); this.add(p);
+      }
       if (s.prop && !this.props.has(def.id)) {
         const kind = s.prop.sprite || (s.prop.kind === 'carnitasTruck' ? 'carnitasTruck' : 'cart');
         const p = new Prop(map, tx + (s.prop.dx || 0) * TILE, ty + (s.prop.dy || 0) * TILE,
@@ -404,6 +415,7 @@ export class NPCManager {
       if (far && !c.talking && !c.down) { this.remove(c); return false; }
       return true;
     });
+    if (map.occupants) { this.syncOccupants(map); }
     if (map.residents) { this.syncResidents(map); return; }
     if (map.id !== 'town') return;
     this.syncDancers();
@@ -482,7 +494,70 @@ export class NPCManager {
     }
     return [px + (R() - 0.5) * 3, py + (R() - 0.5) * 2];
   }
-  // The family at home (or the shopkeeper) in the generic houses and shops of town.
+  // People who belong to a place: the faithful in the pews, readers at the library tables, people
+  // waiting at the Ayuntamiento, drinkers at the micheladas — and customers who come in by the door,
+  // go to the counter, ask for something, and leave.
+  syncOccupants(map) {
+    const g = this.game, oc = map.occupants;
+    const mine = this.crowd.filter(c => c.map === map && c.occupant);
+    const open = !oc.when || oc.when(g);
+    if (!open) { for (const c of mine) if (!c.talking) { c.expire = -1; } return; }
+    if (this.occFor !== map) {
+      this.occFor = map;
+      const r = Math.random, [lo, hi] = oc.n || [1, 3];
+      const n = Math.min(oc.spots.length, lo + Math.floor(r() * (hi - lo + 1)));
+      const spots = oc.spots.slice().sort(() => r() - 0.5).slice(0, n);
+      for (const [x, y, dir, act, type] of spots) this.spawnOccupant(map, x, y, dir, act, type);
+    }
+    const cu = oc.customers;
+    if (!cu) return;
+    this.custT = (this.custT ?? 4) - 1.5;
+    const now = mine.filter(c => c.customer).length;
+    if (this.custT <= 0 && now < cu.max && g.clock.hour >= 8 && g.clock.hour < 22) {
+      this.custT = 10 + Math.random() * 18;
+      this.spawnCustomer(map, cu);
+    }
+  }
+  occupantLook(map, type, seed) {
+    const oc = map.occupants;
+    if (type === 'drinker' || oc.bar) return CROWD.drinker(seed);
+    if (oc.church) return CROWD.church(seed);
+    if (oc.office) return pick(R, [CROWD.office, CROWD.shopper, CROWD.stroll])(seed);
+    if (type === 'dancer') { const r = rng(seed); return makeLook(seed, { female: r() < 0.75, age: pick(r, ['teen', 'teen', 'kid', 'adult']), top: 'blouse', topColor: '#f7f3ea', bottom: 'longskirt', bottomColor: pick(r, ['#c8102e', '#e8b04b', '#2f9e44', '#1f4fa0', '#b2386b']), hair: 'braids', embroidery: pick(r, ['#e84a6a', '#2fb3a0', '#f2a93b']), shoes: 'shoes', holds: null, rebozo: null }); }
+    if (type === 'student') return makeLook(seed, { age: pick(R, ['teen', 'adult', 'elder', 'kid']), apron: R() < 0.5, holds: null });
+    if (type === 'lector' || map.occupants.quiet) return makeLook(seed, { glasses: R() < 0.6, age: pick(R, ['adult', 'elder', 'teen']), holds: null });
+    return CROWD.stroll(seed);
+  }
+  spawnOccupant(map, x, y, dir = 0, act = 'stand', type) {
+    const g = this.game, seed = this.seed++;
+    const look = this.occupantLook(map, type, seed);
+    if (look.phone && (map.occupants.church || map.occupants.quiet)) look.phone = false;
+    const role = map.occupants.church ? 'reza en silencio' : map.occupants.bar ? 'se toma una michelada' : map.occupants.school ? 'toma su taller' : map.occupants.quiet ? 'lee en silencio' : map.occupants.office ? 'hace un trámite' : map.occupants.cafe ? 'toma un café' : 'cliente';
+    const npc = new NPC(map, x * TILE, y * TILE, look, { id: 'occ' + seed, name: this.crowdName(look), role, persona: this.crowdPersona(map.occupants.bar ? 'drinker' : 'stroll', look) + ` Está en ${map.name}, ${role}.`, crowd: true, fixed: act === 'sit' });
+    npc.behaviour = act === 'sit' ? 'sit' : act === 'dance' ? 'dance' : 'stand'; npc.dir = dir; npc.baseDir = dir; npc.occupant = true; npc.ctype = 'occupant'; npc.phase = Math.floor(R() * 2);
+    if (act === 'dance') { npc.def.fixed = true; npc.def.role = 'baila en el taller de danza folclórica'; }
+    npc.expire = g.clock.minutes + 240;
+    this.crowd.push(npc); this.add(npc);
+    return npc;
+  }
+  spawnCustomer(map, cu) {
+    const g = this.game, door = map.exits.find(e => e.to === '__back');
+    if (!door) return;
+    const sx = door.x + 0.5, sy = door.y - 0.4;
+    if (g.people.some(p => Math.hypot(p.x - sx * TILE, p.y - sy * TILE) < 12)) return;
+    const npc = this.spawnOccupant(map, sx, sy, 1, 'walk');
+    npc.customer = true; npc.behaviour = 'walk'; npc.fixed = false; npc.def.fixed = false;
+    npc.role = 'cliente'; npc.def.role = 'cliente';
+    const [cx, cy] = this.freeSpot(map, cu.counter);
+    const path = findPath(map, sx, sy, cx, cy, 2000);
+    if (!path) { this.remove(npc); this.crowd = this.crowd.filter(c => c !== npc); return; }
+    npc.path = path; npc.pathI = 1;
+    npc.onArrive = () => {
+      npc.dir = 1; npc.behaviour = 'stand';
+      npc.bubble = { text: pick(R, cu.lines || ['¿Me da uno, por favor?']), t: 3.4 };
+      npc.leaveAt = g.clock.real + 5 + R() * 4;
+    };
+  }
   syncResidents(map) {
     const g = this.game, res = map.residents;
     if (this.crowd.some(c => c.map === map)) return;
@@ -697,6 +772,7 @@ export class NPCManager {
   }
   // clear everything (map change)
   clearTransient() {
+    this.occFor = null; this.custT = 4;
     for (const c of this.crowd) this.remove(c);
     this.crowd = [];
     for (const v of this.vehicles) this.remove(v);

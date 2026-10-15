@@ -206,6 +206,11 @@ export function bizIncome(g) {
 
 // Called once per new day: construction progress and business income.
 export function newDay(g) {
+  // bottles you promised to bring back to Don Frijoles
+  if (g.state.bottleOwed > 0 && g.clock.dayIndex - (g.state.bottleSince ?? g.clock.dayIndex) >= 3 && !g.state.bottleBan) {
+    g.state.bottleBan = true; g.addStat('palabra', -3);
+    g.ui.toast('Don Frijoles ya te tiene en la libreta: “el de los envases”. Ya no te fía ni uno.', 'bad');
+  }
   const s = g.state, day = g.clock.dayIndex;
   if (s.lastDay === day) return;
   const first = s.lastDay == null; s.lastDay = day;

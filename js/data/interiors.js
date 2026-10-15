@@ -3,6 +3,8 @@ import { GameMap, G } from '../world.js';
 import { TILE } from '../util.js';
 import { sprite, area, light } from './build.js';
 import { STRUCTURE_DRAW } from '../render/structures.js';
+import '../render/rooms.js';
+import '../render/shops.js';
 
 // Back wall with decorations, drawn into the ground chunks.
 STRUCTURE_DRAW.backwall = (ctx, s) => {
@@ -61,24 +63,34 @@ function drawWallDeco(ctx, x, y, d) {
     const cols = ['#e84a6a', '#f2a93b', '#2fb3a0', '#6a5acd', '#f7e36a'];
     for (let i = 0; i < (d.n || 10); i++) { ctx.fillStyle = cols[i % 5]; ctx.beginPath(); ctx.moveTo(x + i * 7, y - 26); ctx.lineTo(x + i * 7 + 6, y - 26); ctx.lineTo(x + i * 7 + 6, y - 20); ctx.lineTo(x + i * 7 + 3, y - 18); ctx.lineTo(x + i * 7, y - 20); ctx.fill(); }
   } else if (d.kind === 'sign') {
-    ctx.fillStyle = d.bg || '#7a1f1a'; ctx.fillRect(x, y - 24, d.w || 40, 8);
-    ctx.fillStyle = d.fg || '#fff'; ctx.font = 'bold 4.2px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(d.text, x + (d.w || 40) / 2, y - 20);
+    ctx.font = 'bold 4.2px sans-serif';
+    const w = Math.max(d.w || 40, ctx.measureText(d.text).width + 8);
+    ctx.fillStyle = d.bg || '#7a1f1a'; ctx.fillRect(x, y - 24, w, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(x, y - 24, w, 0.8);
+    ctx.fillStyle = d.fg || '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(d.text, x + w / 2, y - 20);
   }
 }
 
 // Build a room. spec: {w,h,floor,wall,band,deco,items:[sprites],exit:[x], lights, dark}
-function room(id, name, spec) {
+// Optional: frame (wall-top colour instead of a black border), pattern {pat,a,b} (floor laid over the
+// room), grand {style,...} (a back wall with architecture) or mural (painted back wall), side (wall
+// thickness in tiles), sideMurals (paint the side walls), stairs [{x,y,w,h,to,tx,ty,label}] to other floors.
+export function room(id, name, spec) {
   const w = spec.w, h = spec.h;
   const m = new GameMap(id, name, w, h, { fill: spec.floor ?? G.FLOOR_TILE, interior: true });
   m.ambient = spec.ambient || 'interior';
+  if (spec.zoom) m.zoom = spec.zoom; // big halls are seen from a little further back
   m.dim = spec.dim ?? 0.05; m.dark = spec.dark || 0;
   // walls: top rows are the back wall, sides & bottom are solid borders
   const wallRows = spec.wallRows ?? 3;
   m.fill(0, 0, w, wallRows, G.WALL); m.setSolid(0, 0, w, wallRows);
-  m.structures.push({ kind: 'backwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, color2: spec.wall2, band: spec.band, tiles: spec.tiles, deco: spec.deco, layer: 1 });
-  for (let y = 0; y < h; y++) { m.set(0, y, G.VOID); m.set(w - 1, y, G.VOID); }
-  m.setSolid(0, 0, 1, h); m.setSolid(w - 1, 0, 1, h);
+  if (spec.grand) m.structures.push({ kind: 'grandwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, deco: spec.deco, seed: id.length * 13, ...spec.grand, layer: 1 });
+  else if (spec.mural) m.structures.push({ kind: 'muralwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, seed: spec.mural.seed || 1940, layer: 1 });
+  else m.structures.push({ kind: 'backwall', x: 0, y: 0, w, h: wallRows, color: spec.wall, color2: spec.wall2, band: spec.band, tiles: spec.tiles, deco: spec.deco, layer: 1 });
+  const side = spec.side || 1;
+  for (let y = 0; y < h; y++) for (let k = 0; k < side; k++) { m.set(k, y, G.VOID); m.set(w - 1 - k, y, G.VOID); }
+  m.setSolid(0, 0, side, h); m.setSolid(w - side, 0, side, h);
   for (let x = 0; x < w; x++) { m.set(x, h - 1, G.VOID); m.setSolid(x, h - 1, 1, 1); }
   const ex = spec.exit ?? Math.floor(w / 2);
   const exits = Array.isArray(ex) ? ex : [ex];
@@ -91,22 +103,32 @@ function room(id, name, spec) {
     m.set(spec.topExit, 0, spec.floor); m.set(spec.topExit, 1, spec.floor); m.setSolid(spec.topExit, 0, 1, 2, 0);
     m.exits.push({ x: spec.topExit, y: 0, w: 1, h: 1, to: '__back2', label: 'Salir' });
   }
+  if (spec.pattern) m.structures.push({ kind: 'floorpat', x: side, y: wallRows, w: w - 2 * side, h: h - wallRows - 1, seed: id.length, ...spec.pattern, layer: 0.5 });
+  for (const st of spec.steps || []) m.structures.push({ kind: 'steps', ...st, layer: 0.6 });
+  if (spec.frame) m.structures.push({ kind: 'roomframe', w, h, rows: wallRows, top: spec.frame, exits, layer: 1.2 });
+  if (spec.sideMurals) for (const right of [false, true]) m.structures.push({ kind: 'sidemural', x: right ? w - side : 0, y: wallRows - 1, w: side, h: h - wallRows, right, seed: id.length * 7 + (right ? 3 : 0), layer: 1.3 });
+  for (const st of spec.stairs || []) {
+    m.exits.push({ x: st.x, y: st.y, w: st.w || 1, h: st.h || 1, to: st.to, tx: st.tx, ty: st.ty, dir: st.dir ?? 1, stairs: true, label: st.label || 'Escaleras' });
+    if (st.solidAround) m.setSolid(st.x, st.y, st.w || 1, st.h || 1, 0);
+  }
   for (const r of spec.rugs || []) m.structures.push({ kind: 'rug', ...r, layer: 2 });
+  // inner walls (rooms inside a building), seen from above like the outer ones
+  for (const [x, y, ww, hh] of spec.walls || []) { m.setSolid(x, y, ww, hh); m.fill(x, y, ww, hh, G.VOID); m.structures.push({ kind: 'innerwall', x, y, w: ww, h: hh, top: spec.frame || '#6b5a48', layer: 1.25 }); }
   for (const it of spec.items || []) {
     const { x, y, kind, ...rest } = it;
     sprite(m, kind, x, y, { w: 60, up: 60, ...rest });
   }
   for (const l of spec.lights || []) light(m, l[0], l[1], l[2] || 90, l[3] || '#ffe2a8');
-  m.spawns = { entry: { x: exits[0] + 0.5, y: h - 2 } };
+  m.spawns = { entry: exits.length ? { x: exits[0] + 0.5, y: h - 2 } : (spec.entry || { x: w / 2, y: h - 2 }) };
   area(m, name, 0, 0, w, h, 'interior');
   m.structures.sort((a, b) => (a.layer || 0) - (b.layer || 0));
   m.finalize();
   return m;
 }
 
-const counter = (x, y, fw, props = {}) => ({ kind: 'counter', x, y, fw, w: fw + 10, up: 30, collide: [-fw / 2, -12, fw, 12], ...props });
-const table = (x, y, props = {}) => ({ kind: 'table', x, y, w: 30, up: 20, collide: [-9, -8, 18, 8], ...props });
-const shelf = (x, y, fw, props = {}) => ({ kind: 'shelf', x, y, fw, w: fw + 6, up: 40, collide: [-fw / 2, -6, fw, 6], ...props });
+export const counter = (x, y, fw, props = {}) => ({ kind: 'counter', x, y, fw, w: fw + 10, up: 30, collide: [-fw / 2, -12, fw, 12], ...props });
+export const table = (x, y, props = {}) => ({ kind: 'table', x, y, w: 30, up: 20, collide: [-9, -8, 18, 8], ...props });
+export const shelf = (x, y, fw, props = {}) => ({ kind: 'shelf', x, y, fw, w: fw + 6, up: 40, collide: [-fw / 2, -6, fw, 6], ...props });
 
 const BUILDERS = {
   casa_ezequiel: () => room('casa_ezequiel', 'Casa del tío Ezequiel', { w: 16, h: 11, floor: G.FLOOR_STONE, wall: '#e9dcc4', wall2: '#d8c6a6', band: '#2a3f7a',
@@ -391,6 +413,8 @@ function genericShop(id) {
 }
 function rngLocal(seed) { let a = seed >>> 0 || 1; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
+// Other modules add or replace interiors here (see data/places.js).
+export function registerInteriors(obj) { Object.assign(BUILDERS, obj); }
 export function buildInterior(id) {
   const b = BUILDERS[id];
   if (b) return b();

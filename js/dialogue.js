@@ -35,7 +35,8 @@ export class Dialogue {
   }
   async narrate(text) { return this.say(null, text); }
   async choose(options, who) {
-    if (who !== undefined) this.ui.dialogSpeaker(who);
+    // always show the box: a scene that opens straight with a choice used to leave it hidden (and the game locked)
+    if (who !== undefined || this.ui.el.dialog.classList.contains('hidden')) this.ui.dialogSpeaker(who ?? null);
     return this.ui.dialogChoices(options);
   }
   async askText(placeholder) { return this.ui.dialogAsk(placeholder); }

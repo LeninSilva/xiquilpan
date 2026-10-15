@@ -1,4 +1,5 @@
 // Items, food and shop catalogues.
+import { SHOP_BOOKS } from './books.js';
 export const ITEMS = {
   linterna: { name: 'Linterna', ico: '🔦', desc: 'Una linterna de mano. Indispensable para el Cerro de noche.', type: 'tool' },
   palo: { name: 'Palo', ico: '🪵', desc: 'Un buen palo de fresno. Sirve de bastón, para bajar guayabas… o para defenderte.', type: 'tool', equip: 'hand' },
@@ -46,6 +47,18 @@ export const ITEMS = {
   hueso: { name: 'Hueso con carnita', ico: '🦴', desc: 'De la carnicería. Para algún perro del pueblo.', type: 'misc' },
   croquetas: { name: 'Bolsita de croquetas', ico: '🥣', desc: 'Croquetas a granel en bolsa de plástico. A los perros de la plaza les encantan.', type: 'misc' },
   mecate_amarillo: { name: 'Mecate amarillo', ico: '🪢', desc: 'Un pedazo de mecate de nylon amarillo, cortado con navaja. Lo encontraste en el mezquite de Abadiano.', type: 'quest' },
+  rompope: { name: 'Rompope de las Madres', ico: '🍶', desc: 'Rompope de las religiosas del Santuario: leche, yema, vainilla, canela y un chorrito de alcohol. La receta es de 1890 y no la sueltan.', type: 'drink', effect: { buzz: 8, panza: 2 } },
+  cajeta: { name: 'Cajeta envinada', ico: '🍯', desc: 'Cajeta de leche de cabra, envinada, en su cajita de madera.', type: 'food', effect: { panza: 3 } },
+  ate: { name: 'Ate de membrillo', ico: '🟥', desc: 'Una barra de ate de membrillo de las Madres. Con queso es otra cosa.', type: 'food', effect: { panza: 2 } },
+  obleas: { name: 'Obleas con cajeta', ico: '⚪', desc: 'Dos obleas de colores con cajeta en medio. Se pegan en el paladar.', type: 'food', effect: { panza: 1 } },
+  libro_azul: { name: '“Azul…”, de Rubén Darío', ico: '📘', desc: 'Cuentos y poemas, Valparaíso, 1888. El color del sueño y del arte. A alguien en el pueblo le haría mucha ilusión.', type: 'gift' },
+  libro_paramo: { name: '“Pedro Páramo”, de Rulfo', ico: '📗', desc: 'Un pueblo lleno de murmullos.', type: 'gift' },
+  libro_vilo: { name: '“Pueblo en vilo”', ico: '📙', desc: 'La microhistoria de San José de Gracia, de Luis González y González.', type: 'gift' },
+  libro_sorjuana: { name: 'Poemas de Sor Juana', ico: '📕', desc: '“Hombres necios que acusáis…”', type: 'gift' },
+  libro_principito: { name: '“El Principito”', ico: '📒', desc: 'Para regalar. Siempre es para regalar.', type: 'gift' },
+  libro_laberinto: { name: '“El laberinto de la soledad”', ico: '📓', desc: 'Ensayos de Octavio Paz.', type: 'gift' },
+  bici: { name: 'Bicicleta de ruta', ico: '🚴', desc: 'Usada, revisada por José Luis. Súbete con el botón del Morral o la tecla B (afuera). Más rápida que caminar, y en bajada, ni se diga.', type: 'tool' },
+  envase: { name: 'Envase de caguama', ico: '🍾', desc: 'El envase vacío de una caguama. Don Frijoles lo quiere de vuelta.', type: 'misc' },
   dibujo_moto: { name: 'Dibujo de Beto', ico: '🖍️', desc: 'Un niño de Abadiano dibujó lo que vio: un señor flaco en una moto gris, con un mecate amarillo.', type: 'quest' },
 };
 
@@ -63,12 +76,21 @@ export const SHOPS = {
     ['pastel', 'Rebanada de pastel de tres leches', '🍰', 70, { panza: 5 }, 'Con fresas.'],
     ['galleta', 'Galleta de chispas', '🍪', 35, { panza: 2 }, 'Enorme.'],
   ] },
-  micheladas: { name: 'Micheladas', sub: 'Cerveza, limón, sal, salsas y chamoy', items: [
-    ['michelada', 'Michelada', '🍺', 60, { buzz: 25, cure: 'enchilado' }, 'Con su escarchado de chile.'],
-    ['cubana', 'Michelada cubana', '🍺', 70, { buzz: 25 }, 'Con salsa inglesa y Maggi.'],
-    ['mojito', 'Mojito', '🍹', 80, { buzz: 30 }, 'Hierbabuena fresca.'],
-    ['clamato', 'Clamato preparado', '🍅', 75, { buzz: 20, panza: 1 }, 'Con camarones y pepino.'],
-    ['limonada', 'Limonada mineral', '🍋', 30, { cure: 'enchilado' }, 'Para los que manejan.'],
+  micheladas: { name: 'Micheladas', sub: 'Aquí nomás micheladas: cerveza, limón, sal, chile y lo que usted mande', items: [
+    ['michelada', 'Michelada clásica', '🍺', 60, { buzz: 25, cure: 'enchilado' }, 'Limón, sal y su escarchado de chile.'],
+    ['cubana', 'Michelada cubana', '🍺', 70, { buzz: 25 }, 'Con salsa inglesa, Maggi y Valentina.'],
+    ['clamato', 'Michelada con Clamato', '🍅', 75, { buzz: 22, panza: 1 }, 'Con camarón, pepino y jícama.'],
+    ['gomichela', 'Gomichela', '🍬', 85, { buzz: 22, panza: 1 }, 'Escarchada de chamoy y llena de gomitas enchiladas.'],
+    ['tamarindo', 'Michelada de tamarindo', '🍺', 75, { buzz: 25 }, 'Con pulpa de tamarindo y Tajín.'],
+    ['virgen', 'Michelada sin cerveza (“la virgen”)', '🍋', 40, { cure: 'enchilado' }, 'Mineral en vez de cerveza. Para los que manejan; aquí no se juzga.'],
+  ] },
+  monjas: { name: 'El torno de las Madres', sub: 'Dulces, rompope y rosarios del Santuario · todo hecho aquí', items: [
+    ['rompope', 'Rompope de las Madres (medio litro)', '🍶', 120, { give: 'rompope' }, 'Receta de 1890. No la sueltan.'],
+    ['rosario', 'Rosario de madera de olivo', '📿', 90, { give: 'rosario' }, 'Hecho a mano por las religiosas. Con su medallita.'],
+    ['cajeta', 'Cajeta envinada', '🍯', 70, { give: 'cajeta' }, 'De leche de cabra.'],
+    ['ate', 'Ate de membrillo', '🟥', 45, { give: 'ate' }, 'Con queso es otra cosa.'],
+    ['obleas', 'Obleas con cajeta (docena)', '⚪', 40, { give: 'obleas' }, 'De colores.'],
+    ['cocada', 'Cocadas', '🥥', 30, { panza: 2 }, 'Tostaditas.'],
   ] },
   taco_guero_bueno: { name: 'Tacos El Güero (los tubos)', sub: 'Los mejores del pueblo, dicen', items: [
     ['taco_pastor', 'Taco al pastor', '🌮', 18, { panza: 3, quality: 'excelente' }, 'Con piña, cebolla y cilantro.'],
@@ -129,8 +151,11 @@ export const SHOPS = {
     ['papel', 'Papel de baño (4)', '🧻', 32, { give: 'papel' }, ''],
     ['recarga', 'Recarga de celular', '📱', 50, { phone: 1 }, 'Aunque en el cerro no hay señal.'],
   ] },
-  frijoles: { name: 'Tienda "Frijoles"', sub: 'Vicente Guerrero · de todo un poco', items: [
-    ['cerveza', 'Caguama', '🍺', 45, { buzz: 30 }, 'Retornable.'],
+  frijoles: { name: 'Tienda "Frijoles"', sub: 'Vicente Guerrero · frijol, cacahuate, caguama y lo que se ofrezca', items: [
+    ['caguama', 'Caguama (retornable)', '🍺', 45, { buzz: 30, caguama: true }, 'Si no traes envase, déjalo de depósito ($15)… o que Don Frijoles te tenga confianza.'],
+    ['envase_dev', 'Devolver un envase', '🍾', 0, { returnBottle: true }, 'Te regresa tu depósito, si lo dejaste.'],
+    ['frijol', 'Frijol flor de mayo (kilo)', '🫘', 38, {}, 'Del bueno, del que se cuece rápido.'],
+    ['cacahuates', 'Cacahuates (tostados con sal)', '🥜', 15, { give: 'cacahuates' }, 'En cucurucho de papel de estraza.'],
     ['refresco', 'Refresco de vidrio', '🥤', 18, { give: 'refresco' }, ''],
     ['fruta', 'Guayabas (medio kilo)', '🍐', 20, { panza: 2 }, 'De temporada.'],
     ['jitomate', 'Jitomates (kilo)', '🍅', 28, {}, ''],
@@ -309,10 +334,31 @@ export const SHOPS = {
   mercado_codorniz: { name: 'Huevos de codorniz de Don Beto', sub: 'Con jerez, como debe ser', items: [['codorniz', 'Huevos de codorniz con jerez', '🥚', 40, { panza: 2, buzz: 10 }, 'Un vasito con limón y chile.']] },
   mercado_carne: { name: 'Carnicería del Mercado', sub: 'Res y cerdo', items: [['bistec', 'Bistec (kilo)', '🥩', 180, {}, ''], ['chorizo', 'Chorizo', '🌭', 90, {}, '']] },
   mercado_frutas: { name: 'Frutas y Verduras', sub: 'Del campo', items: [['mandado', 'Mandado de la abuela', '🛍️', 90, { give: 'bolsa_tianguis' }, ''], ['aguacate', 'Aguacates', '🥑', 45, {}, 'De Uruapan.'], ['ramo', 'Ramo de flores', '💐', 45, { give: 'ramo' }, 'Nube y rosas.']] },
-  nieves: { name: 'Nevería del Portal', sub: 'Nieves de garrafa', items: [['nieve_limon', 'Nieve de limón', '🍧', 25, { cure: 'enchilado' }, ''], ['nieve_pasta', 'Nieve de pasta', '🍨', 30, { panza: 2 }, ''], ['nieve_zarza', 'Nieve de zarzamora', '🍧', 30, { cure: 'enchilado' }, '']] },
+  nieves: { name: 'Nevería del Portal', sub: 'Nieve de garrafa batida a mano, en hielo y sal, desde 1962', items: [
+    ['nieve_limon', 'Nieve de limón', '🍧', 25, { cure: 'enchilado' }, 'La que quita lo enchilado.'],
+    ['nieve_pasta', 'Nieve de pasta', '🍨', 30, { panza: 2 }, 'La de la casa: leche, canela y yema.'],
+    ['nieve_zarza', 'Nieve de zarzamora', '🍧', 30, { cure: 'enchilado' }, 'De zarzamora de Los Reyes.'],
+    ['nieve_mamey', 'Nieve de mamey', '🍨', 30, { panza: 2 }, 'Color de atardecer.'],
+    ['nieve_nuez', 'Nieve de nuez', '🍨', 32, { panza: 2 }, 'Con nuez de la huerta.'],
+    ['paleta_mango', 'Paleta de mango con chile', '🍭', 25, { cure: 'enchilado_soft' }, 'Del congelador.'],
+  ] },
   cenaduria: { name: 'Cenaduría del Portal Azul', sub: 'Pozole, enchiladas, tostadas', items: [['pozole', 'Pozole', '🍲', 75, { panza: 9 }, ''], ['enchiladas', 'Enchiladas placeras', '🌯', 70, { panza: 8 }, ''], ['tostada', 'Tostada', '🥙', 25, { panza: 3 }, '']] },
   billar: { name: 'Billar', sub: 'Mesa por hora', items: [['mesa', 'Una hora de billar', '🎱', 40, { minigame: 'billar' }, ''], ['cerveza', 'Cerveza', '🍺', 30, { buzz: 15 }, '']] },
   tortilleria: { name: 'Tortillería de la curva', sub: 'Tortillas de maíz (Maseca)', items: [['tortillas', 'Kilo de tortillas', '🫓', 24, {}, 'Calientitas.'], ['tortilla_sal', 'Tortilla con sal', '🫓', 2, { panza: 1 }, 'La del ratito.']] },
   pemex: { name: 'PEMEX', sub: 'Gasolinera', items: [['refresco', 'Refresco', '🥤', 25, { give: 'refresco' }, ''], ['aire', 'Aire para llantas', '💨', 0, {}, 'Gratis. Casi.']] },
   hotel: { name: 'Hotel Palmira', sub: 'Recepción', items: [['cuarto', 'Una noche (descansar hasta mañana)', '🛏️', 450, { sleep: 1 }, '']] },
+  libreria: { name: 'Librería La Aguadora', sub: 'Libros nuevos y usados · Don Ramón cobra, Doña Leticia acomoda', items: SHOP_BOOKS.map(([id, name, ico, price, desc]) => [id, name, ico, price, { give: id }, desc]) },
+  bicis: { name: 'Bicicletería José Luis', sub: 'Reparación y venta · “si rueda, la arreglo”', items: [
+    ['parche', 'Parchar una cámara', '🩹', 40, {}, 'Con su cemento y su lija. Quince minutos.'],
+    ['camara', 'Cámara nueva rodada 26', '⭕', 90, {}, 'Para la próxima ponchadura.'],
+    ['frenos', 'Ajuste de frenos y cadena', '🔧', 60, {}, 'Que deje de rechinar.'],
+    ['bomba', 'Bomba de aire de pie', '🚲', 150, {}, 'Con manómetro.'],
+    ['bici', 'Bicicleta de ruta usada (revisada)', '🚴', 2800, { give: 'bici' }, 'Cuadro de aluminio, 14 velocidades. Te la entrega ajustada.'],
+  ] },
+  huaraches: { name: 'Huarachería Ortiz', sub: 'Huaraches cosidos a mano · desde 1938', items: [
+    ['o_huarache_correa', 'Huarache de correa (pata de gallo)', '🩴', 380, { outfit: 'huaraches' }, 'El de diario. Suela de llanta, piel de vaqueta.'],
+    ['o_huarache_tres', 'Huarache de tres puntadas', '🩴', 520, { outfit: 'huaraches' }, 'El tejido de Jiquilpan, el que se llevaron a Sahuayo.'],
+    ['o_huarache_fino', 'Huarache tejido fino', '🩴', 780, { outfit: 'huaraches' }, 'Tres días de trabajo. Don Arnulfo no hace dos iguales.'],
+    ['suela', 'Cambio de suela', '🧰', 150, {}, 'A los que ya caminaron mucho.'],
+  ] },
 };
