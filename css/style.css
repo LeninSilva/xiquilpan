@@ -316,3 +316,25 @@ body.talking .hud-life, body.cine .hud-life { opacity: 0; }
 .mural-cap { margin: 0; font-family: Fraunces, Georgia, serif; font-size: 15px; line-height: 1.45; color: #4a3a2a; min-height: 4.4em; }
 @media (max-width: 600px) { .mural-scroll canvas { height: 34vh; } .mural-cap { font-size: 13.5px; } }
 .mural-view .mg-actions { gap: 12px; }
+/* ---- lessons, the fretboard, chords, the organ, the huarache, the trompo ---------------------- */
+.lesson-text p { margin: 0 0 8px; font-size: 14.5px; line-height: 1.5; color: #3a2a1a; }
+.lesson-task { margin: 8px 0; }
+.lesson-status { margin: 6px 0 0; font-weight: 600; color: #6b3f22; min-height: 1.4em; }
+canvas.fretboard { display: block; width: 100%; height: auto; border-radius: 10px; touch-action: none; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+.lesson-task .btn.alt, .quiz .btn.alt { margin-top: 8px; }
+.chord-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chord-btn { background: #fbf6ea; border: 2px solid #e2d4b8; border-radius: 12px; padding: 4px 6px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; min-width: 78px; }
+.chord-btn svg { width: 70px; height: 86px; } .chord-btn small { font-size: 11px; color: #6b4a30; }
+.chord-btn.next { border-color: #e8b04b; box-shadow: 0 0 0 3px rgba(232,176,75,0.35); } .chord-btn.done { border-color: #2e7d32; opacity: 0.75; }
+.quiz p { margin: 8px 0 4px; } .quiz-opts { display: flex; flex-direction: column; gap: 6px; }
+.quiz-opts .btn { text-align: left; font-size: 14px; padding: 10px 14px; border-radius: 12px; }
+.btn.right { background: #2e7d32 !important; color: #fff !important; } .btn.wrong { background: #b3201f !important; color: #fff !important; }
+.organ-keys { display: flex; justify-content: center; gap: 2px; padding: 10px; background: #3a2214; border-radius: 10px; }
+.okey { width: 34px; height: 130px; background: linear-gradient(#fffef8, #eae4d2); border: 1px solid #8a7a5a; border-radius: 0 0 6px 6px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; cursor: pointer; }
+.okey.black { background: linear-gradient(#2b2b2b, #111); height: 90px; width: 24px; margin: 0 -13px; z-index: 1; color: #ddd; }
+.okey small { font-size: 9px; } .okey:active { filter: brightness(0.85); }
+.stitch-row { display: flex; gap: 4px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+.stitch-row span { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; background: #efe4cf; font-weight: 700; }
+.stitch-row span.done { background: #b07a4a; color: #fff; } .stitch-row span.next { background: #e8b04b; }
+.stitch canvas, .trompo-cv { display: block; width: 100%; height: auto; border-radius: 10px; }
+@media (max-width: 600px) { .okey { width: 24px; height: 100px; } .okey.black { width: 18px; height: 70px; margin: 0 -10px; } .chord-btn { min-width: 64px; } .chord-btn svg { width: 56px; height: 70px; } }

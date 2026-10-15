@@ -162,12 +162,12 @@ export const NAMED = [
   {
     id: 'alvaro_ochoa', name: 'Dr. Álvaro Ochoa', short: 'el Dr. Ochoa', role: 'historiador (viene de Zamora a dar pláticas)',
     look: { age: 'elder', hair: 'short', hairColor: '#cfcac2', glasses: true, beard: 'goatee', top: 'shirt', topColor: '#dfe6e9', bottom: 'pants', bottomColor: '#3b3f4a', shoes: 'shoes' },
-    persona: 'Álvaro Ochoa Serrano, historiador michoacano que vive en Zamora; de vez en cuando viene a Jiquilpan a dar pláticas en la Casa de la Cultura o en la Unidad Académica de Estudios Regionales de la UNAM. Conoce la historia de la Ciénega, del añil y de la familia Cárdenas. Habla con precisión, cita fechas y fuentes, y nunca se burla: dice que el historiador escucha a todos, hasta a los que cuentan de luces.',
-    knows: { abuelo: 'No conozco a su abuelo, joven, pero sí conozco las historias del cerro. En los archivos hay testimonios de luces desde el siglo XIX. Un historiador no cree ni descree: anota, compara, y escucha.', luces: 'Xiquilpan quiere decir “lugar del jiquilite”, la planta del añil. En la Ciénega se teñía de azul desde antes de la Conquista. Curioso, ¿no?, que su mancha sea de ese color.' },
+    persona: 'Álvaro Ochoa, historiador michoacano que vive en Zamora; viene a Jiquilpan a dar conferencias en la Casa de la Cultura (jueves) y en la Unidad Académica de Estudios Regionales de la UNAM (viernes). Formado por un maestro muy ortodoxo, no se sale del documento: estudia a los afrodescendientes de la Ciénega, a los “chinos” del Galeón de Manila y del Pacífico que llegaron a la costa, y la etnohistoria de la región. Habla con precisión, cita archivos y fechas. De las luces del cerro no habla: “eso es folclor; tráigame un papel”. Es amable, seco y, en el fondo, generoso con los que leen.',
+    knows: { abuelo: 'No conozco a su abuelo, joven. Si es de La Lagunita, su apellido seguramente está en los padrones del siglo dieciocho. Vaya al archivo de la Unidad.', luces: 'De eso no hablo. No por miedo: porque no hay papel. Xiquilpan quiere decir “lugar del jiquilite”, la planta del añil; de eso sí hay papeles, y muchos.' },
     lines: ['El pasado no está muerto, joven: está en los archivos, esperando que alguien lo lea.', 'Jiquilpan dio más presidentes, maestros y artistas de los que le corresponden a su tamaño.', 'Sahuayo comercia; Jiquilpan conversa. Las dos cosas hacen falta.'],
     sched: [
-      { d: [4], h: [17, 20], map: 'casa_cultura', at: [10, 4.6], act: 'stand' },
-      { d: [5], h: [10, 13], map: 'unam', at: [18.5, 6], act: 'stand' },
+      { d: [4], h: [17, 20], map: 'casa_cultura', at: [16, 11.4], act: 'stand', dir: 0 },
+      { d: [5], h: [10, 13], map: 'unam', at: [8, 15.4], act: 'stand', dir: 0 },
       { d: [6], h: [11, 13], map: 'town', at: [133, 94.4], act: 'stand', dir: 0 },
     ],
   },
@@ -403,7 +403,7 @@ export const NAMED = [
     id: 'ramirez', name: 'Dr. Ramírez', role: 'investigador de la UNAM (Estudios Regionales)',
     look: { age: 'adult', top: 'shirt', topColor: '#dfe6e9', bottom: 'pants', glasses: true, beard: 'full', hairColor: '#6b6660' },
     persona: 'Dr. Ramírez, 56 años, historiador de la Unidad Académica de Estudios Regionales de la UNAM en Jiquilpan; experto en Lázaro Cárdenas y el archivo regional; curioso, escéptico pero honesto.',
-    sched: [{ d: WEEK, h: [9, 18], map: 'unam', at: [14, 5], act: 'stand' }],
+    sched: [{ d: WEEK, h: [9, 18], map: 'unam', at: [25.6, 11.2], act: 'stand', dir: 0 }],
   },
   {
     id: 'fer', name: 'Fer', role: 'estudiante y guía del museo de la UNAM',

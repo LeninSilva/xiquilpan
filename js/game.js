@@ -28,6 +28,8 @@ import { useHand, equip, equipped, hasCharm } from './gear.js';
 import { Combat } from './combat.js';
 import { Riding } from './riding.js';
 import { placeInteract, PLACE_PROMPTS } from './placesInteract.js';
+import { guitarClass, playOrgan, listenOrgan } from './music.js';
+import { studyClass, lecture, archive, stitch, trompoChallenge } from './classes.js';
 
 const SAVE_KEY = 'xiq_save', SETTINGS_KEY = 'xiq_settings';
 const FRUIT_COLOR = { guayaba: '#d8d36a', mango: '#f2a93b', naranja: '#f28c28', limon: '#8cc63f', aguacate: '#3e5b2a' };
@@ -94,7 +96,7 @@ export class Game {
     this.accidents = new Accidents(this);
     this.shake = 0;
     this.combat = new Combat(this);
-    this.minigames = {}; // filled in by minigames.js
+    this.minigames = { guitarClass, playOrgan, listenOrgan, studyClass, lecture, archive, stitch, trompo: trompoChallenge };
     this.riding = new Riding(this);
     this.gearCool = 0; this.hurtFlash = 0;
     this.newState();
@@ -193,7 +195,7 @@ export class Game {
   trompoHere() {
     const p = this.player;
     const kid = this.people?.find(e => e !== p && e.look?.age === 'kid' && !e.down && dist(e.x, e.y, p.x, p.y) < 40);
-    if (kid && this.minigameTrompo) return this.minigameTrompo(kid);
+    if (kid) { if (kid.talking) return; kid.talking = true; kid.face(p.x, p.y); return this.minigames.trompo(this, kid).finally(() => { kid.talking = false; }); }
     this.spinTrompo();
   }
   // “Mirar el cielo” from a mirador: the real sky over the valley, live with the game clock

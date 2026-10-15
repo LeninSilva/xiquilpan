@@ -58,6 +58,35 @@ export class Audio {
       case 'enchilado': [880, 660, 440].forEach((f, i) => this.tone(f, 0.12, 'square', 0.04, i * 0.08)); break;
     }
   }
+  // A plucked string (Karplus–Strong): a burst of noise fed back through a little averaging filter.
+  // Buffers are cached per pitch, so a strummed chord costs almost nothing.
+  pluck(freq, when = 0, vol = 0.22, dur = 1.8) {
+    if (!this.ctx || !this.on) return;
+    const sr = this.ctx.sampleRate, key = Math.round(freq * 10);
+    this.plucks ||= new Map();
+    let buf = this.plucks.get(key);
+    if (!buf) {
+      const len = Math.floor(sr * dur), N = Math.max(2, Math.round(sr / freq));
+      buf = this.ctx.createBuffer(1, len, sr); const d = buf.getChannelData(0);
+      const ring = new Float32Array(N); for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+      let p = 0;
+      for (let i = 0; i < len; i++) { const nx = (p + 1) % N; const v = (ring[p] + ring[nx]) * 0.4985; d[i] = ring[p]; ring[p] = v; p = nx; }
+      this.plucks.set(key, buf);
+    }
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const g = this.ctx.createGain(); g.gain.value = vol;
+    const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3200;
+    src.connect(f); f.connect(g); g.connect(this.master); src.start(this.ctx.currentTime + when);
+  }
+  // A pipe (or reed) organ voice: stacked harmonics with a slow swell and a breathy edge.
+  organ(freq, when = 0, dur = 1.2, vol = 0.06, reed = false) {
+    if (!this.ctx || !this.on) return;
+    const t = this.ctx.currentTime + when;
+    const parts = reed ? [[1, 1], [2, 0.6], [3, 0.45], [4, 0.3], [5, 0.25]] : [[0.5, 0.35], [1, 1], [2, 0.55], [3, 0.2], [4, 0.28], [8, 0.08]];
+    const g = this.ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + (reed ? 0.06 : 0.12)); g.gain.setValueAtTime(vol, t + dur); g.gain.linearRampToValueAtTime(0.0001, t + dur + (reed ? 0.15 : 0.6));
+    g.connect(this.master);
+    for (const [m, a] of parts) { const o = this.ctx.createOscillator(); o.type = reed ? 'sawtooth' : 'sine'; o.frequency.value = freq * m; const ga = this.ctx.createGain(); ga.gain.value = a * (reed ? 0.25 : 1); o.connect(ga); ga.connect(g); o.start(t); o.stop(t + dur + 0.8); }
+  }
   // called every frame with the environment
   ambience(game, dt) {
     if (!this.ctx || !this.on) { if (this.ctx && this.amb.rain) { this.amb.rain.gain.value = 0; this.amb.crowd.gain.value = 0; } return; }
